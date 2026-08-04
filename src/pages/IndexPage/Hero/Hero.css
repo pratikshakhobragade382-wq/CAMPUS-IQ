@@ -1,0 +1,516 @@
+/* ============================
+   HERO SECTION
+============================ */
+
+.hero{
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    gap:60px;
+
+    width:100%;
+    min-height:90vh;
+
+    padding:70px 7%;
+
+    background:
+    radial-gradient(circle at top right,
+        rgba(180,225,255,.28) 0%,
+        transparent 35%),
+
+    radial-gradient(circle at bottom left,
+        rgba(205,236,255,.25) 0%,
+        transparent 35%),
+
+    linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #f8fbff 45%,
+        #eef7ff 100%);
+}
+
+/* ================================
+      LARGE BLURRED CIRCLES
+================================ */
+
+.bg-circle{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(120px);
+    z-index:0;
+}
+
+/* Top Right */
+
+.circle-1{
+    width:520px;
+    height:520px;
+
+    background:#b8e6ff;
+
+    top:-220px;
+    right:-160px;
+
+    opacity:.45;
+}
+
+/* Bottom Left */
+
+.circle-2{
+    width:420px;
+    height:420px;
+
+    background:#d8f3ff;
+
+    left:-180px;
+    bottom:-170px;
+
+    opacity:.45;
+}
+
+/* Middle Right */
+
+.circle-3{
+    width:280px;
+    height:280px;
+
+    background:#d5f1ff;
+
+    right:180px;
+    bottom:40px;
+
+    opacity:.30;
+}
+
+/* Upper Left */
+
+.circle-4{
+    width:250px;
+    height:250px;
+
+    background:#edf8ff;
+
+    top:40px;
+    left:-90px;
+
+    opacity:.35;
+}
+
+/* ================================
+        SMALL EDGE CIRCLES
+================================ */
+
+.small-circle{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(140,210,255,.28);
+    z-index:0;
+}
+
+.small-1{
+    width:120px;
+    height:120px;
+
+    left:-55px;
+    top:300px;
+}
+
+.small-2{
+    width:70px;
+    height:70px;
+
+    right:45px;
+    top:120px;
+
+    opacity:.25;
+}
+
+.small-3{
+    width:140px;
+    height:140px;
+
+    right:-60px;
+    bottom:120px;
+
+    opacity:.18;
+}
+
+/* Top Left */
+
+.small-4{
+    width:90px;
+    height:90px;
+
+    top:90px;
+    left:180px;
+
+    background:rgba(180,225,255,.22);
+}
+
+/* Center Right */
+
+.small-5{
+    width:80px;
+    height:80px;
+
+    top:340px;
+    right:260px;
+
+    background:rgba(82, 167, 216, 0.18);
+}
+
+/* Bottom Center */
+
+.small-6{
+    width:120px;
+    height:120px;
+
+    bottom:40px;
+    left:45%;
+
+    background:rgba(84, 155, 203, 0.2);
+}
+
+/* .small-circle{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(140,210,255,.28);
+    filter:blur(4px);
+    z-index:0;
+} */
+
+/* ================================
+         DOTTED PATTERN
+================================ */
+
+.dot-pattern{
+
+    position:absolute;
+
+    width:120px;
+    height:120px;
+
+    left:39%;
+    top:70px;
+
+    background-image:radial-gradient(
+        #9ecffb 1.4px,
+        transparent 1.4px
+    );
+
+    background-size:12px 12px;
+
+    opacity:.35;
+
+    z-index:0;
+}
+
+/* Keep Content Above */
+
+.hero-left,
+.hero-right{
+    position:relative;
+    z-index:2;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+
+    width: 550px;
+    height: 550px;
+
+    background: #bfe8ff;
+    border-radius: 50%;
+
+    filter: blur(130px);
+    opacity: .45;
+
+    top: -180px;
+    right: -120px;
+
+    z-index: 0;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+
+    width: 450px;
+    height: 450px;
+
+    background: #d6f2ff;
+    border-radius: 50%;
+
+    filter: blur(120px);
+    opacity: .5;
+
+    bottom: -180px;
+    left: -120px;
+
+    z-index: 0;
+}
+
+.hero-left,
+.hero-right {
+    position: relative;
+    z-index: 2;
+}
+
+/* ============================
+   LEFT SECTION
+============================ */
+
+.hero-left {
+    flex: 1;
+}
+
+.hero-left h1 {
+    font-size: 58px;
+    line-height: 1.2;
+    color: #1f2937;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.hero-left p {
+    color: #6b7280;
+    font-size: 17px;
+    line-height: 1.9;
+    margin-bottom: 35px;
+    max-width: 500px;
+}
+
+.hero-btn {
+    padding: 15px 35px;
+    background: #38bdf8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .3s;
+}
+
+.hero-btn:hover {
+    background: #0ea5e9;
+    transform: translateY(-3px);
+}
+
+/* ============================
+   RIGHT SECTION
+============================ */
+
+.hero-right {
+    flex: 1;
+    position: relative;
+    height: 650px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Background Circle */
+
+.hero-circle {
+    width: 470px;
+    height: 470px;
+    background: #eaf8ff;
+    border-radius: 50%;
+    position: absolute;
+    top: 70px;
+    z-index: 1;
+}
+
+/* Hero Image */
+
+.hero-image {
+    width: 360px;
+    position: relative;
+    z-index: 5;
+    transition: .4s;
+}
+
+.hero-image:hover {
+    transform: scale(1.03);
+}
+
+/* ============================
+   FLOATING CARDS
+============================ */
+
+.floating-card {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+}
+
+.floating-card span {
+    font-size: 15px;
+    font-weight: 600;
+    color: #4b5563;
+    text-align: center;
+}
+
+/* Circular Icons */
+
+.icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    transition: .3s;
+}
+
+.icon:hover {
+    transform: translateY(-6px);
+}
+
+/* Colors */
+
+.orange {
+    border: 3px solid #f4b942;
+    color: #f4b942;
+}
+
+.purple {
+    border: 3px solid #8b7cf8;
+    color: #8b7cf8;
+}
+
+.blue {
+    border: 3px solid #38bdf8;
+    color: #38bdf8;
+}
+
+.red {
+    border: 3px solid #ff6b6b;
+    color: #ff6b6b;
+}
+
+.green {
+    border: 3px solid #6ee7b7;
+    color: #10b981;
+}
+
+/* ============================
+   CARD POSITIONS
+============================ */
+
+.top {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.left-top {
+    top: 130px;
+    left: 20px;
+}
+
+.left-bottom {
+    bottom: 120px;
+    left: 35px;
+}
+
+.right-top {
+    top: 150px;
+    right: 20px;
+}
+
+.right-bottom {
+    bottom: 120px;
+    right: 30px;
+}
+
+/* ============================
+   RESPONSIVE
+============================ */
+
+@media (max-width: 1100px) {
+
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    .hero-left p {
+        margin: auto;
+        margin-bottom: 30px;
+    }
+
+    .hero-right {
+        width: 100%;
+        height: 650px;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    .hero-left h1 {
+        font-size: 42px;
+    }
+
+    .hero-left p {
+        font-size: 16px;
+    }
+
+    .hero-circle {
+        width: 320px;
+        height: 320px;
+    }
+
+    .hero-image {
+        width: 250px;
+    }
+
+    .icon {
+        width: 58px;
+        height: 58px;
+        font-size: 22px;
+    }
+
+    .floating-card span {
+        font-size: 13px;
+    }
+
+    .top {
+        top: 50px;
+    }
+
+    .left-top {
+        top: 150px;
+        left: 0;
+    }
+
+    .left-bottom {
+        left: 10px;
+        bottom: 170px;
+    }
+
+    .right-top {
+        top: 150px;
+        right: 0;
+    }
+
+    .right-bottom {
+        right: 10px;
+        bottom: 170px;
+    }
+
+}

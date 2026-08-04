@@ -1,0 +1,136 @@
+/* Google Font */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Poppins", sans-serif;
+    background: #ffffff;
+}
+
+/* ================= NAVBAR ================= */
+
+.navbar {
+    width: 100%;
+    background: #ffffff;
+    border-bottom: 1px solid #edf2f7;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-container {
+    width: 90%;
+    max-width: 1300px;
+    margin: auto;
+    height: 80px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Logo */
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.logo img {
+    width: 270px;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}
+
+/* Navigation */
+
+.nav-links {
+    display: flex;
+    gap: 40px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #111827;
+    font-size: 16px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.nav-links a:hover {
+    color: #38bdf8;
+}
+
+/* Buttons */
+
+.nav-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.login-btn,
+.signup-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 500;
+}
+
+/* Login */
+
+.login-btn {
+    background: white;
+    color: #38bdf8;
+    border: 2px solid #38bdf8;
+}
+
+.login-btn:hover {
+    background: #38bdf8;
+    color: white;
+}
+
+/* Signup */
+
+.signup-btn {
+    background: #38bdf8;
+    color: white;
+    border: none;
+}
+
+.signup-btn:hover {
+    background: #0ea5e9;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 900px) {
+
+    .navbar-container {
+        flex-direction: column;
+        height: auto;
+        padding: 20px 0;
+        gap: 20px;
+    }
+
+    .nav-links {
+        gap: 25px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+}
