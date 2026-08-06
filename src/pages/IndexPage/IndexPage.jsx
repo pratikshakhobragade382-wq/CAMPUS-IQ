@@ -5,6 +5,7 @@ import Hero from "./Hero/Hero";
 import Roles from "./Roles Section/Roles";
 import Tags from "./Tags/Tags";
 import Card from "./Card/Card";
+import Footer from "./Footer/Footer";
 
 function IndexPage() {
   return (
@@ -18,6 +19,8 @@ function IndexPage() {
       <Tags />
 
       <Card />
+
+      <Footer/>
     </>
   );
 }

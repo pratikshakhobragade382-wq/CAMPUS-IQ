@@ -1,0 +1,135 @@
+/* Footer.css
+   Simple dark footer: logo + link columns on top,
+   a tagline and copyright on the bottom. */
+
+.footer {
+  background: #0f172a;
+  padding: 56px 60px 28px;
+  margin-top: 80px; /* space above the footer, separating it from the page content */
+}
+
+/* ---------- top: link columns ---------- */
+
+.footer-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-column {
+  min-width: 150px;
+}
+
+.footer-column {
+  min-width: 150px;
+}
+
+.column-heading {
+  position: relative;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 18px;
+  padding-bottom: 8px;
+}
+
+/* small underline accent below each column heading */
+.column-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 22px;
+  height: 2px;
+  background: #3b82f6;
+}
+
+.column-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.column-list a {
+  font-size: 13px;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.column-list a:hover {
+  color: #5aa3f0;
+}
+
+/* ---------- divider ---------- */
+
+.footer-divider {
+  max-width: 1200px;
+  margin: 40px auto 20px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ---------- bottom bar ---------- */
+
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-tagline {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+.footer-tagline strong {
+  color: #ffffff;
+}
+
+.footer-copyright {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .footer-main {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .footer-links {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 500px) {
+  .footer {
+    padding: 40px 24px 24px;
+  }
+
+  .footer-links {
+    gap: 28px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+}

@@ -15,9 +15,12 @@ const highlights = [
 function Card() {
   return (
     <section className="card-section">
-      {/* soft background blobs behind the card, unchanged from before */}
-      <div className="bg-blob bg-blob--top" />
-      <div className="bg-blob bg-blob--bottom" />
+      {/* soft background blobs behind the card */}
+      <div className="bg-blob bg-blob--1" />
+      <div className="bg-blob bg-blob--2" />
+      <div className="bg-blob bg-blob--3" />
+      <div className="bg-blob bg-blob--4" />
+      <div className="bg-blob bg-blob--5" />
 
       <div className="intro-card">
         <span className="intro-badge">✦ Multiagent AI Platform</span>
