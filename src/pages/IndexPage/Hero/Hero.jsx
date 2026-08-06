@@ -1,5 +1,6 @@
 import "./Hero.css";
 import heroImage from "../../../assets/hero.png";
+import { Link } from "react-router-dom";
 
 function Hero() {
   return (
@@ -37,9 +38,9 @@ function Hero() {
           schools manage students, teachers and parents efficiently.
         </p>
 
-        <button className="hero-btn">
-          Explore More
-        </button>
+        <Link to="/signup" className="hero-btn">
+           Explore More
+        </Link>
 
       </div>
 

@@ -4,6 +4,7 @@
 
 .hero{
     position:relative;
+    z-index:1;
     overflow:hidden;
 
     display:flex;
@@ -174,14 +175,6 @@
 
     background:rgba(84, 155, 203, 0.2);
 }
-
-/* .small-circle{
-    position:absolute;
-    border-radius:50%;
-    background:rgba(140,210,255,.28);
-    filter:blur(4px);
-    z-index:0;
-} */
 
 /* ================================
          DOTTED PATTERN

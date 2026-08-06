@@ -1,5 +1,6 @@
 import "./Navbar.css";
 import logo from "../../../assets/logo.png";
+import { Link } from "react-router-dom";
 
 function Navbar() {
   return (
@@ -22,7 +23,9 @@ function Navbar() {
         {/* Buttons */}
         <div className="nav-buttons">
           <button className="login-btn">Login</button>
-          <button className="signup-btn">Sign Up</button>
+          <Link to="/signup" className="signup-btn">
+             Sign Up
+          </Link>
         </div>
 
       </div>
