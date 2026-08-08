@@ -1,0 +1,467 @@
+/* =========================================================
+   Academic Year Page
+   ========================================================= */
+
+.academic-year-page {
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   PAGE HEADER
+   ========================================================= */
+
+.academic-year-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.academic-year-title-section h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #111827;
+}
+
+.academic-year-title-section p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* =========================================================
+   HEADER ACTIONS
+   ========================================================= */
+
+.academic-year-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.academic-year-search {
+  position: relative;
+  width: 260px;
+}
+
+.academic-year-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.academic-year-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 38px;
+}
+
+/* =========================================================
+   ADD BUTTON
+   ========================================================= */
+
+.academic-year-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   ALERT / ERROR
+   ========================================================= */
+
+.academic-year-alert {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   STATISTICS
+   ========================================================= */
+
+.academic-year-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.academic-year-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.academic-year-stat-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.academic-year-stat-value {
+  margin: 8px 0 0;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* =========================================================
+   TABLE CARD
+   ========================================================= */
+
+.academic-year-table-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.academic-year-table-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.academic-year-table-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.academic-year-table-body {
+  padding: 0;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.academic-year-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.academic-year-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.academic-year-table th {
+  padding: 13px 16px;
+  text-align: left;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.academic-year-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.academic-year-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.academic-year-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* =========================================================
+   YEAR TEXT
+   ========================================================= */
+
+.academic-year-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* =========================================================
+   STATUS BADGES
+   ========================================================= */
+
+.academic-year-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.academic-year-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.academic-year-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.academic-year-status.completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* =========================================================
+   CURRENT YEAR
+   ========================================================= */
+
+.academic-year-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.academic-year-current.yes {
+  color: #15803d;
+}
+
+.academic-year-current.no {
+  color: #6b7280;
+}
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.academic-year-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.academic-year-action-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.academic-year-action-btn.edit {
+  color: #2563eb;
+}
+
+.academic-year-action-btn.edit:hover {
+  background: #eff6ff;
+}
+
+.academic-year-action-btn.activate {
+  color: #15803d;
+}
+
+.academic-year-action-btn.activate:hover {
+  background: #f0fdf4;
+}
+
+.academic-year-action-btn.delete {
+  color: #dc2626;
+}
+
+.academic-year-action-btn.delete:hover {
+  background: #fef2f2;
+}
+
+/* =========================================================
+   EMPTY / LOADING
+   ========================================================= */
+
+.academic-year-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.academic-year-loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =========================================================
+   MODAL FORM
+   ========================================================= */
+
+.academic-year-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.academic-year-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.academic-year-form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.academic-year-form-label .required {
+  color: #dc2626;
+  margin-left: 3px;
+}
+
+/* Date inputs */
+
+.academic-year-date-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.academic-year-date-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.academic-year-date-input:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   CHECKBOX
+   ========================================================= */
+
+.academic-year-active-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.academic-year-active-checkbox {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: #0ea5e9;
+}
+
+.academic-year-active-label {
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* =========================================================
+   MODAL FOOTER
+   ========================================================= */
+
+.academic-year-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .academic-year-page {
+    padding: 20px;
+  }
+
+  .academic-year-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .academic-year-header {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .academic-year-page {
+    padding: 16px;
+    gap: 18px;
+  }
+
+  .academic-year-title-section h1 {
+    font-size: 24px;
+  }
+
+  .academic-year-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .academic-year-search {
+    width: 100%;
+  }
+
+  .academic-year-add-btn {
+    width: 100%;
+  }
+
+  .academic-year-modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .academic-year-modal-actions button {
+    width: 100%;
+  }
+}
