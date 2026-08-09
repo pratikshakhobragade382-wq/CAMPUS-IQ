@@ -2,19 +2,20 @@
  * Class API endpoints
  */
 
-import api from './axios';
-import { CLASSES_DATA } from '../data/class.json';
+import axiosClient from './axiosClient';
+import { CLASSES_DATA } from '../data/class.js';
 
-export const getClasses = async (page = 1, limit = 10) => {
+export const getClasses = async (page = 1, limit = 100) => {
   try {
+    const res = await axiosClient.get('/classes', { params: { page, limit } });
+    return res.data;
+  } catch (error) {
     return {
       data: CLASSES_DATA,
       total: CLASSES_DATA.length,
       page,
       limit,
     };
-  } catch (error) {
-    throw error;
   }
 };
 

@@ -2,23 +2,23 @@
  * Student API endpoints
  */
 
-import api from './axios';
-import { STUDENTS_DATA } from '../data/students.json';
+import axiosClient from './axiosClient';
+import { STUDENTS_DATA } from '../data/students.js';
 
 /**
  * Get all students with pagination
  */
 export const getStudents = async (page = 1, limit = 10, search = '', filters = {}) => {
   try {
-    // Mock API - replace with real endpoint
+    const res = await axiosClient.get('/students', { params: { page, limit, search, ...filters } });
+    return res.data;
+  } catch (error) {
     return {
       data: STUDENTS_DATA,
       total: STUDENTS_DATA.length,
       page,
       limit,
     };
-  } catch (error) {
-    throw error;
   }
 };
 
@@ -95,13 +95,14 @@ export const deleteStudent = async (id) => {
  */
 export const searchStudents = async (query) => {
   try {
+    const res = await axiosClient.get('/students', { params: { search: query, limit: 20 } });
+    return res.data.data || [];
+  } catch (error) {
     return STUDENTS_DATA.filter(s =>
       s.name.toLowerCase().includes(query.toLowerCase()) ||
       s.email.toLowerCase().includes(query.toLowerCase()) ||
       s.admissionNo.toLowerCase().includes(query.toLowerCase())
     );
-  } catch (error) {
-    throw error;
   }
 };
 

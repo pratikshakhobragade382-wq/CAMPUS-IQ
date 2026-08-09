@@ -1,84 +1,60 @@
 /**
- * Fee API endpoints
+ * Fee API endpoints (calls backend)
  */
 
-import api from './axios';
-import { FEE_DATA } from '../data/fee.json';
+import api from './axiosClient';
 
-export const getFees = async (page = 1, limit = 10, filters = {}) => {
-  try {
-    return {
-      data: FEE_DATA,
-      total: FEE_DATA.length,
-      page,
-      limit,
-    };
-  } catch (error) {
-    throw error;
-  }
+export const getCategories = async () => {
+  const res = await api.get('/fees/categories');
+  return res.data.data;
 };
 
-export const getFeeById = async (id) => {
-  try {
-    return FEE_DATA.find(f => f.id === id) || null;
-  } catch (error) {
-    throw error;
-  }
+export const createCategory = async (payload) => {
+  const res = await api.post('/fees/categories', payload);
+  return res.data.data;
 };
 
-export const createFee = async (data) => {
-  try {
-    const newFee = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
-    FEE_DATA.push(newFee);
-    return newFee;
-  } catch (error) {
-    throw error;
-  }
+export const updateCategory = async (id, payload) => {
+  const res = await api.put(`/fees/categories/${id}`, payload);
+  return res.data.data;
 };
 
-export const updateFee = async (id, data) => {
-  try {
-    const index = FEE_DATA.findIndex(f => f.id === id);
-    if (index > -1) {
-      FEE_DATA[index] = { ...FEE_DATA[index], ...data };
-      return FEE_DATA[index];
-    }
-    throw new Error('Fee not found');
-  } catch (error) {
-    throw error;
-  }
+export const deleteCategory = async (id) => {
+  const res = await api.delete(`/fees/categories/${id}`);
+  return res.data;
 };
 
-export const deleteFee = async (id) => {
-  try {
-    const index = FEE_DATA.findIndex(f => f.id === id);
-    if (index > -1) {
-      FEE_DATA.splice(index, 1);
-      return { success: true };
-    }
-    throw new Error('Fee not found');
-  } catch (error) {
-    throw error;
-  }
+export const getStructures = async (filters = {}) => {
+  const res = await api.get('/fees/structures', { params: filters });
+  return res.data.data;
 };
 
-export const getFeeStats = async (studentId) => {
-  try {
-    const studentFees = FEE_DATA.filter(f => f.studentId === studentId);
-    return {
-      total: studentFees.reduce((sum, f) => sum + f.amount, 0),
-      paid: studentFees
-        .filter(f => f.status === 'paid')
-        .reduce((sum, f) => sum + f.amount, 0),
-      pending: studentFees
-        .filter(f => f.status === 'pending')
-        .reduce((sum, f) => sum + f.amount, 0),
-    };
-  } catch (error) {
-    throw error;
-  }
+export const createStructure = async (payload) => {
+  const res = await api.post('/fees/structures', payload);
+  return res.data.data;
+};
+
+export const updateStructure = async (id, payload) => {
+  const res = await api.put(`/fees/structures/${id}`, payload);
+  return res.data.data;
+};
+
+export const collectFee = async (payload) => {
+  const res = await api.post('/fees/collect', payload);
+  return res.data.data;
+};
+
+export const getStudentFeeStatus = async (studentId, academicYearId) => {
+  const res = await api.get(`/fees/students/${studentId}/status`, { params: { academicYearId } });
+  return res.data.data;
+};
+
+export const getStudentPaymentHistory = async (studentId) => {
+  const res = await api.get(`/fees/students/${studentId}/history`);
+  return res.data.data;
+};
+
+export const getCollectionsByDateRange = async (fromDate, toDate) => {
+  const res = await api.get('/fees/collections', { params: { fromDate, toDate } });
+  return res.data.data;
 };
