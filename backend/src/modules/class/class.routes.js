@@ -1,118 +1,119 @@
 const express = require("express");
 const router = express.Router();
+
 const controller = require("./class.controller");
-const auth = require('../../middleware/authMiddleware');
-const authorize = require('../../middleware/authorize');
-const validateRequest = require('../../middleware/validateRequest');
+
+const auth = require("../../middleware/authMiddleware");
+const authorize = require("../../middleware/authorize");
+const validateRequest = require("../../middleware/validateRequest");
+
 const {
-	createClassBody,
-	addSectionBody,
-	classIdParam,
-} = require('./class.validation');
+  createClassBody,
+  updateClassBody,
+  addSectionBody,
+  classIdParam,
+} = require("./class.validation");
 
 /**
- * @openapi
- * /classes:
- *   post:
- *     summary: Create a new class
- *     tags: [Classes]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Class 1"
- *     responses:
- *       201:
- *         description: Class created successfully
- *       400:
- *         description: Bad request
- */
-router.post("/", auth, authorize('admin', 'management', 'principal'), validateRequest({ body: createClassBody }), controller.createClass);
-
-/**
- * @openapi
- * /classes:
- *   get:
- *     summary: Get all classes
- *     tags: [Classes]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of classes
- */
-router.get("/", auth, controller.getClasses);
-
-/**
- * @openapi
- * /classes/{classId}/sections:
- *   post:
- *     summary: Add section to a class
- *     tags: [Classes]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: classId
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               name:
- *                 type: string
- *                 example: "A"
- *     responses:
- *       201:
- *         description: Section created successfully
+ * ============================================================
+ * CREATE CLASS
+ * POST /classes
+ * ============================================================
  */
 router.post(
-	"/:classId/sections",
-	auth,
-	authorize('admin', 'management', 'principal'),
-	validateRequest({ params: classIdParam, body: addSectionBody }),
-	controller.addSection
+  "/",
+  auth,
+  authorize("admin", "management", "principal"),
+  validateRequest({ body: createClassBody }),
+  controller.createClass
 );
 
 /**
- * @openapi
- * /classes/{classId}/sections:
- *   get:
- *     summary: Get sections of a class
- *     tags: [Classes]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: classId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: List of sections
+ * ============================================================
+ * GET ALL CLASSES
+ * GET /classes
+ * ============================================================
  */
 router.get(
-	"/:classId/sections",
-	auth,
-	validateRequest({ params: classIdParam }),
-	controller.getSectionsByClass
+  "/",
+  auth,
+  controller.getClasses
+);
+
+/**
+ * ============================================================
+ * GET SINGLE CLASS
+ * GET /classes/:classId
+ * ============================================================
+ */
+router.get(
+  "/:classId",
+  auth,
+  validateRequest({ params: classIdParam }),
+  controller.getClassById
+);
+
+/**
+ * ============================================================
+ * UPDATE CLASS
+ * PUT /classes/:classId
+ * ============================================================
+ */
+router.put(
+  "/:classId",
+  auth,
+  authorize("admin", "management", "principal"),
+  validateRequest({
+    params: classIdParam,
+    body: updateClassBody,
+  }),
+  controller.updateClass
+);
+
+/**
+ * ============================================================
+ * DELETE CLASS
+ * DELETE /classes/:classId
+ *
+ * Soft delete
+ * ============================================================
+ */
+router.delete(
+  "/:classId",
+  auth,
+  authorize("admin", "management", "principal"),
+  validateRequest({ params: classIdParam }),
+  controller.deleteClass
+);
+
+/**
+ * ============================================================
+ * ADD SECTION TO CLASS
+ * POST /classes/:classId/sections
+ * ============================================================
+ */
+router.post(
+  "/:classId/sections",
+  auth,
+  authorize("admin", "management", "principal"),
+  validateRequest({
+    params: classIdParam,
+    body: addSectionBody,
+  }),
+  controller.addSection
+);
+
+/**
+ * ============================================================
+ * GET SECTIONS OF CLASS
+ * GET /classes/:classId/sections
+ * ============================================================
+ */
+router.get(
+  "/:classId/sections",
+  auth,
+  validateRequest({ params: classIdParam }),
+  controller.getSectionsByClass
 );
 
 module.exports = router;

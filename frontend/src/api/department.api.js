@@ -1,67 +1,48 @@
+import axiosClient from "./axiosClient";
+
 /**
- * Department API endpoints
+ * Get all departments
  */
-
-import api from './axios';
-import { DEPARTMENTS_DATA } from '../data/department.json';
-
-export const getDepartments = async (page = 1, limit = 10) => {
-  try {
-    return {
-      data: DEPARTMENTS_DATA,
-      total: DEPARTMENTS_DATA.length,
-      page,
-      limit,
-    };
-  } catch (error) {
-    throw error;
-  }
+export const getDepartments = async () => {
+  const response = await axiosClient.get("/departments");
+  return response.data;
 };
 
+/**
+ * Get department by ID
+ */
 export const getDepartmentById = async (id) => {
-  try {
-    return DEPARTMENTS_DATA.find(d => d.id === id) || null;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.get(`/departments/${id}`);
+  return response.data;
 };
 
+/**
+ * Create department
+ */
 export const createDepartment = async (data) => {
-  try {
-    const newDept = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
-    DEPARTMENTS_DATA.push(newDept);
-    return newDept;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.post("/departments", data);
+  return response.data;
 };
 
+/**
+ * Update department
+ */
 export const updateDepartment = async (id, data) => {
-  try {
-    const index = DEPARTMENTS_DATA.findIndex(d => d.id === id);
-    if (index > -1) {
-      DEPARTMENTS_DATA[index] = { ...DEPARTMENTS_DATA[index], ...data };
-      return DEPARTMENTS_DATA[index];
-    }
-    throw new Error('Department not found');
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.put(
+    `/departments/${id}`,
+    data
+  );
+
+  return response.data;
 };
 
+/**
+ * Delete department
+ */
 export const deleteDepartment = async (id) => {
-  try {
-    const index = DEPARTMENTS_DATA.findIndex(d => d.id === id);
-    if (index > -1) {
-      DEPARTMENTS_DATA.splice(index, 1);
-      return { success: true };
-    }
-    throw new Error('Department not found');
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.delete(
+    `/departments/${id}`
+  );
+
+  return response.data;
 };

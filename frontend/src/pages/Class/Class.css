@@ -1,0 +1,291 @@
+/* =========================================================
+   CLASS PAGE
+   ========================================================= */
+
+.class-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.class-title-section h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.class-title-section p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.class-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.class-search {
+  position: relative;
+  width: 250px;
+}
+
+.class-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.class-search input {
+  width: 100%;
+  padding-left: 38px;
+}
+
+/* =========================================================
+   ADD CLASS BUTTON
+   ========================================================= */
+
+.class-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* =========================================================
+   ALERT
+   ========================================================= */
+
+.class-alert {
+  margin-bottom: 18px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+/* =========================================================
+   TABLE CARD
+   ========================================================= */
+
+.class-table-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.class-table-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.class-table-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.class-table-body {
+  width: 100%;
+}
+
+/* =========================================================
+   TABLE STATES
+   ========================================================= */
+
+.class-loading,
+.class-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.class-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.class-status.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.class-status.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* =========================================================
+   ACTIONS
+   ICON ONLY — SAME STYLE AS DEPARTMENT / ACADEMIC YEAR
+   ========================================================= */
+
+.class-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.class-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.class-action-btn.edit {
+  color: #2563eb;
+}
+
+.class-action-btn.edit:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.class-action-btn.delete {
+  color: #dc2626;
+}
+
+.class-action-btn.delete:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* =========================================================
+   MODAL FORM
+   ========================================================= */
+
+.class-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.class-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.class-form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.class-form-label .required {
+  color: #dc2626;
+  margin-left: 3px;
+}
+
+.class-form-input {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 10px 12px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #111827;
+
+  font-size: 14px;
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.class-form-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.class-form-input::placeholder {
+  color: #9ca3af;
+}
+
+.class-form-group small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* =========================================================
+   MODAL ACTIONS
+   ========================================================= */
+
+.class-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+
+  padding-top: 5px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .class-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .class-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .class-search {
+    width: 100%;
+  }
+
+  .class-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .class-table-card {
+    overflow-x: auto;
+  }
+}

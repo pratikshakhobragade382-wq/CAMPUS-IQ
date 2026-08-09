@@ -187,7 +187,6 @@ model Class {
   exams              Exam[]
   resultPublications ResultPublication[]
 
-  @@unique([name, tenantId])
   @@index([tenantId])
 }
 
