@@ -24,6 +24,8 @@ import Department from "./pages/Department/Department";
 import ClassPage from "./pages/Class/Class";
 import Section from "./pages/Section/Section";
 import Student from "./pages/Student/Student";
+import StudentForm from "./pages/Student/StudentForm";
+import StudentView from "./pages/Student/StudentView";
 import Attendance from "./pages/Attendance/Attendance";
 import Exam from "./pages/Exam/Exam";
 import Fee from "./pages/Fee/Fee";
@@ -129,6 +131,18 @@ function App() {
               <Route
                 path="/student"
                 element={<Student />}
+              />
+              <Route
+                path="/student/new"
+                element={<StudentForm />}
+              />
+              <Route
+                path="/student/:id"
+                element={<StudentView />}
+              />
+              <Route
+                path="/student/:id/edit"
+                element={<StudentForm />}
               />
 
               {/* Attendance */}

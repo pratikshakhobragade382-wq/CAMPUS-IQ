@@ -1,135 +1,80 @@
 /**
- * Student API endpoints
+ * Student API — mirrors backend/src/modules/student
+ *
+ * Routes (baseURL = /api/v1 via axiosClient):
+ *   GET    /students
+ *   GET    /students/:id
+ *   POST   /students
+ *   PUT    /students/:id
+ *   DELETE /students/:id
+ *
+ * JWT Authorization is attached by axiosClient.
+ * Do NOT send tenantId — backend uses req.user.tenantId.
  */
 
-import axiosClient from './axiosClient';
-import { STUDENTS_DATA } from '../data/students.js';
+import axiosClient from "./axiosClient";
 
 /**
- * Get all students with pagination
+ * GET /students
+ * Query: page, limit, search, classId, gender
+ *
+ * Backend response:
+ * {
+ *   success, message,
+ *   data: { students: [], pagination: { total, page, limit, totalPages } }
+ * }
  */
-export const getStudents = async (page = 1, limit = 10, search = '', filters = {}) => {
-  try {
-    const res = await axiosClient.get('/students', { params: { page, limit, search, ...filters } });
-    return res.data;
-  } catch (error) {
-    return {
-      data: STUDENTS_DATA,
-      total: STUDENTS_DATA.length,
-      page,
-      limit,
-    };
-  }
+export const getStudents = async ({
+  page = 1,
+  limit = 10,
+  search = "",
+  classId,
+  gender,
+} = {}) => {
+  const params = { page, limit };
+
+  if (search?.trim()) params.search = search.trim();
+  if (classId) params.classId = classId;
+  if (gender) params.gender = gender;
+
+  const response = await axiosClient.get("/students", { params });
+  return response.data;
 };
 
 /**
- * Get student by ID
+ * GET /students/:id
+ * Backend response: { success, message, data: student }
+ * student includes class, section, parents
  */
 export const getStudentById = async (id) => {
-  try {
-    // const response = await api.get(`/students/${id}`);
-    // return response.data;
-    return STUDENTS_DATA.find(s => s.id === id) || null;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.get(`/students/${id}`);
+  return response.data;
 };
 
 /**
- * Create new student
+ * POST /students
+ * Backend response: { success, message, data: { ...student, parentCredentials } }
  */
 export const createStudent = async (data) => {
-  try {
-    // const response = await api.post('/students', data);
-    // return response.data;
-    const newStudent = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
-    STUDENTS_DATA.push(newStudent);
-    return newStudent;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.post("/students", data);
+  return response.data;
 };
 
 /**
- * Update student
+ * PUT /students/:id
+ * Backend response: { success, message, data: { ...student, parentCredentials } }
  */
 export const updateStudent = async (id, data) => {
-  try {
-    // const response = await api.put(`/students/${id}`, data);
-    // return response.data;
-    const index = STUDENTS_DATA.findIndex(s => s.id === id);
-    if (index > -1) {
-      STUDENTS_DATA[index] = { ...STUDENTS_DATA[index], ...data };
-      return STUDENTS_DATA[index];
-    }
-    throw new Error('Student not found');
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.put(`/students/${id}`, data);
+  return response.data;
 };
 
 /**
- * Delete student
+ * DELETE /students/:id
+ * Soft delete (isDeleted = true)
+ * Backend response: { success, message }
  */
 export const deleteStudent = async (id) => {
-  try {
-    // const response = await api.delete(`/students/${id}`);
-    // return response.data;
-    const index = STUDENTS_DATA.findIndex(s => s.id === id);
-    if (index > -1) {
-      STUDENTS_DATA.splice(index, 1);
-      return { success: true };
-    }
-    throw new Error('Student not found');
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Search students
- */
-export const searchStudents = async (query) => {
-  try {
-    const res = await axiosClient.get('/students', { params: { search: query, limit: 20 } });
-    return res.data.data || [];
-  } catch (error) {
-    return STUDENTS_DATA.filter(s =>
-      s.name.toLowerCase().includes(query.toLowerCase()) ||
-      s.email.toLowerCase().includes(query.toLowerCase()) ||
-      s.admissionNo.toLowerCase().includes(query.toLowerCase())
-    );
-  }
-};
-
-/**
- * Import students from file
- */
-export const importStudents = async (file) => {
-  try {
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // const response = await api.post('/students/import', formData);
-    // return response.data;
-    return { success: true, count: 0 };
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Export students to CSV
- */
-export const exportStudents = async (filters = {}) => {
-  try {
-    // const response = await api.get('/students/export', { params: filters });
-    // return response.data;
-    return STUDENTS_DATA;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosClient.delete(`/students/${id}`);
+  return response.data;
 };
