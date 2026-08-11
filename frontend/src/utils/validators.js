@@ -161,17 +161,25 @@ export const feeSchema = z.object({
 });
 
 /**
- * Exam form validation schema
+ * Exam form validation schema — matches backend Exam create body
  */
 export const examSchema = z.object({
+  academicYearId: z.number().int().positive('Academic year is required'),
   name: z.string()
     .min(2, 'Exam name must be at least 2 characters')
-    .max(50, 'Exam name must not exceed 50 characters'),
+    .max(100, 'Exam name must not exceed 100 characters'),
+  examType: z.enum([
+    'unit_test_1',
+    'unit_test_2',
+    'half_yearly',
+    'annual',
+    'pre_board',
+    'practical',
+    'internal_assessment',
+  ]),
+  classId: z.number().int().positive('Class is required'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
-  class: z.string().min(1, 'Please select class'),
-  totalMarks: z.number().min(1, 'Total marks must be at least 1'),
-  status: z.string().default('scheduled'),
 });
 
 /**

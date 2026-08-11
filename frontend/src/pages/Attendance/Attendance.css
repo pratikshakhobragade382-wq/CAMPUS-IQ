@@ -1,0 +1,71 @@
+/* =========================================================
+   ATTENDANCE PAGE
+========================================================= */
+
+.attendance-page {
+  width: 100%;
+}
+
+.attendance-alert {
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.attendance-alert--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.attendance-alert--success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.attendance-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.attendance-inline-select,
+.attendance-inline-input {
+  width: 100%;
+  min-width: 120px;
+  max-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.attendance-inline-input {
+  max-width: 220px;
+}
+
+.attendance-inline-select:focus,
+.attendance-inline-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+@media (max-width: 768px) {
+  .attendance-inline-select,
+  .attendance-inline-input {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,460 @@
+/* =========================================================
+   CUSTOM FIELDS PAGE
+========================================================= */
+
+.cf-page {
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.cf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cf-title-section h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cf-title-section p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  max-width: 520px;
+}
+
+.cf-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cf-search {
+  position: relative;
+  width: 260px;
+}
+
+.cf-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.cf-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 38px;
+}
+
+.cf-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   FORM SELECTOR
+========================================================= */
+
+.cf-form-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cf-form-select {
+  min-width: 260px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+}
+
+.cf-form-select:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+/* =========================================================
+   ALERT
+========================================================= */
+
+.cf-alert {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cf-alert.success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* =========================================================
+   TABLE CARD
+========================================================= */
+
+.cf-table-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.cf-table-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cf-table-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cf-table-body {
+  padding: 0;
+}
+
+.cf-field-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cf-field-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.cf-field-key {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.cf-control-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   ROW ACTIONS
+========================================================= */
+
+.cf-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cf-action-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.cf-action-btn.edit {
+  color: #2563eb;
+}
+
+.cf-action-btn.edit:hover {
+  background: #eff6ff;
+}
+
+.cf-action-btn.options {
+  color: #0f766e;
+}
+
+.cf-action-btn.options:hover {
+  background: #f0fdfa;
+}
+
+.cf-action-btn.delete {
+  color: #dc2626;
+}
+
+.cf-action-btn.delete:hover {
+  background: #fef2f2;
+}
+
+.cf-empty,
+.cf-loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =========================================================
+   MODAL FORM
+========================================================= */
+
+.cf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cf-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.cf-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cf-form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cf-form-label .required {
+  color: #dc2626;
+  margin-left: 3px;
+}
+
+.cf-form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cf-form-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.cf-form-group small,
+.cf-options-builder small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.cf-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.cf-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   OPTIONS BUILDER / LIST
+========================================================= */
+
+.cf-options-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.cf-options-builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cf-options-builder-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cf-option-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 88px 36px;
+  gap: 8px;
+  align-items: center;
+}
+
+.cf-priority-input {
+  text-align: center;
+}
+
+.cf-option-remove {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cf-option-remove:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.cf-option-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cf-options-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cf-options-list {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.cf-options-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cf-options-table th,
+.cf-options-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  color: #374151;
+}
+
+.cf-options-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 768px) {
+  .cf-form-row,
+  .cf-option-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cf-priority-input {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .cf-page {
+    padding: 16px;
+    gap: 18px;
+  }
+
+  .cf-title-section h1 {
+    font-size: 24px;
+  }
+
+  .cf-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cf-search,
+  .cf-form-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cf-add-btn {
+    width: 100%;
+  }
+
+  .cf-modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .cf-modal-actions button {
+    width: 100%;
+  }
+}

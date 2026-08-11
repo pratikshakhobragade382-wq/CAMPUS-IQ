@@ -6,11 +6,14 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
 
-export const Tabs = ({ tabs, defaultTab = 0, onChange }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab);
+export const Tabs = ({ tabs, defaultTab = 0, activeTab: controlledTab, onChange }) => {
+  const [internalTab, setInternalTab] = useState(defaultTab);
+  const activeTab = controlledTab !== undefined ? controlledTab : internalTab;
 
   const handleTabChange = (index) => {
-    setActiveTab(index);
+    if (controlledTab === undefined) {
+      setInternalTab(index);
+    }
     onChange?.(index);
   };
 

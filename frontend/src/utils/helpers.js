@@ -187,6 +187,8 @@ export const getStatusColor = (status) => {
     present: { bg: 'bg-green-100', text: 'text-green-800' },
     absent: { bg: 'bg-red-100', text: 'text-red-800' },
     late: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+    half_day: { bg: 'bg-orange-100', text: 'text-orange-800' },
+    holiday: { bg: 'bg-blue-100', text: 'text-blue-800' },
     leave: { bg: 'bg-purple-100', text: 'text-purple-800' },
     paid: { bg: 'bg-green-100', text: 'text-green-800' },
     pending: { bg: 'bg-yellow-100', text: 'text-yellow-800' },

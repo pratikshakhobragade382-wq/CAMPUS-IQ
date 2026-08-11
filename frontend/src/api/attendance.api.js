@@ -1,79 +1,157 @@
 /**
- * Attendance API endpoints
+ * Attendance API — mirrors backend/src/modules/attendance
+ *
+ * Base: /api/v1/attendance (via axiosClient)
+ *
+ * Student:
+ *   POST /attendance/students/mark-class
+ *   GET  /attendance/students/class?classId&sectionId&date
+ *   GET  /attendance/students/monthly-summary?classId&sectionId&month&year&academicYearId
+ *   GET  /attendance/students/:studentId/history?academicYearId&fromDate&toDate
+ *
+ * Staff:
+ *   POST /attendance/staff/mark
+ *   GET  /attendance/staff/by-date?date
+ *   GET  /attendance/staff/:staffId/history?academicYearId&fromDate&toDate
+ *
+ * Do NOT send markedById — backend derives it from the auth token.
+ * Do NOT send tenantId — backend uses req.user.tenantId.
  */
 
-import api from './axios';
-import { ATTENDANCE_DATA } from '../data/attendance.json';
+import axiosClient from "./axiosClient";
 
-export const getAttendance = async (page = 1, limit = 10, filters = {}) => {
-  try {
-    return {
-      data: ATTENDANCE_DATA,
-      total: ATTENDANCE_DATA.length,
-      page,
-      limit,
-    };
-  } catch (error) {
-    throw error;
-  }
+/**
+ * Mark / upsert class attendance for multiple students.
+ * Body: { academicYearId, classId, sectionId?, date, records: [{ studentId, status, remark? }] }
+ * Response: { success, message, data: { message, count } }
+ */
+export const markClassAttendance = async (data) => {
+  const response = await axiosClient.post(
+    "/attendance/students/mark-class",
+    data
+  );
+  return response.data;
 };
 
-export const getAttendanceById = async (id) => {
-  try {
-    return ATTENDANCE_DATA.find(a => a.id === id) || null;
-  } catch (error) {
-    throw error;
+/**
+ * Get existing class attendance for a date.
+ * Query: classId (required), date (required), sectionId (optional)
+ * Response: { success, message, data: StudentAttendance[] }
+ */
+export const getClassAttendanceByDate = async ({
+  classId,
+  sectionId,
+  date,
+}) => {
+  const params = {
+    classId: Number(classId),
+    date,
+  };
+  if (sectionId != null && sectionId !== "") {
+    params.sectionId = Number(sectionId);
   }
+
+  const response = await axiosClient.get("/attendance/students/class", {
+    params,
+  });
+  return response.data;
 };
 
-export const markAttendance = async (data) => {
-  try {
-    const newAttendance = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
-    ATTENDANCE_DATA.push(newAttendance);
-    return newAttendance;
-  } catch (error) {
-    throw error;
+/**
+ * Monthly attendance summary for a class/section.
+ * Query: classId, month, year required; sectionId, academicYearId optional
+ * Response: { success, message, data: { month, year, totalWorkingDays, holidayDates, students } }
+ */
+export const getClassMonthlyAttendanceSummary = async ({
+  classId,
+  sectionId,
+  month,
+  year,
+  academicYearId,
+}) => {
+  const params = {
+    classId: Number(classId),
+    month: Number(month),
+    year: Number(year),
+  };
+  if (sectionId != null && sectionId !== "") {
+    params.sectionId = Number(sectionId);
   }
+  if (academicYearId != null && academicYearId !== "") {
+    params.academicYearId = Number(academicYearId);
+  }
+
+  const response = await axiosClient.get(
+    "/attendance/students/monthly-summary",
+    { params }
+  );
+  return response.data;
 };
 
-export const updateAttendance = async (id, data) => {
-  try {
-    const index = ATTENDANCE_DATA.findIndex(a => a.id === id);
-    if (index > -1) {
-      ATTENDANCE_DATA[index] = { ...ATTENDANCE_DATA[index], ...data };
-      return ATTENDANCE_DATA[index];
-    }
-    throw new Error('Attendance record not found');
-  } catch (error) {
-    throw error;
+/**
+ * Attendance history for one student.
+ * Query: academicYearId?, fromDate?, toDate?
+ * Response: { success, message, data: { student, summary, records } }
+ */
+export const getStudentAttendanceHistory = async (
+  studentId,
+  { academicYearId, fromDate, toDate } = {}
+) => {
+  const params = {};
+  if (academicYearId != null && academicYearId !== "") {
+    params.academicYearId = Number(academicYearId);
   }
+  if (fromDate) params.fromDate = fromDate;
+  if (toDate) params.toDate = toDate;
+
+  const response = await axiosClient.get(
+    `/attendance/students/${Number(studentId)}/history`,
+    { params }
+  );
+  return response.data;
 };
 
-export const deleteAttendance = async (id) => {
-  try {
-    const index = ATTENDANCE_DATA.findIndex(a => a.id === id);
-    if (index > -1) {
-      ATTENDANCE_DATA.splice(index, 1);
-      return { success: true };
-    }
-    throw new Error('Attendance record not found');
-  } catch (error) {
-    throw error;
-  }
+/**
+ * Mark / upsert a single staff attendance record.
+ * Body: { academicYearId, staffId, date, status, inTime?, outTime?, remark? }
+ * Response: { success, message, data: StaffAttendance }
+ */
+export const markStaffAttendance = async (data) => {
+  const response = await axiosClient.post("/attendance/staff/mark", data);
+  return response.data;
 };
 
-export const getMonthlyAttendance = async (studentId, month, year) => {
-  try {
-    return ATTENDANCE_DATA.filter(a =>
-      a.studentId === studentId &&
-      new Date(a.date).getMonth() === month &&
-      new Date(a.date).getFullYear() === year
-    );
-  } catch (error) {
-    throw error;
+/**
+ * All staff attendance records for a date.
+ * Query: date (required)
+ * Response: { success, message, data: StaffAttendance[] }
+ */
+export const getStaffAttendanceByDate = async (date) => {
+  const response = await axiosClient.get("/attendance/staff/by-date", {
+    params: { date },
+  });
+  return response.data;
+};
+
+/**
+ * Attendance history for one staff member.
+ * Query: academicYearId?, fromDate?, toDate?
+ * Response: { success, message, data: { staff, summary, records } }
+ */
+export const getStaffAttendanceHistory = async (
+  staffId,
+  { academicYearId, fromDate, toDate } = {}
+) => {
+  const params = {};
+  if (academicYearId != null && academicYearId !== "") {
+    params.academicYearId = Number(academicYearId);
   }
+  if (fromDate) params.fromDate = fromDate;
+  if (toDate) params.toDate = toDate;
+
+  const response = await axiosClient.get(
+    `/attendance/staff/${Number(staffId)}/history`,
+    { params }
+  );
+  return response.data;
 };

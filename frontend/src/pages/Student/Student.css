@@ -324,6 +324,22 @@
   color: #64748b;
 }
 
+.student-custom-form-group {
+  margin-top: 8px;
+  margin-bottom: 18px;
+}
+
+.student-custom-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.student-custom-form-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
 .student-form-actions {
   display: flex;
   justify-content: flex-end;

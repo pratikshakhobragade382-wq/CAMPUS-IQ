@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { StatusBadge } from "../../components/ui/Badge";
 import { deleteStudent, getStudentById } from "../../api/student.api";
+import { getCustomFieldValues } from "../../api/customFields.api";
 import { getInitials, stringToColor } from "../../utils/helpers";
 
 import "./Student.css";
@@ -27,11 +28,33 @@ function formatDate(value) {
   }
 }
 
+function groupCustomFieldValues(list = []) {
+  const groups = {};
+
+  list.forEach((item) => {
+    const field = item.customField || {};
+    const formName = field.formName || "Custom Fields";
+    if (!groups[formName]) groups[formName] = [];
+    groups[formName].push({
+      id: item.id ?? `${item.customFieldId}-${item.value}`,
+      label: field.displayName || field.name || `Field #${item.customFieldId}`,
+      value: item.value,
+      priority: field.priority ?? 0,
+    });
+  });
+
+  return Object.entries(groups).map(([formName, fields]) => ({
+    formName,
+    fields: fields.sort((a, b) => a.priority - b.priority),
+  }));
+}
+
 export default function StudentView() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [student, setStudent] = useState(null);
+  const [customFieldGroups, setCustomFieldGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -42,7 +65,22 @@ export default function StudentView() {
         setLoading(true);
         setError("");
         const response = await getStudentById(id);
-        setStudent(response?.data || null);
+        const studentData = response?.data || null;
+        setStudent(studentData);
+
+        let values = studentData?.customFieldValues || [];
+
+        try {
+          const valuesRes = await getCustomFieldValues(id);
+          const fromApi = Array.isArray(valuesRes?.data) ? valuesRes.data : [];
+          if (fromApi.length > 0) {
+            values = fromApi;
+          }
+        } catch {
+          // Keep nested student.customFieldValues fallback
+        }
+
+        setCustomFieldGroups(groupCustomFieldValues(values));
       } catch (err) {
         setError(
           err.response?.data?.error ||
@@ -307,6 +345,18 @@ export default function StudentView() {
             <Field label="Fee Remark" value={student.feeRemark} />
           </div>
         </section>
+
+        {customFieldGroups.length > 0 &&
+          customFieldGroups.map((group) => (
+            <section key={group.formName} className="student-view-section">
+              <h3>{group.formName}</h3>
+              <div className="student-view-grid">
+                {group.fields.map((field) => (
+                  <Field key={field.id} label={field.label} value={field.value} />
+                ))}
+              </div>
+            </section>
+          ))}
       </div>
     </div>
   );

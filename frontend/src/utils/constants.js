@@ -44,12 +44,24 @@ export const STAFF_STATUS = {
   RETIRED: "retired",
 };
 
+/** Matches Prisma enum AttendanceStatus exactly */
 export const ATTENDANCE_STATUS = {
   PRESENT: "present",
   ABSENT: "absent",
   LATE: "late",
+  HALF_DAY: "half_day",
+  HOLIDAY: "holiday",
   LEAVE: "leave",
 };
+
+export const ATTENDANCE_STATUS_OPTIONS = [
+  { value: "present", label: "Present" },
+  { value: "absent", label: "Absent" },
+  { value: "late", label: "Late" },
+  { value: "half_day", label: "Half Day" },
+  { value: "holiday", label: "Holiday" },
+  { value: "leave", label: "Leave" },
+];
 
 export const FEE_STATUS = {
   PAID: "paid",
@@ -171,6 +183,32 @@ export const ROUTES = {
   CUSTOM_FIELDS: "/custom-fields",
   SETTINGS: "/settings",
 };
+
+// =====================================================
+// Custom Fields — exact backend control values
+// (custom-fields.routes.js swagger: TextBox | DropDown)
+// =====================================================
+
+export const CUSTOM_FIELD_CONTROLS = {
+  TEXT_BOX: "TextBox",
+  DROP_DOWN: "DropDown",
+};
+
+export const CUSTOM_FIELD_CONTROL_OPTIONS = [
+  { value: "TextBox", label: "TextBox" },
+  { value: "DropDown", label: "DropDown" },
+];
+
+/** Identities allowed to create/update/delete fields & options */
+export const CUSTOM_FIELD_MANAGE_ROLES = ["admin", "management", "principal"];
+
+/** Identities allowed to save student custom field values */
+export const CUSTOM_FIELD_VALUE_SAVE_ROLES = [
+  "admin",
+  "management",
+  "principal",
+  "staff",
+];
 
 // =====================================================
 // Sidebar Menu Items

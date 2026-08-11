@@ -14,6 +14,13 @@ import {
 } from "../../api/student.api";
 import { getClasses } from "../../api/class.api";
 import { getAllSections, getSectionsByClass } from "../../api/section.api";
+import {
+  getCustomFieldForms,
+  getCustomFieldsByForm,
+  getCustomFieldValues,
+  saveCustomFieldValues,
+} from "../../api/customFields.api";
+import { CUSTOM_FIELD_CONTROLS } from "../../utils/constants";
 import { BLOOD_GROUP, CATEGORIES, RELIGIONS } from "../../utils/constants";
 
 import "./Student.css";
@@ -248,6 +255,48 @@ function buildStudentPayload(form) {
   return payload;
 }
 
+/**
+ * Load all active custom fields grouped by formName.
+ * Uses GET /custom-fields/forms + GET /custom-fields?formName=
+ */
+async function loadCustomFieldsGrouped() {
+  const formsRes = await getCustomFieldForms();
+  const formNames = Array.isArray(formsRes?.data) ? formsRes.data : [];
+
+  const groups = [];
+
+  for (const formName of formNames) {
+    try {
+      const fieldsRes = await getCustomFieldsByForm(formName);
+      const fields = Array.isArray(fieldsRes?.data) ? fieldsRes.data : [];
+      if (fields.length > 0) {
+        groups.push({ formName, fields });
+      }
+    } catch (err) {
+      console.error(`Failed to load custom fields for "${formName}":`, err);
+    }
+  }
+
+  return groups;
+}
+
+/**
+ * Map GET /custom-fields/values/:studentId (or student.customFieldValues)
+ * into { [customFieldId]: value }
+ */
+function mapCustomFieldValues(list = []) {
+  const values = {};
+
+  list.forEach((item) => {
+    const fieldId = item.customFieldId ?? item.customField?.id;
+    if (fieldId != null) {
+      values[fieldId] = item.value ?? "";
+    }
+  });
+
+  return values;
+}
+
 function mapStudentToForm(student) {
   const parents = student.parents || [];
   const father = parents.find((p) => p.relation === "father");
@@ -344,6 +393,8 @@ export default function StudentForm() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
+  const [customFieldGroups, setCustomFieldGroups] = useState([]);
+  const [customValues, setCustomValues] = useState({});
   const [errors, setErrors] = useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -351,6 +402,11 @@ export default function StudentForm() {
   const [bootLoading, setBootLoading] = useState(true);
   const [credentials, setCredentials] = useState(null);
   const [savedStudentId, setSavedStudentId] = useState(null);
+
+  const allCustomFields = useMemo(
+    () => customFieldGroups.flatMap((group) => group.fields),
+    [customFieldGroups]
+  );
 
   const filteredSections = useMemo(() => {
     if (!form.classId) return [];
@@ -404,9 +460,36 @@ export default function StudentForm() {
           setSections(embeddedSections);
         }
 
+        // Custom fields (non-blocking if endpoint fails)
+        try {
+          const groups = await loadCustomFieldsGrouped();
+          setCustomFieldGroups(groups);
+        } catch (cfErr) {
+          console.error("Failed to load custom fields:", cfErr);
+          setCustomFieldGroups([]);
+        }
+
         if (isEdit) {
           const studentRes = await getStudentById(id);
-          setForm(mapStudentToForm(studentRes?.data || {}));
+          const student = studentRes?.data || {};
+          setForm(mapStudentToForm(student));
+
+          // Prefer dedicated values endpoint; fall back to nested student payload
+          try {
+            const valuesRes = await getCustomFieldValues(id);
+            const fromApi = Array.isArray(valuesRes?.data) ? valuesRes.data : [];
+            if (fromApi.length > 0) {
+              setCustomValues(mapCustomFieldValues(fromApi));
+            } else {
+              setCustomValues(
+                mapCustomFieldValues(student.customFieldValues || [])
+              );
+            }
+          } catch {
+            setCustomValues(
+              mapCustomFieldValues(student.customFieldValues || [])
+            );
+          }
         }
       } catch (err) {
         setError(
@@ -426,6 +509,13 @@ export default function StudentForm() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleCustomValueChange = (fieldId, value) => {
+    setCustomValues((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }));
   };
 
   const handleNestedChange = (group, e) => {
@@ -497,6 +587,27 @@ export default function StudentForm() {
     }
   };
 
+  /**
+   * POST /custom-fields/values
+   * Body: { studentId, values: [{ customFieldId, value }] }
+   */
+  const saveStudentCustomValues = async (studentId) => {
+    if (!studentId || allCustomFields.length === 0) return;
+
+    const values = allCustomFields.map((field) => ({
+      customFieldId: field.id,
+      value:
+        customValues[field.id] != null
+          ? String(customValues[field.id])
+          : "",
+    }));
+
+    await saveCustomFieldValues({
+      studentId: Number(studentId),
+      values,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -519,6 +630,22 @@ export default function StudentForm() {
       const saved = response?.data || {};
       const parentCredentials = saved.parentCredentials || [];
       const nextId = saved.id || (isEdit ? Number(id) : null);
+
+      // Save custom field answers against the student id (separate endpoint)
+      if (nextId && allCustomFields.length > 0) {
+        try {
+          await saveStudentCustomValues(nextId);
+        } catch (cfErr) {
+          console.error("Failed to save custom field values:", cfErr);
+          setError(
+            cfErr.response?.data?.error ||
+              cfErr.response?.data?.message ||
+              "Student saved, but custom field values failed to save."
+          );
+          setLoading(false);
+          return;
+        }
+      }
 
       setSuccess(
         response?.message ||
@@ -1165,6 +1292,59 @@ export default function StudentForm() {
             />
           </div>
         </section>
+
+        {/* 11. Custom Fields — driven by GET /custom-fields */}
+        {customFieldGroups.length > 0 && (
+          <section className="student-form-section">
+            <h3>11. Custom Fields</h3>
+            <p className="student-form-section-desc">
+              Dynamic fields configured for this school. Values are saved via
+              the custom-fields API.
+            </p>
+
+            {customFieldGroups.map((group) => (
+              <div key={group.formName} className="student-custom-form-group">
+                <h4 className="student-custom-form-title">{group.formName}</h4>
+
+                <div className="student-form-grid three">
+                  {group.fields.map((field) => {
+                    const fieldValue = customValues[field.id] ?? "";
+                    const optionList = (field.options || []).map((opt) => ({
+                      value: opt.value,
+                      label: opt.label,
+                    }));
+
+                    if (field.control === CUSTOM_FIELD_CONTROLS.DROP_DOWN) {
+                      return (
+                        <Select
+                          key={field.id}
+                          label={field.displayName || field.name}
+                          value={fieldValue}
+                          onChange={(e) =>
+                            handleCustomValueChange(field.id, e.target.value)
+                          }
+                          options={optionList}
+                        />
+                      );
+                    }
+
+                    return (
+                      <Input
+                        key={field.id}
+                        label={field.displayName || field.name}
+                        value={fieldValue}
+                        onChange={(e) =>
+                          handleCustomValueChange(field.id, e.target.value)
+                        }
+                        maxLength={field.maxLength || undefined}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
 
         <div className="student-form-actions">
           <Button
