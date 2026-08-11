@@ -35,8 +35,10 @@ import CustomFields from "./pages/CustomFields/CustomFields";
 import Settings from "./pages/Settings/Settings";
 
 // Staff
-import Staff from "./pages/staff/Staff";
+// Staff
+import Staff from "./pages/staff/StaffList";
 import AddStaff from "./pages/staff/AddStaff";
+import EditStaff from "./pages/staff/EditStaff";
 
 // Admin
 import AddUser from "./pages/admin/AddUser";
@@ -208,7 +210,21 @@ function App() {
                     <AddStaff />
                   </ProtectedRoute>
                 }
-              />
+                />
+
+                  <Route
+                  path="/staff/:id/edit"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                    <EditStaff />
+                    </ProtectedRoute>
+                  }
+                  />
+                
+                  
+                  
+                
+              
 
 
               {/* =========================
