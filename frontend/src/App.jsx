@@ -32,11 +32,15 @@ import Fee from "./pages/Fee/Fee";
 import Holiday from "./pages/Holiday/Holiday";
 import Timetable from "./pages/Timetable/Timetable";
 import CustomFields from "./pages/CustomFields/CustomFields";
+import Master from "./pages/Master/Master";
+import MasterData from "./pages/MasterData/MasterData";
 import Settings from "./pages/Settings/Settings";
 
 // Staff
-import Staff from "./pages/staff/Staff";
+// Staff
+import Staff from "./pages/staff/StaffList";
 import AddStaff from "./pages/staff/AddStaff";
+import EditStaff from "./pages/staff/EditStaff";
 
 // Admin
 import AddUser from "./pages/admin/AddUser";
@@ -83,30 +87,16 @@ function App() {
                 element={<AcademicYear />}
               />
 
-              {/* Master */}
+              {/* Master (Subjects) */}
               <Route
                 path="/master"
-                element={
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Master</h1>
-                    <p className="text-gray-500 mt-2">
-                      Master management page
-                    </p>
-                  </div>
-                }
+                element={<Master />}
               />
 
               {/* Master Data */}
               <Route
                 path="/master-data"
-                element={
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Master Data</h1>
-                    <p className="text-gray-500 mt-2">
-                      Master data management page
-                    </p>
-                  </div>
-                }
+                element={<MasterData />}
               />
 
               {/* Department */}
@@ -208,7 +198,21 @@ function App() {
                     <AddStaff />
                   </ProtectedRoute>
                 }
-              />
+                />
+
+                  <Route
+                  path="/staff/:id/edit"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                    <EditStaff />
+                    </ProtectedRoute>
+                  }
+                  />
+                
+                  
+                  
+                
+              
 
 
               {/* =========================
