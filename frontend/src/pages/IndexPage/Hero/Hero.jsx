@@ -38,7 +38,7 @@ function Hero() {
           schools manage students, teachers and parents efficiently.
         </p>
 
-        <Link to="/signup" className="hero-btn">
+        <Link to="/login" className="hero-btn">
            Explore More
         </Link>
 

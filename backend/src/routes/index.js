@@ -20,6 +20,10 @@ const examRoutes = require('../modules/exam/exam.routes');
 const settingsRoutes = require('../modules/settings/settings.routes');
 const notificationRoutes = require('../modules/notification/notification.routes');
 
+const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
+// ...
+router.use('/dashboard', dashboardRoutes);
+
 // Register routes
 router.use('/auth', authRoutes);
 router.use('/academic-years', academicYearRoutes);

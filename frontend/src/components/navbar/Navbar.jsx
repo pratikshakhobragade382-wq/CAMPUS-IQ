@@ -118,7 +118,7 @@ export const Navbar = () => {
                 </p>
 
                 <p className="text-xs text-gray-500">
-                  {user?.role || 'Super Admin'}
+                  {user?.role || 'Admin'}
                 </p>
               </div>
             </button>

@@ -2,8 +2,39 @@ const prisma = require("../../prisma/prismaClient");
 
 /**
  * Create Department
+ *
+ * If a department with the same name already exists but was
+ * soft-deleted, restore that department instead of creating
+ * a duplicate record.
  */
 exports.createDepartment = async ({ name, tenantId }) => {
+  const existingDepartment = await prisma.department.findFirst({
+    where: {
+      name,
+      tenantId,
+    },
+  });
+
+  // Restore previously soft-deleted department
+  if (existingDepartment?.isDeleted) {
+    return await prisma.department.update({
+      where: {
+        id: existingDepartment.id,
+      },
+      data: {
+        isDeleted: false,
+      },
+    });
+  }
+
+  // Department already exists and is active
+  if (existingDepartment) {
+    const error = new Error("Department already exists.");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  // Create a completely new department
   return await prisma.department.create({
     data: {
       name,
@@ -55,6 +86,23 @@ exports.updateDepartment = async ({ id, name, tenantId }) => {
   if (!department) {
     const error = new Error("Department not found.");
     error.statusCode = 404;
+    throw error;
+  }
+
+  // Check whether another department already uses this name
+  const existingDepartment = await prisma.department.findFirst({
+    where: {
+      name,
+      tenantId,
+      id: {
+        not: id,
+      },
+    },
+  });
+
+  if (existingDepartment) {
+    const error = new Error("Department already exists.");
+    error.statusCode = 409;
     throw error;
   }
 

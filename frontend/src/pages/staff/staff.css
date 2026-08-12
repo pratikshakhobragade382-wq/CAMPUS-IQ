@@ -1,287 +1,693 @@
+/* =========================================================
+   Staff Page
+   Styled to match Academic Year
+   ========================================================= */
 
-/* ==========================================================================
-   Staff Module Styles
-   Covers: AddStaff, EditStaff (auth-page/auth-card forms)
-           StaffList (page, filters, data-table, pagination)
-   ========================================================================== */
- 
-:root {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --danger: #dc2626;
-  --danger-hover: #b91c1c;
-  --secondary: #6b7280;
-  --secondary-hover: #4b5563;
-  --border: #e5e7eb;
-  --bg-soft: #f9fafb;
-  --text: #111827;
-  --text-muted: #6b7280;
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-}
- 
-* { box-sizing: border-box; }
- 
-/* ---------- Shared page layout ---------- */
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 24px 64px;
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
- 
-.page-header {
+.staff-page {
+  width: 100%;
+  padding: 24px;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   PAGE HEADER
+   ========================================================= */
+
+.staff-header {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
   flex-wrap: wrap;
 }
- 
-.page-header h1 {
-  margin: 0 0 4px;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
- 
-.page-header p {
+
+.staff-title-section h1 {
   margin: 0;
-  color: var(--text-muted);
-  font-size: 14px;
+  font-size: 28px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #111827;
 }
- 
-/* ---------- Buttons ---------- */
-.btn {
+
+.staff-title-section p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* =========================================================
+   HEADER ACTIONS
+   ========================================================= */
+
+.staff-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.staff-search {
+  position: relative;
+  width: 230px;
+}
+
+.staff-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.staff-search input {
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px 0 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.staff-search input::placeholder {
+  color: #9ca3af;
+}
+
+.staff-search input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+/* =========================================================
+   ROLE FILTER
+   ========================================================= */
+
+.staff-role-filter {
+  height: 40px;
+  min-width: 140px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.staff-role-filter:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+/* =========================================================
+   SEARCH BUTTON
+   ========================================================= */
+
+.staff-search-btn {
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 9px 18px;
+  padding: 0 16px;
   border: none;
   border-radius: 8px;
+  background: #0ea5e9;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
   white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    transform 0.05s ease;
 }
- 
-.btn:active { transform: translateY(1px); }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
- 
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: var(--shadow);
+
+.staff-search-btn:hover {
+  background: #0284c7;
 }
-.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
- 
-.btn-secondary {
-  background: #fff;
-  color: var(--text);
-  border: 1px solid var(--border);
+
+.staff-search-btn:active {
+  transform: translateY(1px);
 }
-.btn-secondary:hover:not(:disabled) { background: var(--bg-soft); border-color: #d1d5db; }
- 
-.btn-danger {
-  background: #fef2f2;
-  color: var(--danger);
-  border: 1px solid #fecaca;
-}
-.btn-danger:hover:not(:disabled) { background: var(--danger); color: #fff; border-color: var(--danger); }
- 
-/* ---------- Filters bar (StaffList) ---------- */
-.filters {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-  padding: 14px;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
- 
-.filters input,
-.filters select {
-  flex: 1 1 200px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
+
+/* =========================================================
+   ADD BUTTON
+   ========================================================= */
+
+.staff-add-btn {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
   border-radius: 8px;
+  background: #0ea5e9;
+  color: #ffffff;
   font-size: 14px;
-  background: #fff;
-  color: var(--text);
-  min-width: 140px;
-}
- 
-.filters input:focus,
-.filters select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
-}
- 
-.filters button {
-  flex: 0 0 auto;
-}
- 
-/* ---------- Table ---------- */
-.table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  background: #fff;
-}
- 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  min-width: 720px;
-}
- 
-.data-table thead th {
-  text-align: left;
-  padding: 12px 16px;
-  background: var(--bg-soft);
-  color: var(--text-muted);
   font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    transform 0.05s ease;
+}
+
+.staff-add-btn:hover {
+  background: #0284c7;
+}
+
+.staff-add-btn:active {
+  transform: translateY(1px);
+}
+
+/* =========================================================
+   ALERT / ERROR
+   ========================================================= */
+
+.staff-alert {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   STATISTICS
+   ========================================================= */
+
+.staff-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.staff-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.staff-stat-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.staff-stat-value {
+  margin: 8px 0 0;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* =========================================================
+   TABLE CARD
+   ========================================================= */
+
+.staff-table-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.staff-table-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.staff-table-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.staff-table-body {
+  padding: 0;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.staff-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.staff-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.staff-table th {
+  padding: 13px 16px;
+  text-align: left;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: #475569;
   white-space: nowrap;
 }
- 
-.data-table tbody td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+
+.staff-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #374151;
+  white-space: nowrap;
   vertical-align: middle;
-  color: var(--text);
 }
- 
-.data-table tbody tr:last-child td { border-bottom: none; }
-.data-table tbody tr:hover { background: var(--bg-soft); }
- 
-.data-table tbody td[colspan] {
+
+.staff-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.staff-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* =========================================================
+   STAFF NAME
+   ========================================================= */
+
+.staff-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.staff-person-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* =========================================================
+   ROLE BADGE
+   ========================================================= */
+
+.staff-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* =========================================================
+   LOGIN STATUS
+   ========================================================= */
+
+.staff-login-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.staff-login-status.yes {
+  color: #15803d;
+}
+
+.staff-login-status.no {
+  color: #6b7280;
+}
+
+/* =========================================================
+   ROW ACTIONS
+   ========================================================= */
+
+.staff-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.staff-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.staff-action-btn.edit {
+  color: #2563eb;
+}
+
+.staff-action-btn.edit:hover {
+  background: #eff6ff;
+}
+
+.staff-action-btn.delete {
+  color: #dc2626;
+}
+
+.staff-action-btn.delete:hover {
+  background: #fef2f2;
+}
+
+/* =========================================================
+   EMPTY / LOADING
+   ========================================================= */
+
+.staff-empty {
+  padding: 40px 20px;
   text-align: center;
-  color: var(--text-muted);
-  padding: 32px 16px;
+  color: #6b7280;
+  font-size: 14px;
 }
- 
-/* ---------- Pagination ---------- */
-.pagination {
+
+.staff-loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+.staff-pagination {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  margin-top: 20px;
   font-size: 14px;
-  color: var(--text-muted);
+  color: #6b7280;
 }
- 
-.pagination button {
+
+.staff-pagination button {
   padding: 7px 14px;
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
   border-radius: 8px;
+  color: #374151;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.15s ease;
+  transition: background 0.15s ease;
 }
- 
-.pagination button:hover:not(:disabled) { background: var(--bg-soft); }
-.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
- 
-/* ---------- Auth-style forms (AddStaff, EditStaff) ---------- */
-.auth-page {
-  min-height: 100vh;
+
+.staff-pagination button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.staff-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   ADD / EDIT STAFF FORM
+   Academic Year-style form
+   ========================================================= */
+
+.staff-form-page {
+  width: 100%;
+  padding: 24px;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 48px 20px;
-  background: var(--bg-soft);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
 }
- 
-.auth-card {
-  width: 100%;
-  max-width: 560px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow-md);
-  padding: 32px 36px 28px;
+
+.staff-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
- 
-.auth-card h1 {
-  margin: 0 0 20px;
-  font-size: 22px;
+
+.staff-form-title-section h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.3;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
+  color: #111827;
 }
- 
-.auth-card label {
-  display: block;
-  margin-bottom: 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
- 
-.auth-card label input,
-.auth-card label select {
-  display: block;
-  width: 100%;
-  margin-top: 6px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+
+.staff-form-title-section p {
+  margin: 6px 0 0;
   font-size: 14px;
-  font-weight: 400;
-  color: var(--text);
-  background: #fff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: #6b7280;
 }
- 
-.auth-card label input:focus,
-.auth-card label select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+
+.staff-form-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 }
- 
-.auth-error {
-  background: #fef2f2;
-  color: var(--danger);
-  border: 1px solid #fecaca;
-  padding: 10px 14px;
+
+.staff-form-card-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.staff-form-card-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.staff-form-card-body {
+  padding: 24px;
+}
+
+.staff-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.staff-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.staff-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.staff-form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.staff-form-label .required {
+  color: #dc2626;
+  margin-left: 3px;
+}
+
+.staff-form-input,
+.staff-form-select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 18px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
- 
-.form-actions {
+
+.staff-form-input:focus,
+.staff-form-select:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.staff-form-help {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.staff-form-actions {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
 }
- 
-/* ---------- Responsive ---------- */
+
+.staff-form-cancel,
+.staff-form-submit {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-form-cancel {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.staff-form-cancel:hover {
+  background: #f8fafc;
+}
+
+.staff-form-submit {
+  border: none;
+  background: #0ea5e9;
+  color: #ffffff;
+}
+
+.staff-form-submit:hover:not(:disabled) {
+  background: #0284c7;
+}
+
+.staff-form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .staff-actions {
+    width: 100%;
+  }
+
+  .staff-search {
+    flex: 1;
+    width: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .staff-page,
+  .staff-form-page {
+    padding: 20px;
+  }
+
+  .staff-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-header,
+  .staff-form-header {
+    align-items: flex-start;
+  }
+
+  .staff-form {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-form-group.full-width {
+    grid-column: auto;
+  }
+
+  .staff-form-actions {
+    grid-column: auto;
+  }
+}
+
 @media (max-width: 640px) {
-  .page { padding: 20px 14px 48px; }
-  .page-header { flex-direction: column; }
-  .auth-card { padding: 24px 20px; }
-  .form-actions { flex-direction: column-reverse; }
-  .form-actions .btn { width: 100%; }
+  .staff-page,
+  .staff-form-page {
+    padding: 16px;
+    gap: 18px;
+  }
+
+  .staff-title-section h1,
+  .staff-form-title-section h1 {
+    font-size: 24px;
+  }
+
+  .staff-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .staff-search {
+    width: 100%;
+  }
+
+  .staff-role-filter,
+  .staff-search-btn,
+  .staff-add-btn {
+    width: 100%;
+  }
+
+  .staff-form-card-body {
+    padding: 20px;
+  }
+
+  .staff-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .staff-form-cancel,
+  .staff-form-submit {
+    width: 100%;
+  }
 }

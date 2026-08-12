@@ -20,14 +20,10 @@ function Navbar() {
           <a href="#">Pricing</a>
         </nav>
 
-        {/* Buttons */}
+        {/* Login Button */}
         <div className="nav-buttons">
-          {/* <button className="login-btn">Login</button> */}
           <Link to="/login" className="login-btn">
-  Login
-</Link>
-          <Link to="/signup" className="signup-btn">
-             Sign Up
+            Login
           </Link>
         </div>
 
