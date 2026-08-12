@@ -202,6 +202,42 @@ export const CUSTOM_FIELD_CONTROL_OPTIONS = [
 /** Identities allowed to create/update/delete fields & options */
 export const CUSTOM_FIELD_MANAGE_ROLES = ["admin", "management", "principal"];
 
+/**
+ * Identities allowed to create/update/delete Master subjects
+ * Matches authorize('admin', 'management', 'principal') on subject routes
+ */
+export const MASTER_MANAGE_ROLES = ["admin", "management", "principal"];
+
+/**
+ * Identities allowed to create/update/delete/bulk Master Data values
+ * Matches authorize('admin', 'management', 'principal') on master-data routes
+ */
+export const MASTER_DATA_MANAGE_ROLES = ["admin", "management", "principal"];
+
+/**
+ * Valid Master Data categories from backend
+ * master-data.service.js VALID_CATEGORIES (source of truth)
+ */
+export const MASTER_DATA_CATEGORIES = [
+  "BloodGroup",
+  "Religion",
+  "Country",
+  "SocialCategory",
+  "MaritalStatus",
+  "MotherTongue",
+  "Nationality",
+  "Document",
+  "BoardingCategory",
+  "Qualification",
+  "House",
+  "Medium",
+  "Board",
+  "Stream",
+  "FeeGroup",
+  "Occupation",
+  "Designation",
+];
+
 /** Identities allowed to save student custom field values */
 export const CUSTOM_FIELD_VALUE_SAVE_ROLES = [
   "admin",
