@@ -1,10 +1,25 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../../prisma/prismaClient');
+const { createNotification } = require('../notification/notification.service'); // NEW: for "New Teacher/Staff Added" notification
 
 function getBcryptCost() {
   const raw = Number.parseInt(process.env.BCRYPT_COST || '12', 10);
   const cost = Number.isFinite(raw) ? raw : 12;
   return Math.min(14, Math.max(10, cost));
+}
+
+// NEW: Figures out whether this staff member is a teacher, by checking a
+// few commonly-used field names. Adjust the field name here if your Staff
+// model uses something different (e.g. "jobRole").
+function isTeacherRole(staffFields) {
+  const roleValue = (
+    staffFields.role ||
+    staffFields.designation ||
+    staffFields.staffRole ||
+    ''
+  ).toString().toLowerCase();
+
+  return roleValue.includes('teacher');
 }
 
 const getStaffById = async (id, tenantId) => {
@@ -130,7 +145,28 @@ const createStaff = async (data, tenantId) => {
     return created;
   });
 
-  return getStaffById(staff.id, tenantId);
+  const fullStaff = await getStaffById(staff.id, tenantId);
+
+  // NEW: Fire "New Teacher Added" if this staff member is a teacher,
+  // otherwise fall back to a generic "New Staff Added" notification.
+  try {
+    const isTeacher = isTeacherRole(staffFields);
+
+    await createNotification({
+      tenantId,
+      title: isTeacher ? 'New Teacher Added' : 'New Staff Added',
+      message: isTeacher
+        ? `${fullStaff.name} has been added as a new teacher.`
+        : `${fullStaff.name} has been added as a new staff member.`,
+      type: 'staff',
+      priority: 'normal',
+      audience: 'all',
+    });
+  } catch (notifyErr) {
+    console.error('Notification creation failed (non-fatal):', notifyErr);
+  }
+
+  return fullStaff;
 };
 
 const getAllStaff = async (tenantId, query = {}) => {

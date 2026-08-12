@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../../prisma/prismaClient');
+const { createNotification } = require('../notification/notification.service'); // NEW: for "New Student Added" notification
 
 function getBcryptCost() {
   const raw = Number.parseInt(process.env.BCRYPT_COST || '12', 10);
@@ -136,6 +137,23 @@ const createStudent = async (data, tenantId) => {
   });
 
   const fullStudent = await getStudentById(student.id, tenantId);
+
+  // NEW: Fire a "New Student Added" notification for everyone.
+  // Wrapped in try/catch so a notification failure never breaks student
+  // creation (same defensive pattern used for Academic Year / Holiday).
+  try {
+    await createNotification({
+      tenantId,
+      title: 'New Student Added',
+      message: `${fullStudent.studentName} has been added as a new student.`,
+      type: 'student',
+      priority: 'normal',
+      audience: 'all',
+    });
+  } catch (notifyErr) {
+    console.error('Notification creation failed (non-fatal):', notifyErr);
+  }
+
   return { ...fullStudent, parentCredentials };
 };
 

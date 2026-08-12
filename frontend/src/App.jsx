@@ -37,13 +37,17 @@ import MasterData from "./pages/MasterData/MasterData";
 import Settings from "./pages/Settings/Settings";
 
 // Staff
-// Staff
 import Staff from "./pages/staff/StaffList";
 import AddStaff from "./pages/staff/AddStaff";
 import EditStaff from "./pages/staff/EditStaff";
 
 // Admin
 import AddUser from "./pages/admin/AddUser";
+
+import Notifications from "./pages/Notifications/Notifications";
+
+// Profile — NEW
+import Profile from "./pages/Profile/Profile";
 
 function App() {
   return (
@@ -177,6 +181,17 @@ function App() {
                 element={<Settings />}
               />
 
+              {/* Notifications */}
+              <Route
+                path="/notifications"
+                element={<Notifications />}
+              />
+
+              {/* Profile — NEW */}
+              <Route
+                path="/profile"
+                element={<Profile />}
+              />
 
               {/* =========================
                   STAFF
@@ -198,22 +213,16 @@ function App() {
                     <AddStaff />
                   </ProtectedRoute>
                 }
-                />
+              />
 
-                  <Route
-                  path="/staff/:id/edit"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
+              <Route
+                path="/staff/:id/edit"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
                     <EditStaff />
-                    </ProtectedRoute>
-                  }
-                  />
-                
-                  
-                  
-                
-              
-
+                  </ProtectedRoute>
+                }
+              />
 
               {/* =========================
                   ADMIN

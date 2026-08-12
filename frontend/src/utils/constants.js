@@ -167,21 +167,35 @@ export const CHART_COLORS = {
 
 export const ROUTES = {
   DASHBOARD: "/dashboard",
+
   ACADEMIC_YEAR: "/academic-year",
+
   MASTER: "/master",
   MASTER_DATA: "/master-data",
+
   DEPARTMENT: "/department",
   CLASS: "/class",
   SECTION: "/section",
+
   STUDENT: "/student",
   STAFF: "/staff",
+
   ATTENDANCE: "/attendance",
   EXAM: "/exam",
   FEE: "/fee",
   HOLIDAY: "/holiday",
   TIMETABLE: "/timetable",
   CUSTOM_FIELDS: "/custom-fields",
+
   SETTINGS: "/settings",
+
+  // ===================================================
+  // Notifications
+  // ===================================================
+  // Used by the "View all" button in NotificationBell
+  NOTIFICATIONS: "/notifications",
+
+  PROFILE: '/profile',
 };
 
 // =====================================================
@@ -257,90 +271,105 @@ export const SIDEBAR_MENU = [
     icon: "LayoutDashboard",
     path: ROUTES.DASHBOARD,
   },
+
   {
     id: "academic-year",
     label: "Academic Year",
     icon: "Calendar",
     path: ROUTES.ACADEMIC_YEAR,
   },
+
   {
     id: "master",
     label: "Master",
     icon: "Database",
     path: ROUTES.MASTER,
   },
+
   {
     id: "master-data",
     label: "Master Data",
     icon: "Database",
     path: ROUTES.MASTER_DATA,
   },
+
   {
     id: "department",
     label: "Department",
     icon: "Building2",
     path: ROUTES.DEPARTMENT,
   },
+
   {
     id: "class",
     label: "Class",
     icon: "BookOpen",
     path: ROUTES.CLASS,
   },
+
   {
     id: "section",
     label: "Section",
     icon: "Layers",
     path: ROUTES.SECTION,
   },
+
   {
     id: "student",
     label: "Student",
     icon: "Users",
     path: ROUTES.STUDENT,
   },
+
   {
     id: "staff",
     label: "Staff",
     icon: "UserCheck",
     path: ROUTES.STAFF,
   },
+
   {
     id: "attendance",
     label: "Attendance",
     icon: "CheckCircle",
     path: ROUTES.ATTENDANCE,
   },
+
   {
     id: "exam",
     label: "Exam",
     icon: "FileText",
     path: ROUTES.EXAM,
   },
+
   {
     id: "fee",
     label: "Fee",
     icon: "CreditCard",
     path: ROUTES.FEE,
   },
+
   {
     id: "holiday",
     label: "Holiday",
     icon: "Smile",
     path: ROUTES.HOLIDAY,
   },
+
   {
     id: "timetable",
     label: "Timetable",
     icon: "Clock",
     path: ROUTES.TIMETABLE,
   },
+
   {
     id: "custom-fields",
     label: "Custom Fields",
     icon: "Layers",
     path: ROUTES.CUSTOM_FIELDS,
   },
+
   {
     id: "settings",
     label: "Settings",
@@ -376,10 +405,13 @@ export const DATE_FORMATS = {
 
 // =====================================================
 // Local Storage Keys
-// IMPORTANT:
-// The login currently stores the JWT using the key "token".
-// Axios must therefore read the same key.
 // =====================================================
+
+/**
+ * IMPORTANT:
+ * Login stores JWT using the key "token".
+ * Axios must therefore read the same key.
+ */
 
 export const STORAGE_KEYS = {
   AUTH_TOKEN: "token",

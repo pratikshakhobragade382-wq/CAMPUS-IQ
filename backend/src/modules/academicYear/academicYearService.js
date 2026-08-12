@@ -1,12 +1,13 @@
 const prisma = require('../../prisma/prismaClient');
 const { HttpError } = require('../../utils/httpError');
+const { createNotification } = require('../notification/notification.service');
 
-/**
- * Generate academic year name automatically
+/*
+ * Generate academic year name automatically.
  *
  * Example:
- * Start: 01/06/2026
- * End:   31/05/2027
+ * Start date: 01/06/2026
+ * End date:   31/05/2027
  *
  * Result:
  * 2026-2027
@@ -18,7 +19,25 @@ function generateAcademicYearName(startDate, endDate) {
   return `${startYear}-${endYear}`;
 }
 
-/**
+/*
+ * Convert ID into a valid number.
+ *
+ * This prevents invalid IDs such as "abc"
+ * from reaching Prisma.
+ */
+function getValidId(id) {
+  const parsedId = parseInt(id, 10);
+
+  if (Number.isNaN(parsedId)) {
+    throw new HttpError(400, 'Invalid academic year ID', {
+      code: 'INVALID_ID',
+    });
+  }
+
+  return parsedId;
+}
+
+/*
  * CREATE ACADEMIC YEAR
  */
 exports.createAcademicYear = async ({
@@ -46,39 +65,40 @@ exports.createAcademicYear = async ({
 
   // End date must be after start date
   if (end <= start) {
-    throw new HttpError(
-      400,
-      'End date must be after start date',
-      {
-        code: 'INVALID_DATE_RANGE',
-      }
-    );
+    throw new HttpError(400, 'End date must be after start date', {
+      code: 'INVALID_DATE_RANGE',
+    });
   }
 
   // Generate academic year name automatically
   const name = generateAcademicYearName(start, end);
 
-  // Check duplicate academic year
-  const existing = await prisma.academicYear.findFirst({
-    where: {
-      name,
-      tenantId,
-      isDeleted: false,
-    },
-  });
+  // Check whether the same academic year already exists
+const existing = await prisma.academicYear.findFirst({
+  where: {
+    startDate: start,
+    endDate: end,
+    tenantId,
+    isDeleted: false,
+  },
+});
 
-  if (existing) {
-    throw new HttpError(
-      409,
-      `Academic year ${name} already exists`,
-      {
-        code: 'DUPLICATE',
-      }
-    );
-  }
+if (existing) {
+  throw new HttpError(
+    409,
+    `An academic year with these exact dates already exists (${existing.name})`,
+    {
+      code: 'DUPLICATE',
+    }
+  );
+}
 
-  // If this year is active,
-  // deactivate all other academic years first.
+  /*
+   * Only one academic year can be active at a time.
+   *
+   * If the new academic year is active,
+   * deactivate all other active academic years first.
+   */
   if (isActive) {
     await prisma.academicYear.updateMany({
       where: {
@@ -92,8 +112,10 @@ exports.createAcademicYear = async ({
     });
   }
 
-  // Create academic year
-  return prisma.academicYear.create({
+  /*
+   * Create the academic year.
+   */
+  const academicYear = await prisma.academicYear.create({
     data: {
       name,
       startDate: start,
@@ -102,14 +124,34 @@ exports.createAcademicYear = async ({
       tenantId,
     },
   });
+
+  /*
+   * Create a notification after the academic year
+   * has been successfully created.
+   *
+   * Audience "all" means the notification can be
+   * shown to all users belonging to this tenant.
+   */
+  await createNotification({
+    tenantId,
+    title: 'New Academic Year',
+    message: `Academic year ${name} has been created.`,
+    type: 'academic_year',
+    priority: 'normal',
+    audience: 'all',
+  });
+
+  // Return the newly created academic year
+  return academicYear;
 };
 
-/**
+/*
  * ACTIVATE ACADEMIC YEAR
  */
 exports.activateAcademicYear = async (id, tenantId) => {
-  const academicYearId = parseInt(id, 10);
+  const academicYearId = getValidId(id);
 
+  // Check whether the academic year exists
   const year = await prisma.academicYear.findFirst({
     where: {
       id: academicYearId,
@@ -119,16 +161,15 @@ exports.activateAcademicYear = async (id, tenantId) => {
   });
 
   if (!year) {
-    throw new HttpError(
-      404,
-      'Academic year not found',
-      {
-        code: 'NOT_FOUND',
-      }
-    );
+    throw new HttpError(404, 'Academic year not found', {
+      code: 'NOT_FOUND',
+    });
   }
 
-  // Deactivate all other academic years
+  /*
+   * Deactivate all other academic years
+   * belonging to this tenant.
+   */
   await prisma.academicYear.updateMany({
     where: {
       tenantId,
@@ -143,7 +184,7 @@ exports.activateAcademicYear = async (id, tenantId) => {
     },
   });
 
-  // Activate selected year
+  // Activate the selected academic year
   return prisma.academicYear.update({
     where: {
       id: academicYearId,
@@ -154,7 +195,7 @@ exports.activateAcademicYear = async (id, tenantId) => {
   });
 };
 
-/**
+/*
  * UPDATE ACADEMIC YEAR
  */
 exports.updateAcademicYear = async (
@@ -162,8 +203,9 @@ exports.updateAcademicYear = async (
   data,
   tenantId
 ) => {
-  const academicYearId = parseInt(id, 10);
+  const academicYearId = getValidId(id);
 
+  // Find the existing academic year
   const year = await prisma.academicYear.findFirst({
     where: {
       id: academicYearId,
@@ -173,62 +215,51 @@ exports.updateAcademicYear = async (
   });
 
   if (!year) {
-    throw new HttpError(
-      404,
-      'Academic year not found',
-      {
-        code: 'NOT_FOUND',
-      }
-    );
+    throw new HttpError(404, 'Academic year not found', {
+      code: 'NOT_FOUND',
+    });
   }
 
   const updateData = {};
 
+  // Keep the old dates by default
   let finalStart = year.startDate;
   let finalEnd = year.endDate;
 
-  /**
+  /*
    * UPDATE START DATE
    */
   if (data.startDate !== undefined) {
     const start = new Date(data.startDate);
 
     if (Number.isNaN(start.getTime())) {
-      throw new HttpError(
-        400,
-        'Invalid start date',
-        {
-          code: 'INVALID_DATE',
-        }
-      );
+      throw new HttpError(400, 'Invalid start date', {
+        code: 'INVALID_DATE',
+      });
     }
 
     updateData.startDate = start;
     finalStart = start;
   }
 
-  /**
+  /*
    * UPDATE END DATE
    */
   if (data.endDate !== undefined) {
     const end = new Date(data.endDate);
 
     if (Number.isNaN(end.getTime())) {
-      throw new HttpError(
-        400,
-        'Invalid end date',
-        {
-          code: 'INVALID_DATE',
-        }
-      );
+      throw new HttpError(400, 'Invalid end date', {
+        code: 'INVALID_DATE',
+      });
     }
 
     updateData.endDate = end;
     finalEnd = end;
   }
 
-  /**
-   * Validate date range
+  /*
+   * Validate the final date range.
    */
   if (finalEnd <= finalStart) {
     throw new HttpError(
@@ -240,9 +271,9 @@ exports.updateAcademicYear = async (
     );
   }
 
-  /**
-   * If either date changes,
-   * regenerate academic year name.
+  /*
+   * If either date changed, generate the
+   * academic year name again.
    */
   if (
     data.startDate !== undefined ||
@@ -254,8 +285,9 @@ exports.updateAcademicYear = async (
     );
   }
 
-  /**
-   * Check duplicate generated name
+  /*
+   * Check whether the generated name already
+   * belongs to another academic year.
    */
   if (
     updateData.name &&
@@ -283,8 +315,11 @@ exports.updateAcademicYear = async (
     }
   }
 
-  /**
-   * ACTIVATE
+  /*
+   * ACTIVATE THIS ACADEMIC YEAR
+   *
+   * Before activating it, deactivate all
+   * other academic years.
    */
   if (data.isActive === true) {
     await prisma.academicYear.updateMany({
@@ -304,13 +339,14 @@ exports.updateAcademicYear = async (
     updateData.isActive = true;
   }
 
-  /**
-   * DEACTIVATE
+  /*
+   * DEACTIVATE THIS ACADEMIC YEAR
    */
   if (data.isActive === false) {
     updateData.isActive = false;
   }
 
+  // Update the academic year
   return prisma.academicYear.update({
     where: {
       id: academicYearId,
@@ -319,15 +355,16 @@ exports.updateAcademicYear = async (
   });
 };
 
-/**
+/*
  * DELETE ACADEMIC YEAR
  */
 exports.deleteAcademicYear = async (
   id,
   tenantId
 ) => {
-  const academicYearId = parseInt(id, 10);
+  const academicYearId = getValidId(id);
 
+  // Find the academic year
   const year = await prisma.academicYear.findFirst({
     where: {
       id: academicYearId,
@@ -337,16 +374,15 @@ exports.deleteAcademicYear = async (
   });
 
   if (!year) {
-    throw new HttpError(
-      404,
-      'Academic year not found',
-      {
-        code: 'NOT_FOUND',
-      }
-    );
+    throw new HttpError(404, 'Academic year not found', {
+      code: 'NOT_FOUND',
+    });
   }
 
-  // Active academic year cannot be deleted
+  /*
+   * Do not allow the currently active academic
+   * year to be deleted.
+   */
   if (year.isActive) {
     throw new HttpError(
       400,
@@ -357,7 +393,11 @@ exports.deleteAcademicYear = async (
     );
   }
 
-  // Soft delete
+  /*
+   * Soft delete.
+   *
+   * We do not actually remove the database row.
+   */
   await prisma.academicYear.update({
     where: {
       id: academicYearId,
@@ -372,7 +412,7 @@ exports.deleteAcademicYear = async (
   };
 };
 
-/**
+/*
  * GET ALL ACADEMIC YEARS
  */
 exports.getAcademicYears = async (tenantId) => {
@@ -387,10 +427,14 @@ exports.getAcademicYears = async (tenantId) => {
   });
 };
 
-/**
+/*
  * GET ACTIVE ACADEMIC YEAR
  */
 exports.getActiveYear = async (tenantId) => {
+  /*
+   * First, look for the academic year that has
+   * been explicitly marked as active.
+   */
   let active = await prisma.academicYear.findFirst({
     where: {
       tenantId,
@@ -399,8 +443,12 @@ exports.getActiveYear = async (tenantId) => {
     },
   });
 
-  // Fallback:
-  // Find academic year containing today's date
+  /*
+   * Fallback:
+   *
+   * If no academic year is marked active,
+   * find the academic year containing today's date.
+   */
   if (!active) {
     const today = new Date();
 
@@ -414,6 +462,9 @@ exports.getActiveYear = async (tenantId) => {
         endDate: {
           gte: today,
         },
+      },
+      orderBy: {
+        startDate: 'desc',
       },
     });
   }
