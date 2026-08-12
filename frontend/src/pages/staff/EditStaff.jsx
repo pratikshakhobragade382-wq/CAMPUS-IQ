@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
-
+import './staff.css';
 const ROLES = ['teacher','accountant','librarian','clerk','receptionist','nurse','counselor','coordinator','lab_assistant','peon','driver','security','other'];
 
 export default function EditStaff() {
