@@ -7,47 +7,84 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
-const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8000/api/v1"
+).replace(/\/$/, "");
+
 const TIMETABLE_API = `${API_BASE}/timetable`;
 
 const DAYS = [
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
 ];
 
-const SLOT_TYPES = ['period', 'recess', 'lunch', 'sports'];
+const SLOT_TYPES = [
+  "period",
+  "recess",
+  "lunch",
+  "sports",
+];
 
 function getToken() {
-  const keys = ['token', 'accessToken', 'authToken', 'jwt', 'campusIQToken'];
+  const keys = [
+    "token",
+    "accessToken",
+    "authToken",
+    "jwt",
+    "campusIQToken",
+  ];
   for (const key of keys) {
     const value = localStorage.getItem(key);
-    if (value) return value;
+
+    if (value) {
+      return value.startsWith('Bearer ')
+        ? value.substring(7)
+        : value;
+    }
   }
+
   return '';
 }
 
 async function apiRequest(path, options = {}) {
   const token = getToken();
+
+  if (!token) {
+    throw new Error('Authentication token not found. Please login again.');
+  }
+
   const response = await fetch(`${TIMETABLE_API}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
       ...(options.headers || {}),
     },
   });
 
   const text = await response.text();
+
   let body = {};
-  try { body = text ? JSON.parse(text) : {}; } catch { body = { error: text }; }
+
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    body = { error: text };
+  }
 
   if (!response.ok) {
-    throw new Error(body.error || body.message || `Request failed (${response.status})`);
+    throw new Error(
+      body.error ||
+      body.message ||
+      `Request failed (${response.status})`
+    );
   }
+
   return body;
 }
 

@@ -16,6 +16,7 @@ const attendanceRoutes   = require('../modules/attendance/attendance.routes');
 const holidayRoutes      = require('../modules/holiday/holiday.routes');
 const feeRoutes          = require('../modules/fee/fee.routes');
 const examRoutes         = require('../modules/exam/exam.routes');
+const settingsRoutes     = require('../modules/settings/settings.routes');
 
 router.use('/auth',           authRoutes);
 router.use('/academic-years', academicYearRoutes);
@@ -32,5 +33,6 @@ router.use('/attendance',     attendanceRoutes);
 router.use('/holidays',       holidayRoutes);
 router.use('/fees',           feeRoutes);
 router.use('/exams',          examRoutes);
+router.use('/settings',       settingsRoutes);
 
 module.exports = router;

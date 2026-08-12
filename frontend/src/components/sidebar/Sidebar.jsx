@@ -28,7 +28,7 @@ export const Sidebar = () => {
       {/* Sidebar */}
       <aside
         className={clsx(
-          'fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40',
+          'fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 flex flex-col overflow-y-auto',
           isCollapsed ? 'w-20' : 'w-64'
         )}
       >

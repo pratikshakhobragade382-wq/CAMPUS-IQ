@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 
 if (!process.env.DATABASE_URL) {

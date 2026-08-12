@@ -6,6 +6,7 @@
 import React, { useRef } from 'react';
 import { Search, Bell, Mail, Settings } from 'lucide-react';
 import clsx from 'clsx';
+import { useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../context/SidebarContext';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
@@ -13,6 +14,7 @@ import { useClickOutside } from '../../hooks';
 import { useState } from 'react';
 
 export const Navbar = () => {
+  const navigate = useNavigate();
   const { toggleSidebar, isCollapsed } = useSidebar();
   const { user } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -53,7 +55,10 @@ export const Navbar = () => {
           </button>
 
           {/* Settings */}
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+          <button
+            onClick={() => navigate('/settings')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+          >
             <Settings className="w-5 h-5 text-gray-600" />
           </button>
 
@@ -82,7 +87,10 @@ export const Navbar = () => {
                 <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200">
                   Profile
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                <button
+                  onClick={() => { setShowProfileMenu(false); navigate('/settings'); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                >
                   Settings
                 </button>
                 <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200">

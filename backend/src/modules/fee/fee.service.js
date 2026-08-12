@@ -235,6 +235,7 @@ const collectFee = async (data, tenantId, actingUser) => {
       throw err;
     }
   }
+  throw new HttpError(409, 'Could not generate a unique receipt number after multiple attempts', { code: 'CONFLICT' });
 };
 
 const getStudentFeeStatus = async (tenantId, studentId, academicYearId) => {

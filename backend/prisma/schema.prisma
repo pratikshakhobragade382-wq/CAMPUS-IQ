@@ -67,11 +67,19 @@ enum ExamType {
 // TENANT
 // ─────────────────────────────────────────────
 model Tenant {
-  id        Int      @id @default(autoincrement())
-  name      String
-  subdomain String   @unique @default("school1")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  name                String
+  subdomain           String   @unique @default("school1")
+  address             String?
+  phone               String?
+  email               String?
+  website             String?
+  logoUrl             String?
+  defaultAcademicYear String?
+  defaultClass        String?
+  defaultSection      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   users              User[]
   academicYears      AcademicYear[]
@@ -106,6 +114,8 @@ model User {
   name      String
   email     String
   password  String
+  phone     String?
+  avatarUrl String?
   identity  Identity       @default(admin)
   tenantId  Int
   staffId   Int?           @unique
@@ -144,7 +154,7 @@ model AcademicYear {
   holidays           Holiday[]
   resultPublications ResultPublication[]
 
-  @@index([name, tenantId])
+  @@unique([name, tenantId])
   @@index([tenantId])
 }
 
@@ -187,6 +197,7 @@ model Class {
   exams              Exam[]
   resultPublications ResultPublication[]
 
+  @@unique([name, tenantId])
   @@index([tenantId])
 }
 
@@ -547,6 +558,7 @@ model CustomField {
   updatedAt   DateTime           @updatedAt
   tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   values      CustomFieldValue[]
+  options     CustomFieldOption[]
 
   @@unique([formName, name, tenantId])
   @@index([tenantId])
@@ -565,6 +577,22 @@ model CustomFieldValue {
 
   @@unique([customFieldId, studentId])
   @@index([tenantId])
+}
+
+model CustomFieldOption {
+  id            Int         @id @default(autoincrement())
+  customFieldId Int
+  label         String
+  value         String
+  priority      Int         @default(1)
+  isActive      Boolean     @default(true)
+  tenantId      Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customFieldId])
 }
 
 // ─────────────────────────────────────────────

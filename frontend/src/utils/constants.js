@@ -236,7 +236,7 @@ export const SIDEBAR_MENU = [
   {
     id: "master-data",
     label: "Master Data",
-    icon: "Settings",
+    icon: "Database",
     path: ROUTES.MASTER_DATA,
   },
   {
