@@ -7,6 +7,11 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import { DashboardLayout } from "../layouts/DashboardLayout";
 
+// Public site pages (these were missing before - that's why "/about" had
+// nowhere to go and fell back to the dashboard redirect)
+import IndexPage from "../pages/IndexPage/IndexPage";
+import About from "../pages/IndexPage/Navbar/About/About";
+
 import Dashboard from "../pages/Dashboard/Dashboard";
 import AcademicYear from "../pages/AcademicYear/AcademicYear";
 import Department from "../pages/Department/Department";
@@ -33,6 +38,11 @@ import { ROUTES } from "../utils/constants";
 export const AppRoutes = () => {
   return (
     <Routes>
+
+      {/* Public site - landing page and About, no login required */}
+      <Route path="/" element={<IndexPage />} />
+      <Route path="/about" element={<About />} />
+
       {/* Dashboard Layout */}
       <Route element={<DashboardLayout />}>
 
@@ -134,16 +144,11 @@ export const AppRoutes = () => {
 
       </Route>
 
-      {/* Default Route */}
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to={ROUTES.DASHBOARD}
-            replace
-          />
-        }
-      />
+      {/* Anything else unmatched - send to the homepage instead of the
+          dashboard, since an unauthenticated visitor shouldn't be pushed
+          toward a page that just bounces them to /login anyway */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+
     </Routes>
   );
 };

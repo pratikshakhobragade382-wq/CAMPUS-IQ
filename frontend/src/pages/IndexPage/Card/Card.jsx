@@ -3,6 +3,7 @@
 // a checklist of highlights, and the two main buttons.
 
 import "./Card.css";
+import { Link } from "react-router-dom";
 
 // Quick highlights shown as a checklist.
 const highlights = [
@@ -15,7 +16,7 @@ const highlights = [
 function Card() {
   return (
     <section className="card-section">
-      {/* soft background blobs behind the card */}
+      {/* Soft background blobs behind the card */}
       <div className="bg-blob bg-blob--1" />
       <div className="bg-blob bg-blob--2" />
       <div className="bg-blob bg-blob--3" />
@@ -36,7 +37,7 @@ function Card() {
           one unified platform.
         </p>
 
-        {/* checklist of highlights */}
+        {/* Checklist of highlights */}
         <ul className="intro-checklist">
           {highlights.map((item) => (
             <li className="checklist-item" key={item}>
@@ -46,9 +47,15 @@ function Card() {
           ))}
         </ul>
 
+        {/* Navigation buttons */}
         <div className="intro-actions">
-          <button className="btn btn--primary">Get Started</button>
-          <button className="btn btn--secondary">See Features</button>
+          <Link to="/login" className="btn btn--primary">
+            Get Started
+          </Link>
+
+          <Link to="/features" className="btn btn--secondary">
+            See Features
+          </Link>
         </div>
       </div>
     </section>

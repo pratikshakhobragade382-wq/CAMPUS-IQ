@@ -1,3 +1,10 @@
+// src/pages/IndexPage/Navbar/Navbar.jsx
+//
+// Site-wide navbar, used on the landing page AND the About page.
+// Because it's shared across pages, "Home" / "Features" / "Pricing" need
+// to point back to "/" (with a hash for the in-page sections), and
+// "About" needs to go to the actual /about route instead of "#".
+
 import "./Navbar.css";
 import logo from "../../../assets/logo.png";
 import { Link } from "react-router-dom";
@@ -14,10 +21,10 @@ function Navbar() {
 
         {/* Navigation Links */}
         <nav className="nav-links">
-          <a href="#">Home</a>
-          <a href="#">About</a>
-          <a href="#">Features</a>
-          <a href="#">Pricing</a>
+          <Link to="/">Home</Link>
+          <Link to="/about">About</Link>
+          <Link to="/features">Features</Link>
+          {/* <Link to="/#pricing">Pricing</Link> */}
         </nav>
 
         {/* Login Button */}

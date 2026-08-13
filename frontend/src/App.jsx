@@ -12,6 +12,8 @@ import DashboardLayout from "./layouts/DashboardLayout";
 
 // Public pages
 import IndexPage from "./pages/IndexPage/IndexPage";
+import About from "./pages/IndexPage/Navbar/About/About";
+import Features from "./pages/IndexPage/Navbar/Features/Features";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
@@ -61,6 +63,10 @@ function App() {
             ========================== */}
 
             <Route path="/" element={<IndexPage />} />
+
+            <Route path="/about" element={<About />} />
+
+            <Route path="/features" element={<Features />} />
 
             <Route path="/login" element={<Login />} />
 
