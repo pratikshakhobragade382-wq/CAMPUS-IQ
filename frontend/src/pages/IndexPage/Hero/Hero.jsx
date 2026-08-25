@@ -22,6 +22,7 @@ function Hero() {
 
       <div className="dot-pattern"></div>
 
+
       {/* ================= Left Section ================= */}
 
       <div className="hero-left">
@@ -38,11 +39,16 @@ function Hero() {
           schools manage students, teachers and parents efficiently.
         </p>
 
-        <Link to="/login" className="hero-btn">
-           Explore More
+        {/* Explore More → Portal Selection */}
+        <Link
+          to="/portal-login"
+          className="hero-btn"
+        >
+          Explore More
         </Link>
 
       </div>
+
 
       {/* ================= Right Section ================= */}
 
@@ -51,45 +57,66 @@ function Hero() {
         {/* Background Circle */}
         <div className="hero-circle"></div>
 
+
         {/* Complete Solution */}
         <div className="floating-card top">
           <div className="icon orange">
             <i className="fas fa-school"></i>
           </div>
-          <span>Complete Solution</span>
+
+          <span>
+            Complete Solution
+          </span>
         </div>
+
 
         {/* Teacher Portal */}
         <div className="floating-card left-top">
           <div className="icon purple">
             <i className="fas fa-chalkboard-teacher"></i>
           </div>
-          <span>Teacher Portal</span>
+
+          <span>
+            Teacher Portal
+          </span>
         </div>
+
 
         {/* Software */}
         <div className="floating-card left-bottom">
           <div className="icon blue">
             <i className="fas fa-laptop-code"></i>
           </div>
-          <span>Software</span>
+
+          <span>
+            Software
+          </span>
         </div>
+
 
         {/* Student Portal */}
         <div className="floating-card right-top">
           <div className="icon red">
             <i className="fas fa-user-graduate"></i>
           </div>
-          <span>Student Portal</span>
+
+          <span>
+            Student Portal
+          </span>
         </div>
+
 
         {/* Parents Portal */}
         <div className="floating-card right-bottom">
           <div className="icon green">
             <i className="fas fa-users"></i>
           </div>
-          <span>Parents Portal</span>
+
+          <span>
+            Parents Portal
+          </span>
         </div>
+
 
         {/* Hero Image */}
         <img

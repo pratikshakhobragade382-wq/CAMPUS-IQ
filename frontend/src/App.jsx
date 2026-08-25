@@ -16,6 +16,7 @@ import About from "./pages/IndexPage/Navbar/About/About";
 import Features from "./pages/IndexPage/Navbar/Features/Features";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 // Dashboard
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -48,7 +49,7 @@ import AddUser from "./pages/admin/AddUser";
 
 import Notifications from "./pages/Notifications/Notifications";
 
-// Profile — NEW
+// Profile
 import Profile from "./pages/Profile/Profile";
 
 function App() {
@@ -62,15 +63,37 @@ function App() {
                 PUBLIC ROUTES
             ========================== */}
 
-            <Route path="/" element={<IndexPage />} />
+            <Route
+              path="/"
+              element={<IndexPage />}
+            />
 
-            <Route path="/about" element={<About />} />
+            <Route
+              path="/about"
+              element={<About />}
+            />
 
-            <Route path="/features" element={<Features />} />
+            <Route
+              path="/features"
+              element={<Features />}
+            />
 
-            <Route path="/login" element={<Login />} />
+            {/* Existing Login Page */}
+            <Route
+              path="/login"
+              element={<Login />}
+            />
 
-            <Route path="/register" element={<Register />} />
+            {/* New Portal Selection Page */}
+            <Route
+              path="/portal-login"
+              element={<PortalLogin />}
+            />
+
+            <Route
+              path="/register"
+              element={<Register />}
+            />
 
 
             {/* =========================
@@ -85,119 +108,190 @@ function App() {
               }
             >
 
-              {/* Dashboard */}
+              {/* =========================
+                  DASHBOARD
+              ========================== */}
+
               <Route
                 path="/dashboard"
                 element={<Dashboard />}
               />
 
-              {/* Academic Year */}
+
+              {/* =========================
+                  ACADEMIC YEAR
+              ========================== */}
+
               <Route
                 path="/academic-year"
                 element={<AcademicYear />}
               />
 
-              {/* Master (Subjects) */}
+
+              {/* =========================
+                  MASTER
+              ========================== */}
+
               <Route
                 path="/master"
                 element={<Master />}
               />
 
-              {/* Master Data */}
+
+              {/* =========================
+                  MASTER DATA
+              ========================== */}
+
               <Route
                 path="/master-data"
                 element={<MasterData />}
               />
 
-              {/* Department */}
+
+              {/* =========================
+                  DEPARTMENT
+              ========================== */}
+
               <Route
                 path="/department"
                 element={<Department />}
               />
 
-              {/* Class */}
+
+              {/* =========================
+                  CLASS
+              ========================== */}
+
               <Route
                 path="/class"
                 element={<ClassPage />}
               />
 
-              {/* Section */}
+
+              {/* =========================
+                  SECTION
+              ========================== */}
+
               <Route
                 path="/section"
                 element={<Section />}
               />
 
-              {/* Student */}
+
+              {/* =========================
+                  STUDENT
+              ========================== */}
+
               <Route
                 path="/student"
                 element={<Student />}
               />
+
               <Route
                 path="/student/new"
                 element={<StudentForm />}
               />
+
               <Route
                 path="/student/:id"
                 element={<StudentView />}
               />
+
               <Route
                 path="/student/:id/edit"
                 element={<StudentForm />}
               />
 
-              {/* Attendance */}
+
+              {/* =========================
+                  ATTENDANCE
+              ========================== */}
+
               <Route
                 path="/attendance"
                 element={<Attendance />}
               />
 
-              {/* Exam */}
+
+              {/* =========================
+                  EXAM
+              ========================== */}
+
               <Route
                 path="/exam"
                 element={<Exam />}
               />
 
-              {/* Fee */}
+
+              {/* =========================
+                  FEE
+              ========================== */}
+
               <Route
                 path="/fee"
                 element={<Fee />}
               />
 
-              {/* Holiday */}
+
+              {/* =========================
+                  HOLIDAY
+              ========================== */}
+
               <Route
                 path="/holiday"
                 element={<Holiday />}
               />
 
-              {/* Timetable */}
+
+              {/* =========================
+                  TIMETABLE
+              ========================== */}
+
               <Route
                 path="/timetable"
                 element={<Timetable />}
               />
 
-              {/* Custom Fields */}
+
+              {/* =========================
+                  CUSTOM FIELDS
+              ========================== */}
+
               <Route
                 path="/custom-fields"
                 element={<CustomFields />}
               />
 
-              {/* Settings */}
+
+              {/* =========================
+                  SETTINGS
+              ========================== */}
+
               <Route
                 path="/settings"
                 element={<Settings />}
               />
 
-              {/* Notifications */}
+
+              {/* =========================
+                  NOTIFICATIONS
+              ========================== */}
+
               <Route
                 path="/notifications"
                 element={<Notifications />}
               />
 
-              {/* Profile — NEW */}
+
+              {/* =========================
+                  PROFILE
+              ========================== */}
+
               <Route
                 path="/profile"
                 element={<Profile />}
               />
+
 
               {/* =========================
                   STAFF
@@ -230,6 +324,7 @@ function App() {
                 }
               />
 
+
               {/* =========================
                   ADMIN
               ========================== */}
@@ -252,7 +347,12 @@ function App() {
 
             <Route
               path="*"
-              element={<Navigate to="/dashboard" replace />}
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
             />
 
           </Routes>
