@@ -16,7 +16,7 @@ import { getAcademicYears } from "../../api/academicYear.api";
 import { getClasses } from "../../api/class.api";
 import { getSectionsByClass } from "../../api/section.api";
 import { getStudents } from "../../api/student.api";
-import axiosClient from "../../api/axiosClient";
+import axiosClient from "../../api/axios";
 
 import {
   markClassAttendance,

@@ -1,4 +1,4 @@
-import axiosClient from './axiosClient';
+import axiosClient from './axios';
 
 export const getHolidays = async (academicYearId) => {
   const response = await axiosClient.get('/holidays', {

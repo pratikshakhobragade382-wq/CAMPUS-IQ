@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axiosClient from '../../api/axiosClient';
+import axiosClient from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
 export default function StudentsList() {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosClient from '../../api/axiosClient';
+import axiosClient from '../../api/axios';
 
 export default function AddUser() {
   const [form, setForm] = useState({

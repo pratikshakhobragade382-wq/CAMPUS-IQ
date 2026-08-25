@@ -5,7 +5,7 @@
  *   /api/v1/classes/:classId/sections
  */
 
-import axiosClient from "./axiosClient";
+import axiosClient from "./axios";
 
 /**
  * Get all sections

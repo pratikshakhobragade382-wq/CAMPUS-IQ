@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 
-import axiosClient from "../../api/axiosClient";
+import axiosClient from "../../api/axios";
 
 import "./staff.css";
 

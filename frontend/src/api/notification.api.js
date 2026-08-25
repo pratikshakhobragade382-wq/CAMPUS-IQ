@@ -1,4 +1,4 @@
-import axiosClient from "./axiosClient";
+import axiosClient from "./axios";
 
 // Get the latest notifications
 export const getNotifications = async () => {

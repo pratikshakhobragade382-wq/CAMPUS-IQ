@@ -19,7 +19,7 @@
  * Errors: { success: false, error }
  */
 
-import axiosClient from "./axiosClient";
+import axiosClient from "./axios";
 
 /**
  * GET /master-data/valid-categories

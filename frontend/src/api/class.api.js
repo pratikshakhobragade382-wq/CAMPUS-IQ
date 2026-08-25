@@ -2,7 +2,7 @@
  * Class API endpoints
  */
 
-import axiosClient from "./axiosClient";
+import axiosClient from "./axios";
 
 /**
  * Get all classes

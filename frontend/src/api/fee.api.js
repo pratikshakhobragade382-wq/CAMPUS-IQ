@@ -2,7 +2,7 @@
  * Fee API endpoints (calls backend)
  */
 
-import api from './axiosClient';
+import api from './axios';
 
 export const getCategories = async () => {
   const res = await api.get('/fees/categories');

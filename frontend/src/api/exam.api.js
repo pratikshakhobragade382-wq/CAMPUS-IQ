@@ -15,7 +15,7 @@
  * Do NOT send tenantId — backend uses req.user.tenantId.
  */
 
-import axiosClient from './axiosClient';
+import axiosClient from './axios';
 
 /**
  * GET /exams

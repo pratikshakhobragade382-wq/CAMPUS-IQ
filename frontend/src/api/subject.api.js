@@ -14,7 +14,7 @@
  * Response shape: { success, data } or { success, message } on delete.
  */
 
-import axiosClient from './axiosClient';
+import axiosClient from './axios';
 
 /**
  * GET /subjects

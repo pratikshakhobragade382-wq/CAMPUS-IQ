@@ -68,6 +68,19 @@ app.get("/", (req, res) => {
   res.send("API Running");
 });
 
+// HEALTH CHECK — used by hosting platforms (Render/Railway/etc.) and uptime
+// monitors. Also verifies the database is actually reachable, since "the
+// server is up" and "the database is live" are two different failure modes.
+app.get("/health", async (req, res) => {
+  const prisma = require("./prisma/prismaClient");
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: "ok", database: "connected" });
+  } catch (err) {
+    res.status(503).json({ status: "error", database: "unreachable" });
+  }
+});
+
 // SWAGGER ROUTE
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
