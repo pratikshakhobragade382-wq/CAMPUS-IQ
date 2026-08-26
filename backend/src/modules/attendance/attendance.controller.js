@@ -58,6 +58,17 @@ const markStaffAttendance = async (req, res, next) => {
 const getStaffAttendanceHistory = async (req, res, next) => {
   try {
     const { academicYearId, fromDate, toDate } = req.query;
+
+    // Ownership scoping: any staff member may view their own attendance history.
+    // Only admin/management/principal may look up someone else's by id.
+    const isPrivileged = ['admin', 'management', 'principal'].includes(req.user.identity);
+    const requestedStaffId = parseInt(req.params.staffId);
+    if (!isPrivileged) {
+      if (!req.user.staffId || req.user.staffId !== requestedStaffId) {
+        return res.status(403).json({ success: false, error: 'You may only view your own attendance history' });
+      }
+    }
+
     const data = await attendanceService.getStaffAttendanceHistory(
       req.user.tenantId, req.params.staffId, academicYearId, fromDate, toDate
     );

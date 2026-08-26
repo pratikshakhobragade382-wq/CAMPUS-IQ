@@ -72,7 +72,22 @@ const getClassTimetable = async (req, res) => {
 
 const getTeacherTimetable = async (req, res) => {
   try {
-    const { staffId, academicYearId } = req.query;
+    const { academicYearId } = req.query;
+    let { staffId } = req.query;
+
+    // Ownership scoping: a plain teacher may only ever view their own timetable.
+    // Only admin/management/principal may look up another teacher's timetable by id.
+    const isPrivileged = ['admin', 'management', 'principal'].includes(req.user.identity);
+    if (!isPrivileged) {
+      if (!req.user.staffId) {
+        return res.status(403).json({ success: false, error: 'This account is not linked to a staff record' });
+      }
+      if (staffId && parseInt(staffId) !== req.user.staffId) {
+        return res.status(403).json({ success: false, error: 'You may only view your own timetable' });
+      }
+      staffId = req.user.staffId;
+    }
+
     if (!staffId) return res.status(400).json({ success: false, error: 'staffId is required' });
     const data = await timetableService.getTeacherTimetable(req.user.tenantId, staffId, academicYearId);
     return res.status(200).json({ success: true, message: 'Teacher timetable fetched', data });

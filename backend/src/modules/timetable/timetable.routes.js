@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('./timetable.controller');
 const authenticate = require('../../middleware/authMiddleware');
+const authorize = require('../../middleware/authorize');
 
 router.use(authenticate);
 
@@ -26,7 +27,7 @@ router.use(authenticate);
  *       409:
  *         description: Already seeded
  */
-router.post('/period-slots/seed', controller.seedDefaultSlots);
+router.post('/period-slots/seed', authorize('admin', 'management', 'principal'), controller.seedDefaultSlots);
 
 /**
  * @swagger
@@ -61,7 +62,7 @@ router.post('/period-slots/seed', controller.seedDefaultSlots);
  *       200:
  *         description: Period slots fetched
  */
-router.post('/period-slots', controller.createPeriodSlot);
+router.post('/period-slots', authorize('admin', 'management', 'principal'), controller.createPeriodSlot);
 router.get('/period-slots', controller.getAllPeriodSlots);
 
 /**
@@ -94,8 +95,8 @@ router.get('/period-slots', controller.getAllPeriodSlots);
  *       200:
  *         description: Deleted
  */
-router.put('/period-slots/:id', controller.updatePeriodSlot);
-router.delete('/period-slots/:id', controller.deletePeriodSlot);
+router.put('/period-slots/:id', authorize('admin', 'management', 'principal'), controller.updatePeriodSlot);
+router.delete('/period-slots/:id', authorize('admin', 'management', 'principal'), controller.deletePeriodSlot);
 
 /**
  * @swagger
@@ -126,7 +127,7 @@ router.delete('/period-slots/:id', controller.deletePeriodSlot);
  *       409:
  *         description: Conflict — teacher or class already booked
  */
-router.post('/', controller.createTimetableEntry);
+router.post('/', authorize('admin', 'management', 'principal'), controller.createTimetableEntry);
 
 /**
  * @swagger
@@ -205,7 +206,7 @@ router.get('/teacher', controller.getTeacherTimetable);
  *       200:
  *         description: Deleted
  */
-router.put('/:id', controller.updateTimetableEntry);
-router.delete('/:id', controller.deleteTimetableEntry);
+router.put('/:id', authorize('admin', 'management', 'principal'), controller.updateTimetableEntry);
+router.delete('/:id', authorize('admin', 'management', 'principal'), controller.deleteTimetableEntry);
 
 module.exports = router;

@@ -231,4 +231,81 @@ async function getSummary(tenantId) {
   };
 }
 
-module.exports = { getSummary };
+async function getTeacherSummary(tenantId, staffId) {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const tomorrowStart = addDays(todayStart, 1);
+  // Timetable.dayOfWeek: 1=Mon..6=Sat. JS getDay(): 0=Sun..6=Sat. Sunday has no entries.
+  const jsDay = now.getDay();
+  const dayOfWeek = jsDay === 0 ? null : jsDay;
+
+  const [
+    todaySchedule,
+    distinctClassRows,
+    activeSubjectAssignments,
+    attendanceMarkedToday,
+    upcomingExams,
+  ] = await Promise.all([
+    dayOfWeek
+      ? prisma.timetable.findMany({
+          where: { tenantId, staffId, dayOfWeek, isActive: true },
+          include: {
+            class: { select: { id: true, name: true } },
+            section: { select: { id: true, name: true } },
+            subject: { select: { id: true, name: true } },
+            periodSlot: { select: { slotNo: true, label: true, startTime: true, endTime: true } },
+          },
+          orderBy: { periodSlot: { slotNo: 'asc' } },
+        })
+      : Promise.resolve([]),
+
+    prisma.timetable.findMany({
+      where: { tenantId, staffId, isActive: true },
+      distinct: ['classId', 'sectionId'],
+      select: { classId: true, sectionId: true },
+    }),
+
+    prisma.staffSubject.count({ where: { staffId } }),
+
+    prisma.studentAttendance.count({
+      where: {
+        tenantId,
+        date: { gte: todayStart, lt: tomorrowStart },
+        markedById: staffId,
+      },
+    }),
+
+    prisma.exam.findMany({
+      where: {
+        tenantId,
+        isActive: true,
+        startDate: { gte: todayStart },
+        class: { timetables: { some: { staffId, isActive: true } } },
+      },
+      select: { id: true, name: true, examType: true, startDate: true, endDate: true, class: { select: { id: true, name: true } } },
+      orderBy: { startDate: 'asc' },
+      take: 5,
+    }),
+  ]);
+
+  return {
+    todaySchedule: todaySchedule.map((t) => ({
+      id: t.id,
+      period: t.periodSlot.label,
+      slotNo: t.periodSlot.slotNo,
+      startTime: t.periodSlot.startTime,
+      endTime: t.periodSlot.endTime,
+      class: t.class.name,
+      section: t.section ? t.section.name : null,
+      subject: t.subject.name,
+    })),
+    stats: {
+      classesAssigned: distinctClassRows.length,
+      subjectsAssigned: activeSubjectAssignments,
+      attendanceMarkedToday,
+    },
+    upcomingExams,
+  };
+}
+
+module.exports = { getSummary, getTeacherSummary };

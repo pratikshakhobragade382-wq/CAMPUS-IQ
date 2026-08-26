@@ -31,7 +31,11 @@ router.get(
   controller.getClassMonthlyAttendanceSummary
 );
 
-router.get('/students/:studentId/history', controller.getStudentAttendanceHistory);
+router.get(
+  '/students/:studentId/history',
+  authorize('admin', 'management', 'principal', 'teacher'),
+  controller.getStudentAttendanceHistory
+);
 
 router.post(
   '/staff/mark',
@@ -45,6 +49,12 @@ router.get(
   controller.getAllStaffAttendanceByDate
 );
 
-router.get('/staff/:staffId/history', controller.getStaffAttendanceHistory);
+// A staff member may view their own attendance history; only admin/management/
+// principal may look up someone else's by id. Ownership is enforced in the controller.
+router.get(
+  '/staff/:staffId/history',
+  authorize('admin', 'management', 'principal', 'teacher', 'accountant', 'librarian', 'clerk', 'receptionist', 'nurse', 'counselor', 'coordinator', 'lab_assistant', 'peon', 'driver', 'security', 'other'),
+  controller.getStaffAttendanceHistory
+);
 
 module.exports = router;

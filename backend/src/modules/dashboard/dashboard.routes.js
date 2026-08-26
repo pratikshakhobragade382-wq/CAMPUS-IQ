@@ -19,4 +19,20 @@ router.use(authenticate);
  */
 router.get('/summary', dashboardController.getSummary);
 
+/**
+ * @swagger
+ * /dashboard/teacher-summary:
+ *   get:
+ *     summary: Get the logged-in teacher's own dashboard summary (today's schedule, classes/subjects assigned, attendance marked today, upcoming exams for their classes)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Teacher dashboard summary fetched successfully
+ *       403:
+ *         description: Not a teacher account
+ */
+router.get('/teacher-summary', dashboardController.getTeacherSummary);
+
 module.exports = router;
