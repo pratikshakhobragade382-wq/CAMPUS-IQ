@@ -1,0 +1,503 @@
+/* =========================================================
+   CAMPUS IQ - TEACHER LOGIN
+   ========================================================= */
+
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.teacher-login-page {
+  min-height: 100vh;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px 20px;
+
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(32, 197, 140, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(32, 197, 140, 0.06),
+      transparent 30%
+    ),
+    #ffffff;
+
+  font-family:
+    "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+
+/* =========================================================
+   LOGIN CARD
+   ========================================================= */
+
+.teacher-login-card {
+  width: 100%;
+  max-width: 440px;
+
+  padding: 42px 40px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 2px solid #b8ecd9;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 12px 35px rgba(32, 197, 140, 0.12),
+    0 4px 12px rgba(32, 197, 140, 0.06);
+}
+
+
+/* =========================================================
+   LOGO
+   ========================================================= */
+
+.teacher-login-logo-wrapper {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 20px;
+}
+
+.teacher-login-logo {
+  display: block;
+
+  width: 210px;
+  max-width: 100%;
+
+  height: auto;
+
+  object-fit: contain;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.teacher-login-header {
+  text-align: center;
+
+  margin-bottom: 28px;
+}
+
+
+/* Teacher Badge */
+
+.teacher-login-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 7px 13px;
+
+  margin-bottom: 15px;
+
+  border: 1px solid #b8ecd9;
+
+  border-radius: 30px;
+
+  background: #e8fbf4;
+
+  color: #20a879;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+.teacher-login-badge i {
+  font-size: 12px;
+}
+
+
+/* Heading */
+
+.teacher-login-header h2 {
+  margin: 0 0 8px;
+
+  color: #173b5c;
+
+  font-size: 28px;
+
+  line-height: 1.2;
+
+  font-weight: 700;
+}
+
+
+/* Description */
+
+.teacher-login-header p {
+  margin: 0;
+
+  color: #6c8498;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.teacher-auth-error {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+  padding: 12px 14px;
+
+  border-radius: 9px;
+
+  background: #fff4f4;
+
+  border: 1px solid #f5b8b8;
+
+  color: #d32f2f;
+
+  font-size: 13px;
+
+  line-height: 1.4;
+}
+
+.teacher-auth-error i {
+  flex-shrink: 0;
+
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
+
+.teacher-form-group {
+  margin-bottom: 20px;
+}
+
+.teacher-form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #234866;
+
+  font-size: 14px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   INPUT WRAPPER
+   ========================================================= */
+
+.teacher-input-wrapper {
+  position: relative;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   INPUT ICON
+   ========================================================= */
+
+.teacher-input-icon {
+  position: absolute;
+
+  left: 15px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: #20b982;
+
+  font-size: 15px;
+
+  pointer-events: none;
+
+  z-index: 2;
+}
+
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.teacher-input-wrapper input {
+  width: 100%;
+  height: 50px;
+
+  box-sizing: border-box;
+
+  padding: 0 15px 0 43px;
+
+  outline: none;
+
+  border: 1.5px solid #b8e5d5;
+
+  border-radius: 9px;
+
+  background: #f8fdfb;
+
+  color: #173b5c;
+
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+/* Placeholder */
+
+.teacher-input-wrapper input::placeholder {
+  color: #91a8ba;
+}
+
+
+/* Hover */
+
+.teacher-input-wrapper input:hover {
+  border-color: #7dd6b7;
+
+  background: #ffffff;
+}
+
+
+/* Focus */
+
+.teacher-input-wrapper input:focus {
+  border-color: #20b982;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 3px rgba(32, 185, 130, 0.12);
+}
+
+
+/* =========================================================
+   LOGIN BUTTON
+   ========================================================= */
+
+.teacher-login-submit-btn {
+  width: 100%;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 9px;
+
+  margin-top: 8px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #20c58c 0%,
+      #159b70 100%
+    );
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 7px 16px rgba(32, 197, 140, 0.20);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+
+/* Hover */
+
+.teacher-login-submit-btn:hover:not(:disabled) {
+  background:
+    linear-gradient(
+      135deg,
+      #19b77f 0%,
+      #128b65 100%
+    );
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 22px rgba(32, 197, 140, 0.27);
+}
+
+
+/* Active */
+
+.teacher-login-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+
+  box-shadow:
+    0 5px 12px rgba(32, 197, 140, 0.18);
+}
+
+
+/* Disabled */
+
+.teacher-login-submit-btn:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* Button icon */
+
+.teacher-login-submit-btn i {
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.teacher-auth-footer {
+  margin: 24px 0 0;
+
+  text-align: center;
+
+  color: #71889a;
+
+  font-size: 14px;
+}
+
+.teacher-auth-footer a {
+  color: #159b70;
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition: color 0.2s ease;
+}
+
+.teacher-auth-footer a:hover {
+  color: #0d7455;
+
+  text-decoration: underline;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .teacher-login-page {
+    padding: 25px 16px;
+  }
+
+  .teacher-login-card {
+    max-width: 440px;
+
+    padding: 35px 28px;
+  }
+
+  .teacher-login-logo {
+    width: 190px;
+  }
+
+  .teacher-login-header h2 {
+    font-size: 26px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .teacher-login-page {
+    padding: 20px 12px;
+  }
+
+  .teacher-login-card {
+    padding: 30px 20px;
+
+    border-radius: 15px;
+
+    border-width: 1.5px;
+  }
+
+  .teacher-login-logo {
+    width: 175px;
+  }
+
+  .teacher-login-header {
+    margin-bottom: 24px;
+  }
+
+  .teacher-login-header h2 {
+    font-size: 24px;
+  }
+
+  .teacher-login-header p {
+    font-size: 13px;
+  }
+
+  .teacher-form-group {
+    margin-bottom: 18px;
+  }
+
+  .teacher-input-wrapper input {
+    height: 48px;
+  }
+
+  .teacher-login-submit-btn {
+    height: 48px;
+  }
+
+}

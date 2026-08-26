@@ -1,34 +1,113 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children, allowedRoles }) {
+export default function ProtectedRoute({
+  children,
+  allowedRoles,
+}) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   const token = localStorage.getItem("token");
 
-  // Wait until authentication state is ready
+  // =========================================================
+  // WAIT FOR AUTHENTICATION STATE
+  // =========================================================
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <p>Loading...</p>
       </div>
     );
   }
 
-  // User is not logged in
+  // =========================================================
+  // USER NOT LOGGED IN
+  // =========================================================
+
   if (!token || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location }}
+        replace
+      />
+    );
   }
 
-  // Check role only when allowedRoles is provided
+  // =========================================================
+  // DETERMINE USER ROLE
+  // =========================================================
+  //
+  // Admin:
+  //   user.identity = "admin"
+  //
+  // Teacher:
+  //   user.identity = "staff"
+  //   user.staff.role = "teacher"
+  //
+  // Student:
+  //   user.identity = "student"
+  //
+  // Parent:
+  //   user.identity = "parent"
+  //
+  // =========================================================
+
+  let userRole = user?.identity;
+
+  // Teacher is a Staff identity with Staff role = teacher
+  if (
+    user?.identity === "staff" &&
+    user?.staff?.role === "teacher"
+  ) {
+    userRole = "teacher";
+  }
+
+  // =========================================================
+  // ROLE AUTHORIZATION
+  // =========================================================
+
   if (
     allowedRoles &&
     allowedRoles.length > 0 &&
-    !allowedRoles.includes(user.identity)
+    !allowedRoles.includes(userRole)
   ) {
-    return <Navigate to="/dashboard" replace />;
+    /*
+      The user is authenticated but does not have permission
+      to access this route.
+
+      Send them to the correct dashboard based on their role.
+    */
+
+    if (userRole === "teacher") {
+      return (
+        <Navigate
+          to="/teacher/dashboard"
+          replace
+        />
+      );
+    }
+
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+      />
+    );
   }
+
+  // =========================================================
+  // AUTHORIZED
+  // =========================================================
 
   return children;
 }

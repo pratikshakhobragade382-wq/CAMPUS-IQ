@@ -18,6 +18,13 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
+// =====================================================
+// TEACHER
+// =====================================================
+
+import TeacherLogin from "./teacher/auth/TeacherLogin";
+import TeacherDashboard from "./teacher/TeacherDashboard";
+
 // Dashboard
 import Dashboard from "./pages/dashboard/Dashboard";
 
@@ -38,6 +45,7 @@ import CustomFields from "./pages/CustomFields/CustomFields";
 import Master from "./pages/Master/Master";
 import MasterData from "./pages/MasterData/MasterData";
 import Settings from "./pages/Settings/Settings";
+import TeacherLayout from "./teacher/layouts/TeacherLayout";
 
 // Staff
 import Staff from "./pages/staff/StaffList";
@@ -52,43 +60,69 @@ import Notifications from "./pages/Notifications/Notifications";
 // Profile
 import Profile from "./pages/Profile/Profile";
 
+
 function App() {
   return (
     <BrowserRouter>
+
       <AuthProvider>
+
         <SidebarProvider>
+
           <Routes>
 
-            {/* =========================
+            {/* =====================================================
                 PUBLIC ROUTES
-            ========================== */}
+            ====================================================== */}
 
+            {/* Home */}
             <Route
               path="/"
               element={<IndexPage />}
             />
 
+            {/* About */}
             <Route
               path="/about"
               element={<About />}
             />
 
+            {/* Features */}
             <Route
               path="/features"
               element={<Features />}
             />
 
-            {/* Existing Login Page */}
+            {/* =====================================================
+                ADMIN LOGIN
+            ====================================================== */}
+
             <Route
               path="/login"
               element={<Login />}
             />
 
-            {/* New Portal Selection Page */}
+            {/* =====================================================
+                PORTAL SELECTION
+            ====================================================== */}
+
             <Route
               path="/portal-login"
               element={<PortalLogin />}
             />
+
+            {/* =====================================================
+                TEACHER LOGIN
+            ====================================================== */}
+
+            <Route
+              path="/teacher-login"
+              element={<TeacherLogin />}
+            />
+
+            {/* =====================================================
+                REGISTER
+            ====================================================== */}
 
             <Route
               path="/register"
@@ -96,21 +130,41 @@ function App() {
             />
 
 
-            {/* =========================
-                PROTECTED ROUTES
-            ========================== */}
+            {/* =====================================================
+                TEACHER DASHBOARD
+                Protected - Teacher Only
+                NO SIDEBAR YET
+            ====================================================== */}
+
+           <Route
+  element={
+    <ProtectedRoute allowedRoles={["teacher"]}>
+      <TeacherLayout />
+    </ProtectedRoute>
+  }
+>
+  <Route
+    path="/teacher/dashboard"
+    element={<TeacherDashboard />}
+  />
+</Route>
+
+
+            {/* =====================================================
+                PROTECTED ADMIN ROUTES
+            ====================================================== */}
 
             <Route
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["admin"]}>
                   <DashboardLayout />
                 </ProtectedRoute>
               }
             >
 
-              {/* =========================
-                  DASHBOARD
-              ========================== */}
+              {/* =================================================
+                  ADMIN DASHBOARD
+              ================================================= */}
 
               <Route
                 path="/dashboard"
@@ -118,9 +172,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   ACADEMIC YEAR
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/academic-year"
@@ -128,9 +182,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   MASTER
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/master"
@@ -138,9 +192,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   MASTER DATA
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/master-data"
@@ -148,9 +202,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   DEPARTMENT
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/department"
@@ -158,9 +212,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   CLASS
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/class"
@@ -168,9 +222,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   SECTION
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/section"
@@ -178,9 +232,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   STUDENT
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/student"
@@ -203,9 +257,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   ATTENDANCE
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/attendance"
@@ -213,9 +267,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   EXAM
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/exam"
@@ -223,9 +277,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   FEE
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/fee"
@@ -233,9 +287,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   HOLIDAY
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/holiday"
@@ -243,9 +297,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   TIMETABLE
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/timetable"
@@ -253,9 +307,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   CUSTOM FIELDS
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/custom-fields"
@@ -263,9 +317,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   SETTINGS
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/settings"
@@ -273,9 +327,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   NOTIFICATIONS
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/notifications"
@@ -283,9 +337,9 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   PROFILE
-              ========================== */}
+              ================================================= */}
 
               <Route
                 path="/profile"
@@ -293,71 +347,59 @@ function App() {
               />
 
 
-              {/* =========================
+              {/* =================================================
                   STAFF
-              ========================== */}
+                  ADMIN ONLY
+              ================================================= */}
 
               <Route
                 path="/staff"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <Staff />
-                  </ProtectedRoute>
-                }
+                element={<Staff />}
               />
 
               <Route
                 path="/staff/new"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AddStaff />
-                  </ProtectedRoute>
-                }
+                element={<AddStaff />}
               />
 
               <Route
                 path="/staff/:id/edit"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <EditStaff />
-                  </ProtectedRoute>
-                }
+                element={<EditStaff />}
               />
 
 
-              {/* =========================
-                  ADMIN
-              ========================== */}
+              {/* =================================================
+                  ADMIN USER MANAGEMENT
+              ================================================= */}
 
               <Route
                 path="/users/new"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AddUser />
-                  </ProtectedRoute>
-                }
+                element={<AddUser />}
               />
 
             </Route>
 
 
-            {/* =========================
-                FALLBACK ROUTE
-            ========================== */}
+            {/* =====================================================
+                FALLBACK
+            ====================================================== */}
 
             <Route
               path="*"
               element={
                 <Navigate
-                  to="/dashboard"
+                  to="/portal-login"
                   replace
                 />
               }
             />
 
           </Routes>
+
         </SidebarProvider>
+
       </AuthProvider>
+
     </BrowserRouter>
   );
 }

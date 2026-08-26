@@ -1,0 +1,432 @@
+/* =====================================================
+   TEACHER SIDEBAR
+   ===================================================== */
+
+.teacher-sidebar {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  width: 230px;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+
+  border-right: 1px solid #e5eef1;
+
+  z-index: 1000;
+
+  box-sizing: border-box;
+}
+
+
+/* =====================================================
+   LOGO
+   ===================================================== */
+
+.teacher-sidebar-logo {
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 22px;
+
+  border-bottom: 1px solid #e5eef1;
+
+  box-sizing: border-box;
+}
+
+.teacher-sidebar-logo img {
+  width: 105px;
+
+  height: auto;
+
+  object-fit: contain;
+}
+
+
+/* =====================================================
+   TEACHER PROFILE
+   ===================================================== */
+
+.teacher-sidebar-profile {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  margin: 18px 14px 10px;
+
+  padding: 12px;
+
+  background: #f0fdfa;
+
+  border: 1px solid #d7f3ec;
+
+  border-radius: 11px;
+
+  box-sizing: border-box;
+}
+
+
+/* Avatar */
+
+.teacher-sidebar-avatar {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #d9f99d;
+
+  border-radius: 50%;
+
+  color: #365314;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+
+/* Profile text */
+
+.teacher-sidebar-profile-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.teacher-sidebar-profile-info strong {
+  overflow: hidden;
+
+  color: #164e63;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.teacher-sidebar-profile-info span {
+  margin-top: 3px;
+
+  color: #64748b;
+
+  font-size: 10px;
+}
+
+
+/* =====================================================
+   NAVIGATION
+   ===================================================== */
+
+.teacher-sidebar-nav {
+  flex: 1;
+
+  overflow-y: auto;
+
+  padding: 8px 14px 15px;
+
+  scrollbar-width: thin;
+}
+
+
+/* Section title */
+
+.teacher-sidebar-section-title {
+  margin: 10px 10px 8px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.8px;
+}
+
+.teacher-sidebar-other-title {
+  margin-top: 18px;
+}
+
+
+/* =====================================================
+   NAVIGATION LINKS
+   ===================================================== */
+
+.teacher-sidebar-link {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  min-height: 38px;
+
+  margin-bottom: 3px;
+
+  padding: 0 12px;
+
+  border-radius: 8px;
+
+  color: #475569;
+
+  text-decoration: none;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.teacher-sidebar-link i {
+  width: 18px;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  text-align: center;
+
+  transition: color 0.2s ease;
+}
+
+
+/* Hover */
+
+.teacher-sidebar-link:hover {
+  background: #f0f9ff;
+
+  color: #0284c7;
+}
+
+.teacher-sidebar-link:hover i {
+  color: #0284c7;
+}
+
+
+/* =====================================================
+   ACTIVE LINK
+   ===================================================== */
+
+.teacher-sidebar-link.active {
+  background: #e0f2fe;
+
+  color: #0284c7;
+
+  font-weight: 600;
+}
+
+.teacher-sidebar-link.active i {
+  color: #0284c7;
+}
+
+
+/* Green active indicator */
+
+.teacher-sidebar-link.active::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+
+  width: 3px;
+  height: 20px;
+
+  background: #22c55e;
+
+  border-radius: 0 4px 4px 0;
+}
+
+
+/* =====================================================
+   SIDEBAR FOOTER
+   ===================================================== */
+
+.teacher-sidebar-footer {
+  padding: 12px 14px 16px;
+
+  border-top: 1px solid #e5eef1;
+}
+
+
+/* Logout */
+
+.teacher-sidebar-logout {
+  width: 100%;
+
+  min-height: 39px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 0 12px;
+
+  background: transparent;
+
+  border: none;
+
+  border-radius: 8px;
+
+  color: #64748b;
+
+  font-family: inherit;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.teacher-sidebar-logout i {
+  width: 18px;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  text-align: center;
+}
+
+.teacher-sidebar-logout:hover {
+  background: #fef2f2;
+
+  color: #dc2626;
+}
+
+.teacher-sidebar-logout:hover i {
+  color: #dc2626;
+}
+
+
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
+
+.teacher-sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.teacher-sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.teacher-sidebar-nav::-webkit-scrollbar-thumb {
+  background: #dbeafe;
+
+  border-radius: 10px;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 900px) {
+
+  .teacher-sidebar {
+    width: 210px;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .teacher-sidebar {
+    width: 72px;
+  }
+
+  .teacher-sidebar-logo {
+    justify-content: center;
+
+    padding: 0 10px;
+  }
+
+  .teacher-sidebar-logo img {
+    width: 42px;
+
+    object-fit: cover;
+
+    object-position: left;
+  }
+
+  .teacher-sidebar-profile {
+    justify-content: center;
+
+    margin: 15px 10px;
+
+    padding: 8px;
+  }
+
+  .teacher-sidebar-profile-info {
+    display: none;
+  }
+
+  .teacher-sidebar-section-title {
+    display: none;
+  }
+
+  .teacher-sidebar-link {
+    justify-content: center;
+
+    padding: 0;
+
+    gap: 0;
+  }
+
+  .teacher-sidebar-link span {
+    display: none;
+  }
+
+  .teacher-sidebar-link i {
+    font-size: 16px;
+  }
+
+  .teacher-sidebar-logout {
+    justify-content: center;
+
+    padding: 0;
+  }
+
+  .teacher-sidebar-logout span {
+    display: none;
+  }
+
+  .teacher-sidebar-logout i {
+    font-size: 16px;
+  }
+
+}
+
+/* =========================================================
+   TEACHER LAYOUT
+========================================================= */
+
+.teacher-layout {
+  min-height: 100vh;
+  width: 100%;
+}
+
