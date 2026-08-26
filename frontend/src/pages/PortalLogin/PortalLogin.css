@@ -1,0 +1,681 @@
+/* =========================================================
+   CAMPUS IQ - PORTAL LOGIN PAGE
+   ========================================================= */
+
+
+/* =========================
+   PAGE
+   ========================= */
+
+.portal-login-page {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(36, 155, 220, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(25, 118, 210, 0.07),
+      transparent 30%
+    ),
+    #ffffff;
+
+  font-family:
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  color: #173b5c;
+}
+
+
+/* =========================
+   NAVBAR
+   ========================= */
+
+.portal-navbar {
+  width: 100%;
+  height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 7%;
+
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  border-bottom: 1px solid #e2f1fa;
+
+  box-shadow:
+    0 3px 15px rgba(30, 136, 229, 0.05);
+}
+
+
+/* =========================
+   LOGO
+   ========================= */
+
+.portal-brand {
+  display: flex;
+  align-items: center;
+}
+
+.portal-brand img {
+  display: block;
+
+  width: 165px;
+  height: auto;
+
+  object-fit: contain;
+}
+
+
+/* =========================
+   NAVBAR LINKS
+   ========================= */
+
+.portal-navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+
+.portal-navbar-links a {
+  position: relative;
+
+  color: #496b84;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  text-decoration: none;
+
+  transition: color 0.2s ease;
+}
+
+.portal-navbar-links a::after {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  bottom: -7px;
+
+  width: 0;
+  height: 2px;
+
+  border-radius: 10px;
+
+  background: #249bdc;
+
+  transition: width 0.2s ease;
+}
+
+.portal-navbar-links a:hover {
+  color: #1976d2;
+}
+
+.portal-navbar-links a:hover::after {
+  width: 100%;
+}
+
+
+/* =========================
+   MAIN
+   ========================= */
+
+.portal-main {
+  width: 100%;
+  max-width: 1050px;
+
+  margin: 0 auto;
+
+  padding: 72px 25px 45px;
+
+  box-sizing: border-box;
+
+  text-align: center;
+}
+
+
+/* =========================
+   HEADING
+   ========================= */
+
+.portal-heading {
+  margin-bottom: 42px;
+}
+
+.portal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 15px;
+
+  margin-bottom: 18px;
+
+  border: 1px solid #b8dcf5;
+  border-radius: 30px;
+
+  background: #f3faff;
+
+  color: #1976d2;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.portal-badge i {
+  font-size: 12px;
+}
+
+.portal-heading h1 {
+  margin: 0;
+
+  color: #173b5c;
+
+  font-size: 42px;
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  letter-spacing: -0.7px;
+}
+
+.portal-heading h1 span {
+  color: #249bdc;
+}
+
+.portal-heading p {
+  margin: 12px 0 0;
+
+  color: #71889a;
+
+  font-size: 16px;
+}
+
+
+/* =========================================================
+   PORTAL CARDS
+   ========================================================= */
+
+.portal-cards {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 20px;
+
+  max-width: 850px;
+
+  margin: 0 auto;
+}
+
+
+/* =========================
+   PORTAL CARD
+   ========================= */
+
+.portal-card {
+  position: relative;
+
+  width: 100%;
+  min-height: 150px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 25px;
+
+  box-sizing: border-box;
+
+  text-align: left;
+
+  background: #ffffff;
+
+  border: 1.5px solid #c5e3f5;
+
+  border-radius: 16px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 25px rgba(30, 136, 229, 0.07);
+
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+
+/* =========================================================
+   ADMIN - ORANGE
+   ========================================================= */
+
+.portal-card:nth-child(1) {
+  border-color: #ffd1b3;
+}
+
+.portal-card:nth-child(1) .portal-card-icon {
+  background: #fff0e6;
+  border-color: #ffd1b3;
+  color: #ff914d;
+}
+
+.portal-card:nth-child(1):hover {
+  border-color: #ff914d;
+
+  box-shadow:
+    0 14px 30px rgba(255, 145, 77, 0.18);
+}
+
+.portal-card:nth-child(1):hover .portal-card-icon {
+  background: #ff914d;
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   STUDENT - SKY BLUE
+   ========================================================= */
+
+.portal-card:nth-child(2) {
+  border-color: #b8e5f8;
+}
+
+.portal-card:nth-child(2) .portal-card-icon {
+  background: #e8f8fe;
+  border-color: #b8e5f8;
+  color: #2faeea;
+}
+
+.portal-card:nth-child(2):hover {
+  border-color: #2faeea;
+
+  box-shadow:
+    0 14px 30px rgba(47, 174, 234, 0.18);
+}
+
+.portal-card:nth-child(2):hover .portal-card-icon {
+  background: #2faeea;
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   TEACHER - GREEN
+   ========================================================= */
+
+.portal-card:nth-child(3) {
+  border-color: #b8ecd9;
+}
+
+.portal-card:nth-child(3) .portal-card-icon {
+  background: #e8fbf4;
+  border-color: #b8ecd9;
+  color: #20c58c;
+}
+
+.portal-card:nth-child(3):hover {
+  border-color: #20c58c;
+
+  box-shadow:
+    0 14px 30px rgba(32, 197, 140, 0.18);
+}
+
+.portal-card:nth-child(3):hover .portal-card-icon {
+  background: #20c58c;
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   PARENT - PURPLE
+   ========================================================= */
+
+.portal-card:nth-child(4) {
+  border-color: #d6b9f8;
+}
+
+.portal-card:nth-child(4) .portal-card-icon {
+  background: #f3eaff;
+  border-color: #d6b9f8;
+  color: #8d3ff0;
+}
+
+.portal-card:nth-child(4):hover {
+  border-color: #8d3ff0;
+
+  box-shadow:
+    0 14px 30px rgba(141, 63, 240, 0.18);
+}
+
+.portal-card:nth-child(4):hover .portal-card-icon {
+  background: #8d3ff0;
+  color: #ffffff;
+}
+
+
+/* =========================
+   CARD HOVER
+   ========================= */
+
+.portal-card:hover {
+  transform: translateY(-5px);
+
+  background: #ffffff;
+}
+
+
+/* =========================
+   CARD ICON
+   ========================= */
+
+.portal-card-icon {
+  width: 62px;
+  height: 62px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 20px;
+
+  border-radius: 14px;
+
+  font-size: 24px;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.portal-card:hover .portal-card-icon {
+  transform: scale(1.05);
+}
+
+
+/* =========================
+   CARD CONTENT
+   ========================= */
+
+.portal-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-card-content h2 {
+  margin: 0 0 7px;
+
+  color: #173b5c;
+
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.portal-card-content p {
+  margin: 0;
+
+  color: #71889a;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================
+   ARROW
+   ========================= */
+
+.portal-card-arrow {
+  width: 35px;
+  height: 35px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 12px;
+
+  border-radius: 50%;
+
+  background: #f1f9fe;
+
+  color: #4da6dc;
+
+  font-size: 13px;
+
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+
+/* Admin arrow */
+
+.portal-card:nth-child(1):hover .portal-card-arrow {
+  background: #ff914d;
+  color: #ffffff;
+}
+
+
+/* Student arrow */
+
+.portal-card:nth-child(2):hover .portal-card-arrow {
+  background: #2faeea;
+  color: #ffffff;
+}
+
+
+/* Teacher arrow */
+
+.portal-card:nth-child(3):hover .portal-card-arrow {
+  background: #20c58c;
+  color: #ffffff;
+}
+
+
+/* Parent arrow */
+
+.portal-card:nth-child(4):hover .portal-card-arrow {
+  background: #8d3ff0;
+  color: #ffffff;
+}
+
+
+.portal-card:hover .portal-card-arrow {
+  transform: translateX(4px);
+}
+
+
+/* =========================
+   BOTTOM TEXT
+   ========================= */
+
+.portal-bottom-text {
+  margin: 35px 0 0;
+
+  color: #9aafbd;
+
+  font-size: 12px;
+
+  letter-spacing: 0.2px;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .portal-navbar {
+    height: 75px;
+
+    padding: 0 5%;
+  }
+
+  .portal-brand img {
+    width: 145px;
+  }
+
+  .portal-navbar-links {
+    gap: 20px;
+  }
+
+  .portal-navbar-links a {
+    font-size: 13px;
+  }
+
+  .portal-main {
+    padding-top: 55px;
+  }
+
+  .portal-heading h1 {
+    font-size: 36px;
+  }
+
+  .portal-cards {
+    gap: 16px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .portal-navbar {
+    height: auto;
+
+    min-height: 72px;
+
+    padding: 15px 20px;
+  }
+
+  .portal-brand img {
+    width: 135px;
+  }
+
+  .portal-navbar-links {
+    gap: 13px;
+  }
+
+  .portal-navbar-links a {
+    font-size: 12px;
+  }
+
+  .portal-main {
+    padding:
+      45px 18px 35px;
+  }
+
+  .portal-heading {
+    margin-bottom: 30px;
+  }
+
+  .portal-badge {
+    font-size: 11px;
+
+    padding:
+      7px 12px;
+  }
+
+  .portal-heading h1 {
+    font-size: 30px;
+  }
+
+  .portal-heading p {
+    font-size: 14px;
+  }
+
+  .portal-cards {
+    grid-template-columns: 1fr;
+
+    max-width: 450px;
+  }
+
+  .portal-card {
+    min-height: 125px;
+
+    padding: 20px;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .portal-navbar {
+    flex-direction: column;
+
+    gap: 12px;
+
+    padding:
+      15px 18px;
+  }
+
+  .portal-navbar-links {
+    gap: 20px;
+  }
+
+  .portal-main {
+    padding-top: 35px;
+  }
+
+  .portal-heading h1 {
+    font-size: 27px;
+  }
+
+  .portal-card-icon {
+    width: 54px;
+    height: 54px;
+
+    margin-right: 15px;
+
+    font-size: 21px;
+  }
+
+  .portal-card-content h2 {
+    font-size: 16px;
+  }
+
+  .portal-card-content p {
+    font-size: 12px;
+  }
+
+  .portal-card-arrow {
+    width: 31px;
+    height: 31px;
+
+    margin-left: 8px;
+  }
+
+}
