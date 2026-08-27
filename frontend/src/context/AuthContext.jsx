@@ -19,6 +19,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const isAuthenticated = !!user;
+
   // =========================================================
   // LOGIN
   // =========================================================
@@ -122,14 +124,16 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        loading,
-        error,
-      }}
-    >
+  value={{
+    user,
+    login,
+    logout,
+    loading,
+    isLoading: loading,
+    isAuthenticated,
+    error,
+  }}
+>
       {children}
     </AuthContext.Provider>
   );

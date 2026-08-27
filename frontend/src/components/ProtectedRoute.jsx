@@ -3,18 +3,18 @@ import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedRoute({
   children,
-  allowedRoles,
+  allowedRoles = [],
 }) {
-  const { user, loading } = useAuth();
+  const {
+    user,
+    isLoading,
+    isAuthenticated,
+  } = useAuth();
+
   const location = useLocation();
 
-  const token = localStorage.getItem("token");
-
-  // =========================================================
-  // WAIT FOR AUTHENTICATION STATE
-  // =========================================================
-
-  if (loading) {
+  // Wait until authentication is loaded
+  if (isLoading) {
     return (
       <div
         style={{
@@ -29,11 +29,8 @@ export default function ProtectedRoute({
     );
   }
 
-  // =========================================================
-  // USER NOT LOGGED IN
-  // =========================================================
-
-  if (!token || !user) {
+  // Not logged in
+  if (!isAuthenticated || !user) {
     return (
       <Navigate
         to="/login"
@@ -43,51 +40,36 @@ export default function ProtectedRoute({
     );
   }
 
-  // =========================================================
-  // DETERMINE USER ROLE
-  // =========================================================
-  //
-  // Admin:
-  //   user.identity = "admin"
-  //
-  // Teacher:
-  //   user.identity = "staff"
-  //   user.staff.role = "teacher"
-  //
-  // Student:
-  //   user.identity = "student"
-  //
-  // Parent:
-  //   user.identity = "parent"
-  //
-  // =========================================================
+  // =====================================================
+  // DETERMINE ROLE
+  // =====================================================
 
   let userRole = user?.identity;
 
-  // Teacher is a Staff identity with Staff role = teacher
+  // Teacher
   if (
     user?.identity === "staff" &&
-    user?.staff?.role === "teacher"
+    (
+      user?.role === "teacher" ||
+      user?.staff?.role === "teacher" ||
+      user?.staffRole === "teacher"
+    )
   ) {
     userRole = "teacher";
   }
 
-  // =========================================================
-  // ROLE AUTHORIZATION
-  // =========================================================
+  console.log("ProtectedRoute user:", user);
+  console.log("ProtectedRoute resolved role:", userRole);
+  console.log("Allowed roles:", allowedRoles);
+
+  // =====================================================
+  // AUTHORIZATION
+  // =====================================================
 
   if (
-    allowedRoles &&
     allowedRoles.length > 0 &&
     !allowedRoles.includes(userRole)
   ) {
-    /*
-      The user is authenticated but does not have permission
-      to access this route.
-
-      Send them to the correct dashboard based on their role.
-    */
-
     if (userRole === "teacher") {
       return (
         <Navigate
@@ -104,10 +86,6 @@ export default function ProtectedRoute({
       />
     );
   }
-
-  // =========================================================
-  // AUTHORIZED
-  // =========================================================
 
   return children;
 }

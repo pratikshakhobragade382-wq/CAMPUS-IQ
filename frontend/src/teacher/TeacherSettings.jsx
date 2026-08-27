@@ -47,7 +47,11 @@ function getSettingsErrorMessage(error, fallback) {
     return "That email is already in use.";
   }
 
-  if (status === 400 && Array.isArray(data.details) && data.details.length > 0) {
+  if (
+    status === 400 &&
+    Array.isArray(data.details) &&
+    data.details.length > 0
+  ) {
     const messages = data.details
       .map((item) => item?.message)
       .filter(Boolean);
@@ -57,7 +61,11 @@ function getSettingsErrorMessage(error, fallback) {
     }
   }
 
-  if (typeof data.error === "string" && data.error && data.error !== "Something went wrong") {
+  if (
+    typeof data.error === "string" &&
+    data.error &&
+    data.error !== "Something went wrong"
+  ) {
     return data.error;
   }
 
@@ -137,7 +145,12 @@ function validatePassword(form) {
   return "";
 }
 
-function SettingsSection({ icon, title, description, children }) {
+function SettingsSection({
+  icon,
+  title,
+  description,
+  children,
+}) {
   return (
     <section className="teacher-dashboard-card teacher-profile-section teacher-settings-card">
       <div className="teacher-card-header">
@@ -175,12 +188,14 @@ export default function TeacherSettings() {
   });
 
   const [identity, setIdentity] = useState("");
+
   const [account, setAccount] = useState({
     name: "",
     email: "",
     phone: "",
     avatarUrl: "",
   });
+
   const [password, setPassword] = useState({
     currentPassword: "",
     newPassword: "",
@@ -189,15 +204,33 @@ export default function TeacherSettings() {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
   const [savingAccount, setSavingAccount] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [accountMessage, setAccountMessage] = useState({ type: "", text: "" });
-  const [passwordMessage, setPasswordMessage] = useState({ type: "", text: "" });
 
+  const [accountMessage, setAccountMessage] = useState({
+    type: "",
+    text: "",
+  });
+
+  const [passwordMessage, setPasswordMessage] = useState({
+    type: "",
+    text: "",
+  });
+
+  /*
+   * Loads the teacher settings from the backend.
+   *
+   * This function is also used by the "Try again" button,
+   * so it is kept separate from the initial useEffect.
+   */
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setLoadError("");
-    setAccountMessage({ type: "", text: "" });
+    setAccountMessage({
+      type: "",
+      text: "",
+    });
 
     try {
       const response = await getSettingsProfile();
@@ -209,6 +242,7 @@ export default function TeacherSettings() {
       }
 
       setIdentity(profile.identity || "");
+
       setAccount({
         name: profile.name || "",
         email: profile.email || "",
@@ -217,26 +251,108 @@ export default function TeacherSettings() {
       });
     } catch (err) {
       console.error("Failed to load teacher settings:", err);
-      setLoadError(getSettingsErrorMessage(err, "Unable to load settings."));
+
+      setLoadError(
+        getSettingsErrorMessage(
+          err,
+          "Unable to load settings."
+        )
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
+  /*
+   * Initial page load.
+   *
+   * The API request is started directly inside the effect
+   * instead of calling loadSettings(), which prevents the
+   * react-hooks/set-state-in-effect ESLint warning.
+   */
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+    let cancelled = false;
+
+    const fetchSettings = async () => {
+      try {
+        const response = await getSettingsProfile();
+
+        if (cancelled) {
+          return;
+        }
+
+        const profile = response?.data;
+
+        if (!profile) {
+          setLoadError("Unable to load settings.");
+          setLoading(false);
+          return;
+        }
+
+        setIdentity(profile.identity || "");
+
+        setAccount({
+          name: profile.name || "",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          avatarUrl: profile.avatarUrl || "",
+        });
+
+        setLoading(false);
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Failed to load teacher settings:",
+          err
+        );
+
+        setLoadError(
+          getSettingsErrorMessage(
+            err,
+            "Unable to load settings."
+          )
+        );
+
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleAccountChange = (field) => (event) => {
     const value = event.target.value;
-    setAccount((prev) => ({ ...prev, [field]: value }));
-    setAccountMessage({ type: "", text: "" });
+
+    setAccount((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    setAccountMessage({
+      type: "",
+      text: "",
+    });
   };
 
   const handlePasswordChange = (field) => (event) => {
     const value = event.target.value;
-    setPassword((prev) => ({ ...prev, [field]: value }));
-    setPasswordMessage({ type: "", text: "" });
+
+    setPassword((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    setPasswordMessage({
+      type: "",
+      text: "",
+    });
   };
 
   const handleSaveAccount = async (event) => {
@@ -245,12 +361,20 @@ export default function TeacherSettings() {
     const validationError = validateAccount(account);
 
     if (validationError) {
-      setAccountMessage({ type: "error", text: validationError });
+      setAccountMessage({
+        type: "error",
+        text: validationError,
+      });
+
       return;
     }
 
     setSavingAccount(true);
-    setAccountMessage({ type: "", text: "" });
+
+    setAccountMessage({
+      type: "",
+      text: "",
+    });
 
     try {
       const response = await updateSettingsProfile({
@@ -264,6 +388,7 @@ export default function TeacherSettings() {
 
       if (updated) {
         setIdentity(updated.identity || identity);
+
         setAccount({
           name: updated.name || "",
           email: updated.email || "",
@@ -277,10 +402,17 @@ export default function TeacherSettings() {
         text: "Settings updated successfully.",
       });
     } catch (err) {
-      console.error("Failed to save teacher settings:", err);
+      console.error(
+        "Failed to save teacher settings:",
+        err
+      );
+
       setAccountMessage({
         type: "error",
-        text: getSettingsErrorMessage(err, "Unable to save settings."),
+        text: getSettingsErrorMessage(
+          err,
+          "Unable to save settings."
+        ),
       });
     } finally {
       setSavingAccount(false);
@@ -293,12 +425,20 @@ export default function TeacherSettings() {
     const validationError = validatePassword(password);
 
     if (validationError) {
-      setPasswordMessage({ type: "error", text: validationError });
+      setPasswordMessage({
+        type: "error",
+        text: validationError,
+      });
+
       return;
     }
 
     setSavingPassword(true);
-    setPasswordMessage({ type: "", text: "" });
+
+    setPasswordMessage({
+      type: "",
+      text: "",
+    });
 
     try {
       await changeSettingsPassword({
@@ -311,15 +451,23 @@ export default function TeacherSettings() {
         newPassword: "",
         confirmPassword: "",
       });
+
       setPasswordMessage({
         type: "success",
         text: "Password changed successfully.",
       });
     } catch (err) {
-      console.error("Failed to change teacher password:", err);
+      console.error(
+        "Failed to change teacher password:",
+        err
+      );
+
       setPasswordMessage({
         type: "error",
-        text: getSettingsErrorMessage(err, "Unable to change password."),
+        text: getSettingsErrorMessage(
+          err,
+          "Unable to change password."
+        ),
       });
     } finally {
       setSavingPassword(false);
@@ -333,16 +481,29 @@ export default function TeacherSettings() {
       <header className="teacher-topbar">
         <div className="teacher-search">
           <i className="fa-solid fa-magnifying-glass"></i>
-          <input type="text" placeholder="Search anything..." />
+
+          <input
+            type="text"
+            placeholder="Search anything..."
+          />
         </div>
 
         <div className="teacher-topbar-actions">
-          <button type="button" className="teacher-topbar-icon">
+          <button
+            type="button"
+            className="teacher-topbar-icon"
+          >
             <i className="fa-regular fa-bell"></i>
-            <span className="teacher-notification-dot">1</span>
+
+            <span className="teacher-notification-dot">
+              1
+            </span>
           </button>
 
-          <button type="button" className="teacher-topbar-icon">
+          <button
+            type="button"
+            className="teacher-topbar-icon"
+          >
             <i className="fa-solid fa-gear"></i>
           </button>
 
@@ -365,21 +526,29 @@ export default function TeacherSettings() {
         <div className="teacher-page-heading">
           <div>
             <h1>Settings</h1>
-            <p>Manage your account details and password.</p>
+
+            <p>
+              Manage your account details and password.
+            </p>
           </div>
 
           <div className="teacher-current-date">
             <i className="fa-regular fa-calendar"></i>
+
             <span>{formattedDate}</span>
           </div>
         </div>
 
         {loading && (
-          <div className="teacher-profile-loading" aria-busy="true">
+          <div
+            className="teacher-profile-loading"
+            aria-busy="true"
+          >
             <div className="teacher-profile-skeleton-grid">
               <div className="teacher-profile-skeleton"></div>
               <div className="teacher-profile-skeleton"></div>
             </div>
+
             <p>Loading your settings...</p>
           </div>
         )}
@@ -392,6 +561,7 @@ export default function TeacherSettings() {
               </div>
 
               <h3>Unable to load settings</h3>
+
               <p>{loadError}</p>
 
               <button
@@ -400,6 +570,7 @@ export default function TeacherSettings() {
                 onClick={loadSettings}
               >
                 <i className="fa-solid fa-rotate-right"></i>
+
                 Try again
               </button>
             </div>
@@ -413,7 +584,11 @@ export default function TeacherSettings() {
               title="Account Settings"
               description="Update the personal details on your login account"
             >
-              <form className="teacher-settings-form" onSubmit={handleSaveAccount} noValidate>
+              <form
+                className="teacher-settings-form"
+                onSubmit={handleSaveAccount}
+                noValidate
+              >
                 {accountMessage.text && (
                   <div
                     className={`teacher-settings-banner ${accountMessage.type}`}
@@ -426,19 +601,26 @@ export default function TeacherSettings() {
                           : "fa-solid fa-circle-exclamation"
                       }
                     ></i>
-                    <span>{accountMessage.text}</span>
+
+                    <span>
+                      {accountMessage.text}
+                    </span>
                   </div>
                 )}
 
                 <div className="teacher-profile-fields">
                   <div className="teacher-profile-field">
                     <span>Account type</span>
-                    <strong>{formatIdentity(identity)}</strong>
+
+                    <strong>
+                      {formatIdentity(identity)}
+                    </strong>
                   </div>
                 </div>
 
                 <label className="teacher-settings-field">
                   <span>Name</span>
+
                   <input
                     type="text"
                     name="name"
@@ -452,6 +634,7 @@ export default function TeacherSettings() {
 
                 <label className="teacher-settings-field">
                   <span>Email</span>
+
                   <input
                     type="email"
                     name="email"
@@ -465,6 +648,7 @@ export default function TeacherSettings() {
 
                 <label className="teacher-settings-field">
                   <span>Phone</span>
+
                   <input
                     type="text"
                     name="phone"
@@ -478,6 +662,7 @@ export default function TeacherSettings() {
 
                 <label className="teacher-settings-field">
                   <span>Avatar URL</span>
+
                   <input
                     type="text"
                     name="avatarUrl"
@@ -515,7 +700,11 @@ export default function TeacherSettings() {
               title="Password & Security"
               description="Change the password you use to sign in"
             >
-              <form className="teacher-settings-form" onSubmit={handleChangePassword} noValidate>
+              <form
+                className="teacher-settings-form"
+                onSubmit={handleChangePassword}
+                noValidate
+              >
                 {passwordMessage.text && (
                   <div
                     className={`teacher-settings-banner ${passwordMessage.type}`}
@@ -528,51 +717,65 @@ export default function TeacherSettings() {
                           : "fa-solid fa-circle-exclamation"
                       }
                     ></i>
-                    <span>{passwordMessage.text}</span>
+
+                    <span>
+                      {passwordMessage.text}
+                    </span>
                   </div>
                 )}
 
                 <label className="teacher-settings-field">
                   <span>Current password</span>
+
                   <input
                     type="password"
                     name="currentPassword"
                     maxLength={72}
                     autoComplete="current-password"
                     value={password.currentPassword}
-                    onChange={handlePasswordChange("currentPassword")}
+                    onChange={handlePasswordChange(
+                      "currentPassword"
+                    )}
                     disabled={savingPassword}
                   />
                 </label>
 
                 <label className="teacher-settings-field">
                   <span>New password</span>
+
                   <input
                     type="password"
                     name="newPassword"
                     maxLength={72}
                     autoComplete="new-password"
                     value={password.newPassword}
-                    onChange={handlePasswordChange("newPassword")}
+                    onChange={handlePasswordChange(
+                      "newPassword"
+                    )}
                     disabled={savingPassword}
                   />
                 </label>
 
                 <label className="teacher-settings-field">
                   <span>Confirm new password</span>
+
                   <input
                     type="password"
                     name="confirmPassword"
                     maxLength={72}
                     autoComplete="new-password"
                     value={password.confirmPassword}
-                    onChange={handlePasswordChange("confirmPassword")}
+                    onChange={handlePasswordChange(
+                      "confirmPassword"
+                    )}
                     disabled={savingPassword}
                   />
                 </label>
 
                 <p className="teacher-settings-hint">
-                  New password must be at least 8 characters. Confirmation is checked here and is not sent to the server.
+                  New password must be at least 8
+                  characters. Confirmation is checked here
+                  and is not sent to the server.
                 </p>
 
                 <button

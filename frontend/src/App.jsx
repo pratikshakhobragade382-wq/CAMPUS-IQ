@@ -29,7 +29,7 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 // =====================================================
 // TEACHER
 // =====================================================
-
+import TeacherNotifications from "./teacher/TeacherNotifications";
 import TeacherLogin from "./teacher/auth/TeacherLogin";
 import TeacherDashboard from "./teacher/TeacherDashboard";
 import TeacherStudents from "./teacher/TeacherStudents";
@@ -37,8 +37,10 @@ import TeacherProfile from "./teacher/TeacherProfile";
 import TeacherSettings from "./teacher/TeacherSettings";
 import TeacherLayout from "./teacher/layouts/TeacherLayout";
 
-// AI Teacher Co-Pilot
+import TeacherAttendance from "./teacher/Attendance/Attendance";
+
 import AICopilot from "./teacher/Ai Copilot/AICopilot";
+import MyClasses from "./teacher/classes/MyClasses";
 
 // =====================================================
 // ADMIN DASHBOARD
@@ -87,16 +89,21 @@ import AddUser from "./pages/admin/AddUser";
 import Notifications from "./pages/Notifications/Notifications";
 import Profile from "./pages/Profile/Profile";
 
+// =====================================================
+// APP
+// =====================================================
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <SidebarProvider>
+
           <Routes>
 
             {/* =====================================================
                 PUBLIC ROUTES
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               path="/"
@@ -115,7 +122,7 @@ function App() {
 
             {/* =====================================================
                 ADMIN LOGIN
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               path="/login"
@@ -124,7 +131,7 @@ function App() {
 
             {/* =====================================================
                 PORTAL LOGIN
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               path="/portal-login"
@@ -133,7 +140,7 @@ function App() {
 
             {/* =====================================================
                 TEACHER LOGIN
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               path="/teacher-login"
@@ -142,7 +149,7 @@ function App() {
 
             {/* =====================================================
                 REGISTER
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               path="/register"
@@ -152,7 +159,7 @@ function App() {
             {/* =====================================================
                 TEACHER ROUTES
                 Protected - Teacher Only
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               element={
@@ -164,16 +171,27 @@ function App() {
 
               {/* -----------------------------------------------------
                   TEACHER DASHBOARD
-              ------------------------------------------------------ */}
+              ----------------------------------------------------- */}
 
               <Route
                 path="/teacher/dashboard"
                 element={<TeacherDashboard />}
               />
+              {/* -----------------------------------------------------
+                  TEACHER NOTIFICATIONS
+              ----------------------------------------------------- */}
+              <Route
+  path="/teacher/notifications"
+  element={
+    <ProtectedRoute allowedRoles={["teacher"]}>
+      <TeacherNotifications />
+    </ProtectedRoute>
+  }
+/>
 
               {/* -----------------------------------------------------
                   TEACHER STUDENTS
-              ------------------------------------------------------ */}
+              ----------------------------------------------------- */}
 
               <Route
                 path="/teacher/students"
@@ -182,7 +200,7 @@ function App() {
 
               {/* -----------------------------------------------------
                   TEACHER PROFILE
-              ------------------------------------------------------ */}
+              ----------------------------------------------------- */}
 
               <Route
                 path="/teacher/profile"
@@ -191,7 +209,7 @@ function App() {
 
               {/* -----------------------------------------------------
                   TEACHER SETTINGS
-              ------------------------------------------------------ */}
+              ----------------------------------------------------- */}
 
               <Route
                 path="/teacher/settings"
@@ -200,19 +218,42 @@ function App() {
 
               {/* -----------------------------------------------------
                   AI TEACHER CO-PILOT
-              ------------------------------------------------------ */}
+              ----------------------------------------------------- */}
 
               <Route
                 path="/teacher/ai-copilot"
                 element={<AICopilot />}
               />
 
+              {/* -----------------------------------------------------
+                  TEACHER CLASSES
+              ----------------------------------------------------- */}
+
+              <Route
+                path="/teacher/classes"
+                element={<MyClasses />}
+              />
+
+              {/* -----------------------------------------------------
+                  TEACHER ATTENDANCE
+                  IMPORTANT: INSIDE TEACHER PROTECTED ROUTE
+              ----------------------------------------------------- */}
+
+              <Route
+  path="/teacher/attendance"
+  element={
+    <ProtectedRoute allowedRoles={["teacher"]}>
+      <TeacherAttendance />
+    </ProtectedRoute>
+  }
+/>
+
             </Route>
 
             {/* =====================================================
                 ADMIN ROUTES
                 Protected - Admin Only
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               element={
@@ -310,7 +351,7 @@ function App() {
               />
 
               {/* =================================================
-                  ATTENDANCE
+                  ADMIN ATTENDANCE
               ================================================= */}
 
               <Route
@@ -392,7 +433,6 @@ function App() {
 
               {/* =================================================
                   STAFF
-                  ADMIN ONLY
               ================================================= */}
 
               <Route
@@ -423,7 +463,7 @@ function App() {
 
             {/* =====================================================
                 FALLBACK
-            ====================================================== */}
+            ===================================================== */}
 
             <Route
               path="*"
@@ -436,11 +476,12 @@ function App() {
             />
 
           </Routes>
+
         </SidebarProvider>
+
+        <ToastContainer />
+
       </AuthProvider>
-
-      <ToastContainer />
-
     </BrowserRouter>
   );
 }
