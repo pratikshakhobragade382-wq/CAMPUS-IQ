@@ -15,10 +15,18 @@ function isJwtError(err) {
 }
 
 function toSafeHttpError(err) {
-  // Explicit, developer-created HTTP errors.
+  // =====================================================
+  // EXPLICIT HTTP ERRORS
+  // =====================================================
+
+  // Errors intentionally created by our application.
   if (err instanceof HttpError) return err;
 
-  // Request validation errors (safe to expose per-field messages).
+  // =====================================================
+  // ZOD VALIDATION ERRORS
+  // =====================================================
+
+  // Request validation errors.
   if (err instanceof ZodError || err?.name === 'ZodError') {
     const details = err.issues?.map((issue) => ({
       path: issue.path?.join('.') || '',
@@ -27,54 +35,126 @@ function toSafeHttpError(err) {
 
     const validationError = new HttpError(400, 'Validation failed', {
       code: 'VALIDATION_ERROR',
+      expose: true,
     });
 
     validationError.details = details;
+
     return validationError;
   }
 
-  // Invalid JSON body.
+  // =====================================================
+  // INVALID JSON
+  // =====================================================
+
   if (err instanceof SyntaxError && err?.type === 'entity.parse.failed') {
-    return new HttpError(400, 'Invalid JSON payload', { code: 'INVALID_JSON' });
+    return new HttpError(400, 'Invalid JSON payload', {
+      code: 'INVALID_JSON',
+      expose: true,
+    });
   }
 
-  // JWT auth errors.
+  // =====================================================
+  // MULTER UPLOAD ERRORS
+  // =====================================================
+
+  // Handles Multer errors such as:
+  // - File too large
+  // - Too many files
+  // - Unexpected file
+  // - Other Multer upload errors
+  if (err?.name === 'MulterError') {
+    return new HttpError(400, err.message, {
+      code: err.code || 'UPLOAD_ERROR',
+      expose: true,
+    });
+  }
+
+  // =====================================================
+  // INVALID IMAGE FILE TYPE
+  // =====================================================
+
+  // This matches the custom validation message from
+  // ai.routes.js fileFilter.
+  if (
+    err?.message ===
+    'Invalid file type. Only JPG, JPEG, PNG, WEBP and GIF images are allowed.'
+  ) {
+    return new HttpError(400, err.message, {
+      code: 'INVALID_FILE_TYPE',
+      expose: true,
+    });
+  }
+
+  // =====================================================
+  // JWT AUTH ERRORS
+  // =====================================================
+
   if (isJwtError(err)) {
-    return new HttpError(401, 'Unauthorized', { code: 'UNAUTHORIZED', expose: true });
+    return new HttpError(401, 'Unauthorized', {
+      code: 'UNAUTHORIZED',
+      expose: true,
+    });
   }
 
-  // Prisma errors — map to safe messages.
+  // =====================================================
+  // PRISMA ERRORS
+  // =====================================================
+
   if (isPrismaKnownRequestError(err)) {
+    // Prisma error reference:
     // https://www.prisma.io/docs/orm/reference/error-reference
+
     switch (err.code) {
       case 'P2002':
         return new HttpError(409, 'Duplicate value for a unique field', {
           code: 'DUPLICATE',
           expose: true,
         });
+
       case 'P2025':
         return new HttpError(404, 'Resource not found', {
           code: 'NOT_FOUND',
           expose: true,
         });
+
       case 'P2003':
         return new HttpError(400, 'Invalid reference (foreign key)', {
           code: 'INVALID_REFERENCE',
           expose: true,
         });
+
       default:
-        return new HttpError(500, 'Database error', { code: 'DB_ERROR', expose: false, cause: err });
+        return new HttpError(500, 'Database error', {
+          code: 'DB_ERROR',
+          expose: false,
+          cause: err,
+        });
     }
   }
 
-  // Fallback.
-  return new HttpError(500, 'Internal server error', { code: 'INTERNAL', expose: false, cause: err });
+  // =====================================================
+  // FALLBACK
+  // =====================================================
+
+  return new HttpError(500, 'Internal server error', {
+    code: 'INTERNAL',
+    expose: false,
+    cause: err,
+  });
 }
 
 /**
  * Centralized error handler.
- * - Prevents leaking stack traces / internal messages
- * - Provides consistent, secure error responses
+ *
+ * Responsibilities:
+ * - Prevent leaking internal errors
+ * - Return consistent API responses
+ * - Handle validation errors
+ * - Handle authentication errors
+ * - Handle Prisma errors
+ * - Handle Multer upload errors
+ * - Log useful information on the server
  */
 module.exports = (err, req, res, _next) => {
   const safeError = toSafeHttpError(err);
@@ -82,8 +162,11 @@ module.exports = (err, req, res, _next) => {
   const statusCode = safeError.statusCode || 500;
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Server-side logging (do NOT send stack traces to clients in production).
-  // Include request id so clients can report it for debugging.
+  // =====================================================
+  // SERVER-SIDE LOGGING
+  // =====================================================
+
+  // Include request ID so errors can be traced during debugging.
   const logPayload = {
     requestId: req.id,
     method: req.method,
@@ -95,19 +178,29 @@ module.exports = (err, req, res, _next) => {
   };
 
   if (!isProduction) {
-    // In dev, print the original error for easier debugging.
+    // Development:
+    // Show the original error in the backend console.
     console.error('ERROR:', logPayload, err);
   } else {
+    // Production:
+    // Do not expose stack traces.
     console.error('ERROR:', logPayload);
   }
 
+  // =====================================================
+  // API ERROR RESPONSE
+  // =====================================================
+
   const response = {
     success: false,
-    error: safeError.expose ? safeError.message : 'Something went wrong',
+    error: safeError.expose
+      ? safeError.message
+      : 'Something went wrong',
     code: safeError.code,
     requestId: req.id,
   };
 
+  // Include validation details when available.
   if (safeError.details) {
     response.details = safeError.details;
   }

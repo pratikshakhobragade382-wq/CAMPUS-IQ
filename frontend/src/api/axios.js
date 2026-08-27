@@ -2,16 +2,17 @@
  * Axios configuration for CampusIQ API
  * Single source of truth for all HTTP requests.
  *
- * The backend URL comes from VITE_API_URL (set in .env / .env.production).
- * This is what lets the SAME frontend build talk to a local backend during
- * development and to the live, hosted backend once deployed — without any
- * code changes.
+ * Supports:
+ * - Normal JSON requests
+ * - FormData requests such as AI image uploads
  */
 
 import axios from "axios";
 import { STORAGE_KEYS } from "../utils/constants";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8000/api/v1";
 
 if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   // Fail loudly in a production build rather than silently calling localhost.
@@ -23,38 +24,79 @@ if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+
   timeout: 15000,
+
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor — attach the JWT (if we have one) to every call.
+// =====================================================
+// REQUEST INTERCEPTOR
+// =====================================================
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    // -------------------------------------------------
+    // Attach JWT
+    // -------------------------------------------------
+
+    const token = localStorage.getItem(
+      STORAGE_KEYS.AUTH_TOKEN
+    );
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // -------------------------------------------------
+    // IMPORTANT:
+    // Let the browser/Axios set Content-Type automatically
+    // when sending FormData.
+    //
+    // This is required for image uploads.
+    // -------------------------------------------------
+
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
+
   (error) => Promise.reject(error)
 );
 
-// Response interceptor — on 401, the session is dead: clear it and bounce to login.
+// =====================================================
+// RESPONSE INTERCEPTOR
+// =====================================================
+
 api.interceptors.response.use(
   (response) => response,
+
   (error) => {
     if (error.response?.status === 401) {
+      // Clear authentication data
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+
+      // -------------------------------------------------
+      // Redirect based on the current portal
+      //
+      // Teacher -> Teacher Login
+      // Admin   -> Admin Login
+      // -------------------------------------------------
+
       const loginPath = window.location.pathname.startsWith("/teacher")
         ? "/teacher-login"
         : "/login";
+
       if (window.location.pathname !== loginPath) {
         window.location.href = loginPath;
       }
     }
+
     return Promise.reject(error);
   }
 );

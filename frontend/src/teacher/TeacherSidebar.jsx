@@ -52,6 +52,12 @@ export default function TeacherSidebar() {
       icon: "fa-solid fa-file-lines",
       path: "/teacher/exams",
     },
+
+    {
+     label: "AI Teacher Co-Pilot",
+     path: "/teacher/ai-copilot",
+     icon: "🤖",
+},
   ];
 
   const bottomItems = [

@@ -2,13 +2,23 @@
    TEACHER PANEL
    ===================================================== */
 
- .teacher-panel {
+  .teacher-panel {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 20px;
+  padding-right: 30px;
+  margin-bottom: 20px;
   min-height: 100vh;
-  width: calc(100% - 230px);
-  margin-left: 230px;
+
+  /* margin: 0;
+  padding: 0; */
+
   background: #f5fafb;
   color: #172033;
+
   box-sizing: border-box;
+
+  overflow-x: hidden;
 }
 
 
@@ -236,7 +246,7 @@
 }
 
 .teacher-page-heading h1 {
-  margin: 0;
+  margin-top: 15px;
 
   color: #172033;
 
@@ -257,6 +267,9 @@
 }
 
 .teacher-current-date {
+
+  margin-top: 15px;
+  margin-right: 40px;
   display: flex;
   align-items: center;
   gap: 8px;

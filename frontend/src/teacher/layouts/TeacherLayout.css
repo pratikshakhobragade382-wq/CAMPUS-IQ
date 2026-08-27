@@ -1,19 +1,44 @@
+/* =========================================================
+   TEACHER LAYOUT
+   ========================================================= */
+
 .teacher-layout {
   width: 100%;
   min-height: 100vh;
-
-  display: flex;
-
   margin: 0;
   padding: 0;
 
   background: #f5fafb;
 }
 
-.teacher-layout-content {
-  flex: 1;
+/* =========================================================
+   MAIN CONTENT AREA
+   Sidebar is fixed at 230px, so the main area must
+   reserve exactly the same space.
+   ========================================================= */
+
+ .teacher-layout-content {
+  width: calc(100% - 230px);
+  max-width: calc(100% - 230px);
+
   min-width: 0;
   min-height: 100vh;
+
+  margin-left: 230px;
+  padding: 0;
+
+  box-sizing: border-box;
+
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+.teacher-layout-content main {
+  width: 100%;
+  min-width: 0;
 
   margin: 0;
   padding: 0;
@@ -21,10 +46,24 @@
   box-sizing: border-box;
 }
 
-.teacher-layout-content main {
-  width: 100%;
-  margin: 0;
-  padding: 0;
+/* =========================================================
+   TABLET
+   ========================================================= */
 
-  box-sizing: border-box;
+@media (max-width: 900px) {
+  .teacher-layout-content {
+    width: calc(100% - 210px);
+    margin-left: 210px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .teacher-layout-content {
+    width: calc(100% - 72px);
+    margin-left: 72px;
+  }
 }

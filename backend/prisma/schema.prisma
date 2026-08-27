@@ -7,133 +7,71 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Identity {
-  admin
-  staff
-  student
-  parent
-  principal
-  management
-}
-
-enum StaffRole {
-  teacher
-  accountant
-  librarian
-  clerk
-  receptionist
-  nurse
-  counselor
-  coordinator
-  lab_assistant
-  peon
-  driver
-  security
-  other
-}
-
-enum Gender {
-  male
-  female
-  other
-}
-
-enum AdmissionType {
-  new
-  transfer
-  readmission
-}
-
-enum AttendanceStatus {
-  present
-  absent
-  late
-  half_day
-  holiday
-  leave
-}
-
-enum ExamType {
-  unit_test_1
-  unit_test_2
-  half_yearly
-  annual
-  pre_board
-  practical
-  internal_assessment
-}
-
-// ─────────────────────────────────────────────
-// TENANT
-// ─────────────────────────────────────────────
 model Tenant {
-  id                  Int      @id @default(autoincrement())
+  id                  Int                 @id @default(autoincrement())
   name                String
-  subdomain           String   @unique @default("school1")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  subdomain           String              @unique @default("school1")
   address             String?
-  phone               String?
-  email               String?
-  website             String?
-  logoUrl             String?
   defaultAcademicYear String?
   defaultClass        String?
   defaultSection      String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  users              User[]
-  academicYears      AcademicYear[]
-  classes            Class[]
-  sections           Section[]
-  departments        Department[]
-  subjects           Subject[]
-  staff              Staff[]
-  students           Student[]
-  masterData         MasterData[]
-  customFields       CustomField[]
-  periodSlots        PeriodSlot[]
-  timetables         Timetable[]
-  studentAttendances StudentAttendance[]
-  staffAttendances   StaffAttendance[]
-  feeCategories      FeeCategory[]
-  feeStructures      FeeStructure[]
-  feeCollections     FeeCollection[]
-  exams              Exam[]
-  examMarks          ExamMark[]
-  holidays           Holiday[]
-  notifications      Notification[]
-  notificationReads  NotificationRead[]
-  resultPublications ResultPublication[]
+  email               String?
+  logoUrl             String?
+  phone               String?
+  website             String?
+  academicYears       AcademicYear[]
+  classes             Class[]
+  customFields        CustomField[]
+  departments         Department[]
+  exams               Exam[]
+  examMarks           ExamMark[]
+  feeCategories       FeeCategory[]
+  feeCollections      FeeCollection[]
+  feeStructures       FeeStructure[]
+  holidays            Holiday[]
+  masterData          MasterData[]
+  notifications       Notification[]
+  notificationReads   NotificationRead[]
+  periodSlots         PeriodSlot[]
+  resultPublications  ResultPublication[]
+  sections            Section[]
+  staff               Staff[]
+  staffAttendances    StaffAttendance[]
+  students            Student[]
+  studentAttendances  StudentAttendance[]
+  subjects            Subject[]
+  timetables          Timetable[]
+  users               User[]
+  aiConversations     AIConversation[]
+  aiMessages          AIMessage[]
 }
 
-// ─────────────────────────────────────────────
-// USER
-// ─────────────────────────────────────────────
 model User {
-  id        Int            @id @default(autoincrement())
-  name      String
-  email     String
-  password  String
-  phone     String?
-  avatarUrl String?
-  identity  Identity       @default(admin)
-  tenantId  Int
-  staffId   Int?           @unique
-  parentId  Int?           @unique
-  isDeleted Boolean        @default(false)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff     Staff?         @relation(fields: [staffId], references: [id])
-  parent    StudentParent? @relation(fields: [parentId], references: [id])
+  id              Int              @id @default(autoincrement())
+  name            String
+  email           String
+  password        String
+  tenantId        Int
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  isDeleted       Boolean          @default(false)
+  identity        Identity         @default(admin)
+  staffId         Int?             @unique
+  avatarUrl       String?
+  parentId        Int?             @unique
+  phone           String?
+  parent          StudentParent?   @relation(fields: [parentId], references: [id])
+  staff           Staff?           @relation(fields: [staffId], references: [id])
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  aiConversations AIConversation[]
+  aiMessages      AIMessage[]
 
   @@unique([email, tenantId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// ACADEMIC YEAR
-// ─────────────────────────────────────────────
 model AcademicYear {
   id                 Int                 @id @default(autoincrement())
   name               String
@@ -141,30 +79,25 @@ model AcademicYear {
   endDate            DateTime
   isActive           Boolean             @default(false)
   tenantId           Int
-  isDeleted          Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  isDeleted          Boolean             @default(false)
   tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  timetables         Timetable[]
-  studentAttendances StudentAttendance[]
-  staffAttendances   StaffAttendance[]
-  feeStructures      FeeStructure[]
-  feeCollections     FeeCollection[]
   exams              Exam[]
+  feeCollections     FeeCollection[]
+  feeStructures      FeeStructure[]
   holidays           Holiday[]
   resultPublications ResultPublication[]
-
+  staffAttendances   StaffAttendance[]
+  studentAttendances StudentAttendance[]
+  timetables         Timetable[]
 
   @@unique([name, tenantId])
-
   @@unique([startDate, endDate, tenantId])
   @@index([name, tenantId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// DEPARTMENT
-// ─────────────────────────────────────────────
 model Department {
   id        Int      @id @default(autoincrement())
   name      String
@@ -172,63 +105,54 @@ model Department {
   isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   classes   Class[]
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   staff     Staff[]
 
   @@unique([name, tenantId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// CLASS
-// ─────────────────────────────────────────────
 model Class {
   id                 Int                 @id @default(autoincrement())
   name               String
-  departmentId       Int?
   tenantId           Int
-  isDeleted          Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  departmentId       Int?
+  isDeleted          Boolean             @default(false)
   department         Department?         @relation(fields: [departmentId], references: [id])
   tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  exams              Exam[]
+  feeStructures      FeeStructure[]
+  resultPublications ResultPublication[]
   sections           Section[]
   students           Student[]
-  timetables         Timetable[]
   studentAttendances StudentAttendance[]
-  feeStructures      FeeStructure[]
-  exams              Exam[]
-  resultPublications ResultPublication[]
+  timetables         Timetable[]
 
   @@unique([name, tenantId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// SECTION
-// ─────────────────────────────────────────────
 model Section {
   id                 Int                 @id @default(autoincrement())
   name               String
   classId            Int
   tenantId           Int
-  isDeleted          Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  isDeleted          Boolean             @default(false)
   class              Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
   tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   students           Student[]
-  timetables         Timetable[]
   studentAttendances StudentAttendance[]
+  timetables         Timetable[]
 
   @@unique([name, classId, tenantId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// SUBJECT
-// ─────────────────────────────────────────────
 model Subject {
   id         Int            @id @default(autoincrement())
   name       String
@@ -237,88 +161,85 @@ model Subject {
   isDeleted  Boolean        @default(false)
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
-  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff      StaffSubject[]
-  timetables Timetable[]
   examMarks  ExamMark[]
+  staff      StaffSubject[]
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  timetables Timetable[]
 
   @@unique([code, tenantId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// STAFF
-// ─────────────────────────────────────────────
 model Staff {
   id                       Int                 @id @default(autoincrement())
   employeeId               String
-  fileNo                   String?
-  title                    String?
   name                     String
   email                    String
-  officialEmail            String?
   phone                    String?
-  mobileNo                 String?
-  photoUrl                 String?
-  signatureUrl             String?
-  gender                   Gender?
-  dateOfBirth              DateTime?
-  fatherName               String?
-  motherName               String?
-  nationality              String?
-  motherTongue             String?
-  religion                 String?
-  maritalStatus            String?
-  bloodGroup               String?
-  caste                    String?
-  placeOfBirth             String?
-  identificationMark       String?
-  emergencyContactPerson   String?
-  relationWithEmployee     String?
-  emergencyContactNo       String?
-  aadharNo                 String?
-  uanNo                    String?
-  panNo                    String?
-  rfidNo                   String?
-  cbseTid                  String?
-  priorityNo               String?
-  employeeUniqueId         String?
-  role                     StaffRole?
-  staffCategory            String?
-  socialCategory           String?
-  highQualification        String?
-  staffDirectory           String?
-  qualificationForPrinting String?
-  busUser                  Boolean             @default(false)
-  ctetExamQualified        String?
-  employeePresentDuty      String?
-  noticePeriod             Boolean             @default(false)
-  isReviewer               Boolean             @default(false)
   dateOfJoining            DateTime?
   salary                   Decimal?            @db.Decimal(10, 2)
+  photoUrl                 String?
   departmentId             Int?
-  reportPerson             String?
-  leaveCategory            String?
-  experience               String?
-  employeeLedger           String?
   tenantId                 Int
   isDeleted                Boolean             @default(false)
   createdAt                DateTime            @default(now())
   updatedAt                DateTime            @updatedAt
-  tenant                   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role                     StaffRole?
+  gender                   Gender?
+  aadharNo                 String?
+  bloodGroup               String?
+  busUser                  Boolean             @default(false)
+  caste                    String?
+  cbseTid                  String?
+  ctetExamQualified        String?
+  dateOfBirth              DateTime?
+  emergencyContactNo       String?
+  emergencyContactPerson   String?
+  employeeLedger           String?
+  employeePresentDuty      String?
+  employeeUniqueId         String?
+  experience               String?
+  fatherName               String?
+  fileNo                   String?
+  highQualification        String?
+  identificationMark       String?
+  isReviewer               Boolean             @default(false)
+  leaveCategory            String?
+  maritalStatus            String?
+  mobileNo                 String?
+  motherName               String?
+  motherTongue             String?
+  nationality              String?
+  noticePeriod             Boolean             @default(false)
+  officialEmail            String?
+  panNo                    String?
+  placeOfBirth             String?
+  priorityNo               String?
+  qualificationForPrinting String?
+  relationWithEmployee     String?
+  religion                 String?
+  reportPerson             String?
+  rfidNo                   String?
+  signatureUrl             String?
+  socialCategory           String?
+  staffCategory            String?
+  staffDirectory           String?
+  title                    String?
+  uanNo                    String?
+  examMarksEntered         ExamMark[]
+  feeCollections           FeeCollection[]
+  resultPublications       ResultPublication[]
   department               Department?         @relation(fields: [departmentId], references: [id])
-  subjects                 StaffSubject[]
+  tenant                   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   address                  StaffAddress?
+  staffAttendances         StaffAttendance[]
+  children                 StaffChild[]
   otherDetails             StaffOtherDetails?
   spouse                   StaffSpouse?
-  children                 StaffChild[]
-  timetables               Timetable[]
+  subjects                 StaffSubject[]
   studentAttendancesMarked StudentAttendance[]
-  staffAttendances         StaffAttendance[]
-  feeCollections           FeeCollection[]
-  examMarksEntered         ExamMark[]
+  timetables               Timetable[]
   user                     User?
-  resultPublications       ResultPublication[]
 
   @@unique([employeeId, tenantId])
   @@unique([email, tenantId])
@@ -419,9 +340,6 @@ model StaffChild {
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// STUDENT
-// ─────────────────────────────────────────────
 model Student {
   id                  Int                 @id @default(autoincrement())
   admissionNo         String
@@ -470,24 +388,24 @@ model Student {
   virtualAccountNo    String?
   apaarId             String?
   srnNo               String?
-  bloodGroup          String?
-  religion            String?
-  category            String?
-  motherTongue        String?
-  nationality         String?
-  maritalStatus       String?
   tenantId            Int
   isDeleted           Boolean             @default(false)
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
-  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bloodGroup          String?
+  category            String?
+  maritalStatus       String?
+  motherTongue        String?
+  nationality         String?
+  religion            String?
+  customFieldValues   CustomFieldValue[]
+  examMarks           ExamMark[]
+  feeCollections      FeeCollection[]
   class               Class               @relation(fields: [classId], references: [id])
   section             Section?            @relation(fields: [sectionId], references: [id])
-  parents             StudentParent[]
-  customFieldValues   CustomFieldValue[]
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   studentAttendances  StudentAttendance[]
-  feeCollections      FeeCollection[]
-  examMarks           ExamMark[]
+  parents             StudentParent[]
 
   @@unique([admissionNo, tenantId])
   @@index([tenantId])
@@ -527,9 +445,6 @@ model StudentParent {
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// MASTER DATA
-// ─────────────────────────────────────────────
 model MasterData {
   id        Int      @id @default(autoincrement())
   category  String
@@ -544,25 +459,22 @@ model MasterData {
   @@index([tenantId, category])
 }
 
-// ─────────────────────────────────────────────
-// CUSTOM FIELDS
-// ─────────────────────────────────────────────
 model CustomField {
-  id          Int                @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   formName    String
   name        String
   displayName String
   control     String
-  dataType    String             @default("text")
-  priority    Int                @default(1)
+  dataType    String              @default("text")
+  priority    Int                 @default(1)
   maxLength   Int?
-  isActive    Boolean            @default(true)
+  isActive    Boolean             @default(true)
   tenantId    Int
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  values      CustomFieldValue[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   options     CustomFieldOption[]
+  values      CustomFieldValue[]
 
   @@unique([formName, name, tenantId])
   @@index([tenantId])
@@ -599,17 +511,14 @@ model CustomFieldOption {
   @@index([customFieldId])
 }
 
-// ─────────────────────────────────────────────
-// TIMETABLE
-// ─────────────────────────────────────────────
 model PeriodSlot {
   id         Int         @id @default(autoincrement())
   tenantId   Int
   slotNo     Int
   label      String
-  slotType   String // "period" | "recess" | "lunch" | "sports"
-  startTime  String // "08:00"
-  endTime    String // "08:45"
+  slotType   String
+  startTime  String
+  endTime    String
   isActive   Boolean     @default(true)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -629,26 +538,23 @@ model Timetable {
   subjectId      Int
   staffId        Int
   periodSlotId   Int
-  dayOfWeek      Int // 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+  dayOfWeek      Int
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
   class          Class        @relation(fields: [classId], references: [id])
-  section        Section?     @relation(fields: [sectionId], references: [id])
-  subject        Subject      @relation(fields: [subjectId], references: [id])
-  staff          Staff        @relation(fields: [staffId], references: [id])
   periodSlot     PeriodSlot   @relation(fields: [periodSlotId], references: [id])
+  section        Section?     @relation(fields: [sectionId], references: [id])
+  staff          Staff        @relation(fields: [staffId], references: [id])
+  subject        Subject      @relation(fields: [subjectId], references: [id])
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, academicYearId, staffId, dayOfWeek, periodSlotId])
   @@unique([tenantId, academicYearId, classId, sectionId, dayOfWeek, periodSlotId])
   @@index([tenantId])
 }
 
-// ─────────────────────────────────────────────
-// ATTENDANCE
-// ─────────────────────────────────────────────
 model StudentAttendance {
   id             Int              @id @default(autoincrement())
   tenantId       Int
@@ -662,12 +568,12 @@ model StudentAttendance {
   markedById     Int
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   academicYear   AcademicYear     @relation(fields: [academicYearId], references: [id])
-  student        Student          @relation(fields: [studentId], references: [id])
   class          Class            @relation(fields: [classId], references: [id])
-  section        Section?         @relation(fields: [sectionId], references: [id])
   markedBy       Staff            @relation(fields: [markedById], references: [id])
+  section        Section?         @relation(fields: [sectionId], references: [id])
+  student        Student          @relation(fields: [studentId], references: [id])
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, studentId, date])
   @@index([tenantId, classId, date])
@@ -686,18 +592,15 @@ model StaffAttendance {
   remark         String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   academicYear   AcademicYear     @relation(fields: [academicYearId], references: [id])
   staff          Staff            @relation(fields: [staffId], references: [id])
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, staffId, date])
   @@index([tenantId, staffId])
   @@index([tenantId, date])
 }
 
-// ─────────────────────────────────────────────
-// FEE MANAGEMENT
-// ─────────────────────────────────────────────
 model FeeCategory {
   id            Int            @id @default(autoincrement())
   tenantId      Int
@@ -727,11 +630,11 @@ model FeeStructure {
   isActive        Boolean         @default(true)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  collections     FeeCollection[]
   academicYear    AcademicYear    @relation(fields: [academicYearId], references: [id])
   class           Class           @relation(fields: [classId], references: [id])
   feeCategory     FeeCategory     @relation(fields: [feeCategoryId], references: [id])
-  collections     FeeCollection[]
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, academicYearId, classId])
 }
@@ -756,20 +659,17 @@ model FeeCollection {
   collectedById  Int
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  student        Student      @relation(fields: [studentId], references: [id])
-  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
   collectedBy    Staff        @relation(fields: [collectedById], references: [id])
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
+  student        Student      @relation(fields: [studentId], references: [id])
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([receiptNo, tenantId])
   @@index([tenantId, studentId])
   @@index([tenantId, academicYearId])
 }
 
-// ─────────────────────────────────────────────
-// EXAM & MARKS (CBSE)
-// ─────────────────────────────────────────────
 model Exam {
   id                 Int                 @id @default(autoincrement())
   tenantId           Int
@@ -782,11 +682,11 @@ model Exam {
   isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   academicYear       AcademicYear        @relation(fields: [academicYearId], references: [id])
   class              Class               @relation(fields: [classId], references: [id])
-  resultPublications ResultPublication[]
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   marks              ExamMark[]
+  resultPublications ResultPublication[]
 
   @@index([tenantId, academicYearId])
 }
@@ -806,39 +706,33 @@ model ExamMark {
   enteredById   Int
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enteredBy     Staff    @relation(fields: [enteredById], references: [id])
   exam          Exam     @relation(fields: [examId], references: [id])
   student       Student  @relation(fields: [studentId], references: [id])
   subject       Subject  @relation(fields: [subjectId], references: [id])
-  enteredBy     Staff    @relation(fields: [enteredById], references: [id])
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([examId, studentId, subjectId])
   @@index([tenantId, examId])
   @@index([tenantId, studentId])
 }
 
-// ─────────────────────────────────────────────
-// HOLIDAY CALENDAR
-// ─────────────────────────────────────────────
 model Holiday {
   id             Int          @id @default(autoincrement())
   tenantId       Int
   academicYearId Int
   name           String
   date           DateTime     @db.Date
-  holidayType    String       @default("public") // "public" | "school" | "regional"
+  holidayType    String       @default("public")
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, date])
   @@index([tenantId, academicYearId])
 }
 
-// ─────────────────────────────────────────────
-// HOMEWORK / ASSIGNMENTS (recovered from live DB)
-// ─────────────────────────────────────────────
 model Assignment {
   id                   Int                    @id @default(autoincrement())
   tenantId             Int
@@ -881,9 +775,6 @@ model AssignmentSubmission {
   @@index([tenantId, studentId])
 }
 
-// ─────────────────────────────────────────────
-// NOTIFICATIONS (recovered from live DB)
-// ─────────────────────────────────────────────
 model Notification {
   id               Int                  @id @default(autoincrement())
   tenantId         Int
@@ -899,7 +790,7 @@ model Notification {
   isActive         Boolean              @default(true)
   expiresAt        DateTime?
   createdAt        DateTime             @default(now())
-  updatedAt        DateTime              @updatedAt
+  updatedAt        DateTime             @updatedAt
   Tenant           Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   NotificationRead NotificationRead[]
 
@@ -922,9 +813,6 @@ model NotificationRead {
   @@index([tenantId, userId])
 }
 
-// ─────────────────────────────────────────────
-// RESULT PUBLICATION (recovered from live DB)
-// ─────────────────────────────────────────────
 model ResultPublication {
   id             Int          @id @default(autoincrement())
   tenantId       Int
@@ -944,6 +832,100 @@ model ResultPublication {
 
   @@unique([academicYearId, classId, examId])
   @@index([tenantId, academicYearId])
+}
+
+// =========================================================
+// AI TEACHER CO-PILOT CHAT HISTORY
+// =========================================================
+
+model AIConversation {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  userId    Int
+  title     String   @default("New Chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
+
+  @@index([tenantId, userId])
+  @@index([tenantId, updatedAt])
+}
+
+model AIMessage {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int
+  userId         Int
+  conversationId Int
+  role           String
+  content        String
+  imageUrl       String?
+  createdAt      DateTime @default(now())
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([conversationId, createdAt])
+}
+
+enum Identity {
+  admin
+  staff
+  student
+  parent
+  principal
+  management
+}
+
+enum StaffRole {
+  teacher
+  accountant
+  librarian
+  clerk
+  receptionist
+  nurse
+  counselor
+  coordinator
+  lab_assistant
+  peon
+  driver
+  security
+  other
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum AdmissionType {
+  new
+  transfer
+  readmission
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  half_day
+  holiday
+  leave
+}
+
+enum ExamType {
+  unit_test_1
+  unit_test_2
+  half_yearly
+  annual
+  pre_board
+  practical
+  internal_assessment
 }
 
 enum HomeworkSubmissionStatus {

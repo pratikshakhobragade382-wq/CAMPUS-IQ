@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import TeacherSidebar from "../TeacherSidebar";
+import "./TeacherLayout.css";
 
 export default function TeacherLayout() {
   return (
@@ -8,14 +9,11 @@ export default function TeacherLayout() {
       {/* =====================================================
           TEACHER SIDEBAR
       ====================================================== */}
-
       <TeacherSidebar />
-
 
       {/* =====================================================
           TEACHER MAIN AREA
       ====================================================== */}
-
       <div className="teacher-layout-content">
 
         <main>
