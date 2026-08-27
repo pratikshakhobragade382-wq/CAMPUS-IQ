@@ -62,7 +62,7 @@ node prisma/seed-academic-years.js
 2. https://render.com → **New → Web Service** → connect your repo, root
    directory `backend`.
 3. Build command: `npm ci && npx prisma generate`
-   Start command: `npm start`
+   Start command: `node src/server.js`
 4. Under **Environment**, add every variable from `backend/.env.example`
    with real values — **use the same `DATABASE_URL` from Step 1** and the
    same `JWT_SECRET` you generated. This is what makes it "the same
