@@ -19,7 +19,7 @@ export default function TeacherSidebar() {
   const menuItems = [
     {
       label: "Dashboard",
-      icon: "fa-solid fa-grip-2",
+      icon: "fa-solid fa-bars-staggered",
       path: "/teacher/dashboard",
     },
     {
@@ -56,7 +56,7 @@ export default function TeacherSidebar() {
     {
      label: "AI Teacher Co-Pilot",
      path: "/teacher/ai-copilot",
-     icon: "🤖",
+     icon: "fa-solid fa-robot",
 },
   ];
 

@@ -11,6 +11,18 @@ const OLLAMA_URL = "http://127.0.0.1:11434/api/chat";
 const MODEL_NAME = "qwen2.5vl:7b";
 
 // =====================================================
+// OLLAMA TIMEOUT
+// =====================================================
+// Qwen2.5-VL 7B is running locally on CPU.
+// The first response can take a while.
+//
+// 5 minutes gives the model enough time to load,
+// process the prompt/image and generate a response.
+// =====================================================
+
+const OLLAMA_TIMEOUT = 5 * 60 * 1000;
+
+// =====================================================
 // CAMPUSIQ AI SYSTEM PROMPT
 // =====================================================
 
@@ -139,45 +151,97 @@ async function chatWithAI(
   messages.push(userMessage);
 
   // ---------------------------------------------------
-  // SEND REQUEST TO OLLAMA
+  // CREATE ABORT CONTROLLER
   // ---------------------------------------------------
 
-  const response = await fetch(OLLAMA_URL, {
-    method: "POST",
+  const controller = new AbortController();
 
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, OLLAMA_TIMEOUT);
 
-    body: JSON.stringify({
-      model: MODEL_NAME,
-      messages,
-      stream: false,
-    }),
-  });
+  try {
+    // -------------------------------------------------
+    // SEND REQUEST TO OLLAMA
+    // -------------------------------------------------
 
-  // ---------------------------------------------------
-  // HANDLE OLLAMA ERRORS
-  // ---------------------------------------------------
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    throw new Error(
-      `Ollama request failed: ${response.status} ${errorText}`
+    console.log(
+      `AI: Sending request to Ollama (${MODEL_NAME})...`
     );
+
+    const response = await fetch(OLLAMA_URL, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages,
+        stream: false,
+      }),
+
+      signal: controller.signal,
+    });
+
+    // -------------------------------------------------
+    // HANDLE OLLAMA HTTP ERRORS
+    // -------------------------------------------------
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      throw new Error(
+        `Ollama request failed: ${response.status} ${errorText}`
+      );
+    }
+
+    // -------------------------------------------------
+    // READ RESPONSE
+    // -------------------------------------------------
+
+    const data = await response.json();
+
+    const aiResponse =
+      data.message?.content ||
+      "No response generated.";
+
+    console.log("AI: Ollama response received.");
+
+    return aiResponse;
+  } catch (error) {
+    // -------------------------------------------------
+    // HANDLE TIMEOUT
+    // -------------------------------------------------
+
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "The local AI model took too long to respond. Please try again."
+      );
+    }
+
+    // -------------------------------------------------
+    // HANDLE CONNECTION ERRORS
+    // -------------------------------------------------
+
+    if (
+      error?.cause?.code === "ECONNREFUSED" ||
+      error?.code === "ECONNREFUSED"
+    ) {
+      throw new Error(
+        "Ollama is not running. Please start Ollama and try again."
+      );
+    }
+
+    // -------------------------------------------------
+    // RE-THROW ORIGINAL ERROR
+    // -------------------------------------------------
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const data = await response.json();
-
-  // ---------------------------------------------------
-  // RETURN AI RESPONSE
-  // ---------------------------------------------------
-
-  return (
-    data.message?.content ||
-    "No response generated."
-  );
 }
 
 // =====================================================
