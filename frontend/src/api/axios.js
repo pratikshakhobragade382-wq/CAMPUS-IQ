@@ -15,7 +15,6 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/
 
 if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   // Fail loudly in a production build rather than silently calling localhost.
-  // eslint-disable-next-line no-console
   console.error(
     "[CampusIQ] VITE_API_URL is not set. The app will try to call localhost, " +
       "which will not work in production. Set VITE_API_URL in your deployment environment."
@@ -49,8 +48,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      const loginPath = window.location.pathname.startsWith("/teacher")
+        ? "/teacher-login"
+        : "/login";
+      if (window.location.pathname !== loginPath) {
+        window.location.href = loginPath;
       }
     }
     return Promise.reject(error);

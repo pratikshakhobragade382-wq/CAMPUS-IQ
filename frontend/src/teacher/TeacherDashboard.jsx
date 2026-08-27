@@ -1,4 +1,5 @@
 import { useAuth } from "../context/AuthContext";
+import TeacherTopbar from "./components/TeacherTopbar";
 import "./TeacherDashboard.css";
 
 export default function TeacherDashboard() {
@@ -30,76 +31,7 @@ export default function TeacherDashboard() {
   return (
     <div className="teacher-panel">
 
-      {/* =====================================================
-          TOP HEADER
-      ====================================================== */}
-
-      <header className="teacher-topbar">
-
-        {/* Search */}
-
-        <div className="teacher-search">
-          <i className="fa-solid fa-magnifying-glass"></i>
-
-          <input
-            type="text"
-            placeholder="Search anything..."
-          />
-        </div>
-
-
-        {/* Topbar Actions */}
-
-        <div className="teacher-topbar-actions">
-
-          {/* Notification */}
-
-          <button className="teacher-topbar-icon">
-            <i className="fa-regular fa-bell"></i>
-
-            <span className="teacher-notification-dot">
-              1
-            </span>
-          </button>
-
-
-          {/* Settings */}
-
-          <button className="teacher-topbar-icon">
-            <i className="fa-solid fa-gear"></i>
-          </button>
-
-
-          {/* Divider */}
-
-          <div className="teacher-topbar-divider"></div>
-
-
-          {/* Profile */}
-
-          <div className="teacher-mini-profile">
-
-            <div className="teacher-mini-avatar">
-              {teacherName.charAt(0).toUpperCase()}
-            </div>
-
-            <div className="teacher-mini-info">
-
-              <strong>
-                {teacherName}
-              </strong>
-
-              <span>
-                Teacher
-              </span>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </header>
+      <TeacherTopbar />
 
 
       {/* =====================================================
