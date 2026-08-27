@@ -27,6 +27,8 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 import TeacherLogin from "./teacher/auth/TeacherLogin";
 import TeacherDashboard from "./teacher/TeacherDashboard";
 import TeacherStudents from "./teacher/TeacherStudents";
+import TeacherProfile from "./teacher/TeacherProfile";
+import TeacherSettings from "./teacher/TeacherSettings";
 
 // Dashboard
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -152,6 +154,14 @@ function App() {
               <Route
                 path="/teacher/students"
                 element={<TeacherStudents />}
+              />
+              <Route
+                path="/teacher/profile"
+                element={<TeacherProfile />}
+              />
+              <Route
+                path="/teacher/settings"
+                element={<TeacherSettings />}
               />
             </Route>
 

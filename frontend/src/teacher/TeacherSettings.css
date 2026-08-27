@@ -1,0 +1,177 @@
+/* =====================================================
+   TEACHER SETTINGS — page-specific styles
+   Shared topbar / heading / card styles come from
+   TeacherDashboard.css and TeacherProfile.css
+   ===================================================== */
+
+.teacher-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+  align-items: start;
+}
+
+.teacher-settings-card {
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.teacher-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.teacher-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.teacher-settings-field span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.teacher-settings-field input {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid #dce8eb;
+  border-radius: 9px;
+  background: #f8fbfc;
+  color: #334155;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.teacher-settings-field input::placeholder {
+  color: #94a3b8;
+}
+
+.teacher-settings-field input:hover:not(:disabled) {
+  border-color: #bae6fd;
+  background: #ffffff;
+}
+
+.teacher-settings-field input:focus {
+  border-color: #38bdf8;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+}
+
+.teacher-settings-field input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.teacher-settings-hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.teacher-settings-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.teacher-settings-banner.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.teacher-settings-banner.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.teacher-settings-banner i {
+  margin-top: 1px;
+}
+
+.teacher-settings-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(2, 132, 199, 0.18);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.teacher-settings-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(2, 132, 199, 0.24);
+}
+
+.teacher-settings-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 1200px) {
+  .teacher-settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .teacher-settings-page.teacher-panel {
+    width: calc(100% - 210px);
+    margin-left: 210px;
+  }
+}
+
+@media (max-width: 700px) {
+  .teacher-settings-page.teacher-panel {
+    width: calc(100% - 72px);
+    margin-left: 72px;
+  }
+
+  .teacher-settings-submit {
+    width: 100%;
+  }
+}
+
+@media (max-width: 500px) {
+  .teacher-settings-field input {
+    height: 44px;
+  }
+}
