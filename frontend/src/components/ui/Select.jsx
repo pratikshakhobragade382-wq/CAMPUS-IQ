@@ -12,6 +12,7 @@ export const Select = React.forwardRef(({
   error,
   required,
   options = [],
+  placeholder = 'Select an option',
   className,
   disabled,
   ...props
@@ -37,7 +38,7 @@ export const Select = React.forwardRef(({
           disabled={disabled}
           {...props}
         >
-          <option value="">Select an option</option>
+          <option value="">{placeholder}</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

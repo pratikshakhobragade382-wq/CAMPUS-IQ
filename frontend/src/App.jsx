@@ -4,6 +4,8 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import { AuthProvider } from "./context/AuthContext";
 import { SidebarProvider } from "./context/SidebarContext";
@@ -24,6 +26,7 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 import TeacherLogin from "./teacher/auth/TeacherLogin";
 import TeacherDashboard from "./teacher/TeacherDashboard";
+import TeacherStudents from "./teacher/TeacherStudents";
 
 // Dashboard
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -131,23 +134,26 @@ function App() {
 
 
             {/* =====================================================
-                TEACHER DASHBOARD
+                TEACHER ROUTES
                 Protected - Teacher Only
-                NO SIDEBAR YET
             ====================================================== */}
 
-           <Route
-  element={
-    <ProtectedRoute allowedRoles={["teacher"]}>
-      <TeacherLayout />
-    </ProtectedRoute>
-  }
->
-  <Route
-    path="/teacher/dashboard"
-    element={<TeacherDashboard />}
-  />
-</Route>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={["teacher"]}>
+                  <TeacherLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                path="/teacher/dashboard"
+                element={<TeacherDashboard />}
+              />
+              <Route
+                path="/teacher/students"
+                element={<TeacherStudents />}
+              />
+            </Route>
 
 
             {/* =====================================================
@@ -399,6 +405,8 @@ function App() {
         </SidebarProvider>
 
       </AuthProvider>
+
+      <ToastContainer />
 
     </BrowserRouter>
   );
