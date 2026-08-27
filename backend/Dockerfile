@@ -3,8 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and Prisma schema before install so `postinstall`
+# (`prisma generate`) uses this repository's schema, not a stale client.
 COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 
 # Install dependencies (including dev for prisma)
 RUN npm ci
@@ -22,6 +25,8 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 
 # Install production dependencies only
 RUN npm ci --omit=dev
@@ -31,6 +36,9 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application files
 COPY . .
+
+# Regenerate after the full tree is present so the running image matches schema.prisma
+RUN npx prisma generate
 
 # Expose port
 EXPOSE 8010
