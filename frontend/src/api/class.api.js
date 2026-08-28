@@ -1,3 +1,4 @@
+
 /**
  * Class API endpoints
  */
@@ -5,46 +6,106 @@
 import axiosClient from "./axios";
 
 /**
- * Get all classes
- * GET /classes
+ * ============================================================
+ * GET ALL CLASSES
+ * ============================================================
  */
 export const getClasses = async () => {
   const response = await axiosClient.get("/classes");
+
   return response.data;
 };
 
 /**
- * Get a single class by ID
- * GET /classes/:id
+ * ============================================================
+ * GET SINGLE CLASS
+ * ============================================================
  */
 export const getClassById = async (id) => {
   const response = await axiosClient.get(`/classes/${id}`);
+
   return response.data;
 };
 
 /**
- * Create a new class
- * POST /classes
+ * ============================================================
+ * CREATE CLASS
+ * ============================================================
  */
 export const createClass = async (data) => {
   const response = await axiosClient.post("/classes", data);
+
   return response.data;
 };
 
 /**
- * Update class
- * PUT /classes/:id
+ * ============================================================
+ * UPDATE CLASS
+ * ============================================================
  */
 export const updateClass = async (id, data) => {
   const response = await axiosClient.put(`/classes/${id}`, data);
+
   return response.data;
 };
 
 /**
- * Delete class
- * DELETE /classes/:id
+ * ============================================================
+ * DELETE CLASS
+ * ============================================================
  */
 export const deleteClass = async (id) => {
   const response = await axiosClient.delete(`/classes/${id}`);
+
   return response.data;
 };
+
+/**
+ * ============================================================
+ * ADD SECTION
+ * ============================================================
+ */
+export const addSectionToClass = async (classId, data) => {
+  const response = await axiosClient.post(
+    `/classes/${classId}/sections`,
+    data
+  );
+
+  return response.data;
+};
+
+/**
+ * ============================================================
+ * GET CLASS SECTIONS
+ * ============================================================
+ */
+export const getClassSections = async (classId) => {
+  const response = await axiosClient.get(
+    `/classes/${classId}/sections`
+  );
+
+  return response.data;
+};
+
+/**
+ * ============================================================
+ * GET STUDENTS BY SECTION
+ * ============================================================
+ *
+ * IMPORTANT:
+ * This endpoint assumes your backend route is:
+ *
+ * GET /classes/:classId/sections/:sectionId/students
+ *
+ */
+export const getStudentsBySection = async (
+  classId,
+  sectionId
+) => {
+  const response = await axiosClient.get(
+    `/classes/${classId}/sections/${sectionId}/students`
+  );
+
+  return response.data;
+};
+

@@ -3,21 +3,24 @@ const classService = require("./class.service");
 /**
  * ============================================================
  * CREATE CLASS
+ * POST /api/classes
  * ============================================================
  */
 exports.createClass = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const { name, section } = req.body;
 
     const tenantId = req.user.tenantId;
 
     const newClass = await classService.createClass({
       name,
+      section,
       tenantId,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
+      message: "Class created successfully",
       data: newClass,
     });
   } catch (error) {
@@ -25,18 +28,20 @@ exports.createClass = async (req, res, next) => {
   }
 };
 
+
 /**
  * ============================================================
  * GET ALL CLASSES
+ * GET /api/classes
  * ============================================================
  */
 exports.getClasses = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId;
+    const classes = await classService.getClasses({
+      tenantId: req.user.tenantId,
+    });
 
-    const classes = await classService.getClasses(tenantId);
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: classes,
     });
@@ -45,22 +50,23 @@ exports.getClasses = async (req, res, next) => {
   }
 };
 
+
 /**
  * ============================================================
  * GET SINGLE CLASS
+ * GET /api/classes/:classId
  * ============================================================
  */
 exports.getClassById = async (req, res, next) => {
   try {
     const { classId } = req.params;
-    const tenantId = req.user.tenantId;
 
-    const classData = await classService.getClassById(
-      Number(classId),
-      tenantId
-    );
+    const classData = await classService.getClassById({
+      classId: Number(classId),
+      tenantId: req.user.tenantId,
+    });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: classData,
     });
@@ -69,9 +75,11 @@ exports.getClassById = async (req, res, next) => {
   }
 };
 
+
 /**
  * ============================================================
  * UPDATE CLASS
+ * PUT /api/classes/:classId
  * ============================================================
  */
 exports.updateClass = async (req, res, next) => {
@@ -79,17 +87,16 @@ exports.updateClass = async (req, res, next) => {
     const { classId } = req.params;
     const { name, section } = req.body;
 
-    const tenantId = req.user.tenantId;
-
     const updatedClass = await classService.updateClass({
       classId: Number(classId),
       name,
       section,
-      tenantId,
+      tenantId: req.user.tenantId,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
+      message: "Class updated successfully",
       data: updatedClass,
     });
   } catch (error) {
@@ -97,24 +104,25 @@ exports.updateClass = async (req, res, next) => {
   }
 };
 
+
 /**
  * ============================================================
  * DELETE CLASS
+ * DELETE /api/classes/:classId
  * ============================================================
  */
 exports.deleteClass = async (req, res, next) => {
   try {
     const { classId } = req.params;
 
-    const tenantId = req.user.tenantId;
-
     const deletedClass = await classService.deleteClass({
       classId: Number(classId),
-      tenantId,
+      tenantId: req.user.tenantId,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
+      message: "Class deleted successfully",
       data: deletedClass,
     });
   } catch (error) {
@@ -122,26 +130,27 @@ exports.deleteClass = async (req, res, next) => {
   }
 };
 
+
 /**
  * ============================================================
  * ADD SECTION
+ * POST /api/classes/:classId/sections
  * ============================================================
  */
 exports.addSection = async (req, res, next) => {
   try {
-    const { name } = req.body;
     const { classId } = req.params;
-
-    const tenantId = req.user.tenantId;
+    const { name } = req.body;
 
     const section = await classService.addSection({
       name,
       classId: Number(classId),
-      tenantId,
+      tenantId: req.user.tenantId,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
+      message: "Section added successfully",
       data: section,
     });
   } catch (error) {
@@ -149,24 +158,59 @@ exports.addSection = async (req, res, next) => {
   }
 };
 
+
 /**
  * ============================================================
- * GET SECTIONS BY CLASS
+ * GET SECTIONS
+ * GET /api/classes/:classId/sections
  * ============================================================
  */
 exports.getSectionsByClass = async (req, res, next) => {
   try {
     const { classId } = req.params;
-    const tenantId = req.user.tenantId;
 
-    const sections = await classService.getSectionsByClass(
-      Number(classId),
-      tenantId
-    );
+    const sections =
+      await classService.getSectionsByClass(
+        Number(classId),
+        req.user.tenantId
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: sections,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+   /**
+ * ============================================================
+ * GET STUDENTS BY SECTION
+ * GET /classes/:classId/sections/:sectionId/students
+ * ============================================================
+ */
+exports.getStudentsBySection = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const {
+      classId,
+      sectionId,
+    } = req.params;
+
+    const result =
+      await classService.getStudentsBySection({
+        classId: Number(classId),
+        sectionId: Number(sectionId),
+        tenantId: req.user.tenantId,
+      });
 
     res.status(200).json({
       success: true,
-      data: sections,
+      data: result,
     });
   } catch (error) {
     next(error);

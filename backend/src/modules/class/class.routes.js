@@ -1,4 +1,6 @@
+
 const express = require("express");
+
 const router = express.Router();
 
 const controller = require("./class.controller");
@@ -23,8 +25,15 @@ const {
 router.post(
   "/",
   auth,
-  authorize("admin", "management", "principal"),
-  validateRequest({ body: createClassBody }),
+  authorize(
+    "admin",
+    "management",
+    "principal",
+    "teacher"
+  ),
+  validateRequest({
+    body: createClassBody,
+  }),
   controller.createClass
 );
 
@@ -49,7 +58,9 @@ router.get(
 router.get(
   "/:classId",
   auth,
-  validateRequest({ params: classIdParam }),
+  validateRequest({
+    params: classIdParam,
+  }),
   controller.getClassById
 );
 
@@ -62,7 +73,11 @@ router.get(
 router.put(
   "/:classId",
   auth,
-  authorize("admin", "management", "principal"),
+  authorize(
+    "admin",
+    "management",
+    "principal"
+  ),
   validateRequest({
     params: classIdParam,
     body: updateClassBody,
@@ -74,28 +89,37 @@ router.put(
  * ============================================================
  * DELETE CLASS
  * DELETE /classes/:classId
- *
- * Soft delete
  * ============================================================
  */
 router.delete(
   "/:classId",
   auth,
-  authorize("admin", "management", "principal"),
-  validateRequest({ params: classIdParam }),
+  authorize(
+    "admin",
+    "management",
+    "principal"
+  ),
+  validateRequest({
+    params: classIdParam,
+  }),
   controller.deleteClass
 );
 
 /**
  * ============================================================
- * ADD SECTION TO CLASS
+ * ADD SECTION
  * POST /classes/:classId/sections
  * ============================================================
  */
 router.post(
   "/:classId/sections",
   auth,
-  authorize("admin", "management", "principal"),
+  authorize(
+    "admin",
+    "management",
+    "principal",
+    "teacher"
+  ),
   validateRequest({
     params: classIdParam,
     body: addSectionBody,
@@ -105,15 +129,34 @@ router.post(
 
 /**
  * ============================================================
- * GET SECTIONS OF CLASS
- * GET /classes/:classId/sections
+ * GET STUDENTS BY SECTION
+ * GET /classes/:classId/sections/:sectionId/students
  * ============================================================
  */
 router.get(
-  "/:classId/sections",
+  "/:classId/sections/:sectionId/students",
   auth,
-  validateRequest({ params: classIdParam }),
-  controller.getSectionsByClass
+  controller.getStudentsBySection
 );
 
+/**
+ * ============================================================
+ * EXPORT ROUTER
+ * ============================================================
+ *
+ * VERY IMPORTANT:
+ * The routes/index.js file expects this file to export
+ * an Express router.
+ *
+ * Without this line:
+ *
+ * module.exports = router;
+ *
+ * Express receives an object instead of a router and gives:
+ *
+ * Router.use() requires a middleware function but got an Object
+ *
+ * ============================================================
+ */
 module.exports = router;
+

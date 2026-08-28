@@ -4,10 +4,18 @@ const { z, safeText, idParam } = require("../../validation/schemas");
  * ============================================================
  * CREATE CLASS
  * ============================================================
+ *
+ * Teacher can create:
+ * - Class name
+ * - Optional first section
  */
 const createClassBody = z
   .object({
     name: safeText("Class name", { max: 80 }),
+
+    section: safeText("Section name", {
+      max: 20,
+    }).optional(),
   })
   .strip();
 
@@ -15,11 +23,16 @@ const createClassBody = z
  * ============================================================
  * UPDATE CLASS
  * ============================================================
+ *
+ * Existing admin functionality.
  */
 const updateClassBody = z
   .object({
     name: safeText("Class name", { max: 80 }),
-    section: safeText("Section name", { max: 20 }),
+
+    section: safeText("Section name", {
+      max: 20,
+    }),
   })
   .strip();
 
@@ -30,7 +43,9 @@ const updateClassBody = z
  */
 const addSectionBody = z
   .object({
-    name: safeText("Section name", { max: 20 }),
+    name: safeText("Section name", {
+      max: 20,
+    }),
   })
   .strip();
 

@@ -1,174 +1,317 @@
 const prisma = require('../../prisma/prismaClient');
 
 // =====================================================
-// GET NOTIFICATIONS FOR THE BELL DROPDOWN
+// GET NOTIFICATION VISIBILITY
+// =====================================================
+// Determines which notifications the logged-in user
+// should be able to see.
+//
+// Supports:
+// - all
+// - admin
+// - staff
+// - teacher
+// - student
+// - parent
+// - class
+// - section
+// - individual
+// =====================================================
+
+const getNotificationVisibility = async (user) => {
+  const {
+    userId,
+    tenantId,
+    identity,
+  } = user;
+
+  const visibility = [
+    // Notifications for everyone
+    {
+      audience: 'all',
+    },
+
+    // Notifications for the user's identity
+    {
+      audience: identity,
+    },
+
+    // Teachers are normally stored as "staff"
+    // inside User.identity.
+    ...(identity === 'staff'
+      ? [
+          {
+            audience: 'teacher',
+          },
+        ]
+      : []),
+
+    // Direct notification for this user
+    {
+      audience: 'individual',
+      userId,
+    },
+  ];
+
+  // ===================================================
+  // FIND PARENT'S STUDENTS
+  // ===================================================
+
+  if (identity === 'parent') {
+    const parentStudents = await prisma.student.findMany({
+      where: {
+        tenantId,
+        isDeleted: false,
+
+        parents: {
+          some: {
+            user: {
+              id: userId,
+            },
+          },
+        },
+      },
+
+      select: {
+        classId: true,
+        sectionId: true,
+      },
+    });
+
+    const classIds = parentStudents
+      .map((student) => student.classId)
+      .filter(Boolean);
+
+    const sectionIds = parentStudents
+      .map((student) => student.sectionId)
+      .filter(Boolean);
+
+    // Parent receives class notifications
+    if (classIds.length > 0) {
+      visibility.push({
+        audience: 'class',
+        classId: {
+          in: classIds,
+        },
+      });
+    }
+
+    // Parent receives section notifications
+    if (sectionIds.length > 0) {
+      visibility.push({
+        audience: 'section',
+        sectionId: {
+          in: sectionIds,
+        },
+      });
+    }
+  }
+
+  return visibility;
+};
+
+// =====================================================
+// GET LATEST NOTIFICATIONS
 // =====================================================
 
 const getNotifications = async (user) => {
-  const { userId, tenantId, identity } = user;
+  const {
+    userId,
+    tenantId,
+  } = user;
 
-  const notifications = await prisma.notification.findMany({
-    where: {
-      tenantId,
-      isActive: true,
+  const visibility =
+    await getNotificationVisibility(user);
 
-      // Don't show expired notifications
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
+  const notifications =
+    await prisma.notification.findMany({
+      where: {
+        tenantId,
+        isActive: true,
 
-      // Show notifications meant for this user
-      AND: [
-        {
-          OR: [
-            { audience: 'all' },
-            { audience: identity },
-            { audience: 'individual', userId },
-          ],
-        },
-      ],
-    },
+        OR: [
+          {
+            expiresAt: null,
+          },
+          {
+            expiresAt: {
+              gt: new Date(),
+            },
+          },
+        ],
 
-    // Newest notifications first
-    orderBy: {
-      createdAt: 'desc',
-    },
+        AND: [
+          {
+            OR: visibility,
+          },
+        ],
+      },
 
-    // Keep the Bell dropdown small
-    take: 10,
+      orderBy: {
+        createdAt: 'desc',
+      },
 
-    // Check whether the logged-in user has read each notification
-    include: {
-      NotificationRead: {
-        where: {
-          userId,
-        },
-        select: {
-          readAt: true,
+      take: 10,
+
+      include: {
+        NotificationRead: {
+          where: {
+            userId,
+          },
+
+          select: {
+            readAt: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  // Add a simple "isRead" value for the frontend
   return notifications.map((notification) => ({
     id: notification.id,
     title: notification.title,
     message: notification.message,
     type: notification.type,
     priority: notification.priority,
+    audience: notification.audience,
+    classId: notification.classId,
+    sectionId: notification.sectionId,
+    userId: notification.userId,
+    createdById: notification.createdById,
     createdAt: notification.createdAt,
-    isRead: notification.NotificationRead.length > 0,
+    expiresAt: notification.expiresAt,
+
+    isRead:
+      notification.NotificationRead.length > 0,
   }));
 };
 
 // =====================================================
-// GET ALL NOTIFICATIONS FROM THE PAST 15 DAYS
+// GET ALL NOTIFICATIONS
+// LAST 15 DAYS
 // =====================================================
 
 const getAllNotifications = async (user) => {
-  const { userId, tenantId, identity } = user;
+  const {
+    userId,
+    tenantId,
+  } = user;
 
-  // Calculate the date 15 days ago
   const fifteenDaysAgo = new Date();
-  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-  const notifications = await prisma.notification.findMany({
-    where: {
-      tenantId,
-      isActive: true,
+  fifteenDaysAgo.setDate(
+    fifteenDaysAgo.getDate() - 15
+  );
 
-      // Only notifications created during the past 15 days
-      createdAt: {
-        gte: fifteenDaysAgo,
+  const visibility =
+    await getNotificationVisibility(user);
+
+  const notifications =
+    await prisma.notification.findMany({
+      where: {
+        tenantId,
+        isActive: true,
+
+        createdAt: {
+          gte: fifteenDaysAgo,
+        },
+
+        OR: [
+          {
+            expiresAt: null,
+          },
+          {
+            expiresAt: {
+              gt: new Date(),
+            },
+          },
+        ],
+
+        AND: [
+          {
+            OR: visibility,
+          },
+        ],
       },
 
-      // Don't show expired notifications
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
+      orderBy: {
+        createdAt: 'desc',
+      },
 
-      // Show notifications meant for this user
-      AND: [
-        {
-          OR: [
-            { audience: 'all' },
-            { audience: identity },
-            { audience: 'individual', userId },
-          ],
-        },
-      ],
-    },
+      include: {
+        NotificationRead: {
+          where: {
+            userId,
+          },
 
-    // Newest notifications first
-    orderBy: {
-      createdAt: 'desc',
-    },
-
-    // Check whether the logged-in user has read each notification
-    include: {
-      NotificationRead: {
-        where: {
-          userId,
-        },
-        select: {
-          readAt: true,
+          select: {
+            readAt: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  // Return clean notification data for the frontend
   return notifications.map((notification) => ({
     id: notification.id,
     title: notification.title,
     message: notification.message,
     type: notification.type,
     priority: notification.priority,
+    audience: notification.audience,
+    classId: notification.classId,
+    sectionId: notification.sectionId,
+    userId: notification.userId,
+    createdById: notification.createdById,
     createdAt: notification.createdAt,
-    isRead: notification.NotificationRead.length > 0,
+    expiresAt: notification.expiresAt,
+
+    isRead:
+      notification.NotificationRead.length > 0,
   }));
 };
 
 // =====================================================
-// GET UNREAD NOTIFICATION COUNT
+// GET UNREAD COUNT
 // =====================================================
 
 const getUnreadCount = async (user) => {
-  const { userId, tenantId, identity } = user;
+  const {
+    userId,
+    tenantId,
+  } = user;
 
-  const count = await prisma.notification.count({
-    where: {
-      tenantId,
-      isActive: true,
+  const visibility =
+    await getNotificationVisibility(user);
 
-      // Don't count expired notifications
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
+  const count =
+    await prisma.notification.count({
+      where: {
+        tenantId,
+        isActive: true,
 
-      // Only count notifications meant for this user
-      AND: [
-        {
-          OR: [
-            { audience: 'all' },
-            { audience: identity },
-            { audience: 'individual', userId },
-          ],
-        },
-      ],
+        OR: [
+          {
+            expiresAt: null,
+          },
+          {
+            expiresAt: {
+              gt: new Date(),
+            },
+          },
+        ],
 
-      // Notification must NOT have been read by this user
-      NotificationRead: {
-        none: {
-          userId,
+        AND: [
+          {
+            OR: visibility,
+          },
+        ],
+
+        NotificationRead: {
+          none: {
+            userId,
+          },
         },
       },
-    },
-  });
+    });
 
   return count;
 };
@@ -177,22 +320,37 @@ const getUnreadCount = async (user) => {
 // MARK ONE NOTIFICATION AS READ
 // =====================================================
 
-const markAsRead = async (notificationId, user) => {
-  const { userId, tenantId } = user;
+const markAsRead = async (
+  notificationId,
+  user
+) => {
+  const {
+    userId,
+    tenantId,
+  } = user;
 
-  const notification = await prisma.notification.findFirst({
-    where: {
-      id: parseInt(notificationId, 10),
-      tenantId,
-      isActive: true,
-    },
-  });
+  const id = parseInt(
+    notificationId,
+    10
+  );
+
+  if (Number.isNaN(id)) {
+    return null;
+  }
+
+  const notification =
+    await prisma.notification.findFirst({
+      where: {
+        id,
+        tenantId,
+        isActive: true,
+      },
+    });
 
   if (!notification) {
     return null;
   }
 
-  // Create or update the read record
   return prisma.notificationRead.upsert({
     where: {
       notificationId_userId: {
@@ -201,12 +359,10 @@ const markAsRead = async (notificationId, user) => {
       },
     },
 
-    // Already read -> update the read time
     update: {
       readAt: new Date(),
     },
 
-    // First time reading -> create a read record
     create: {
       tenantId,
       notificationId: notification.id,
@@ -216,113 +372,133 @@ const markAsRead = async (notificationId, user) => {
 };
 
 // =====================================================
-// MARK ALL NOTIFICATIONS AS READ
+// MARK ALL AS READ
 // =====================================================
 
 const markAllAsRead = async (user) => {
-  const { userId, tenantId, identity } = user;
+  const {
+    userId,
+    tenantId,
+  } = user;
 
-  // Find every notification visible to this user that
-  // does NOT already have a read record for them.
-  const unreadNotifications = await prisma.notification.findMany({
-    where: {
-      tenantId,
-      isActive: true,
+  const visibility =
+    await getNotificationVisibility(user);
 
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
+  const unreadNotifications =
+    await prisma.notification.findMany({
+      where: {
+        tenantId,
+        isActive: true,
 
-      AND: [
-        {
-          OR: [
-            { audience: 'all' },
-            { audience: identity },
-            { audience: 'individual', userId },
-          ],
-        },
-      ],
+        OR: [
+          {
+            expiresAt: null,
+          },
+          {
+            expiresAt: {
+              gt: new Date(),
+            },
+          },
+        ],
 
-      NotificationRead: {
-        none: {
-          userId,
+        AND: [
+          {
+            OR: visibility,
+          },
+        ],
+
+        NotificationRead: {
+          none: {
+            userId,
+          },
         },
       },
-    },
-    select: {
-      id: true,
-    },
-  });
 
-  if (unreadNotifications.length === 0) {
-    return { markedCount: 0 };
+      select: {
+        id: true,
+      },
+    });
+
+  if (
+    unreadNotifications.length === 0
+  ) {
+    return {
+      markedCount: 0,
+    };
   }
 
-  // Create a "read" record for each one, in a single batch insert.
-  // skipDuplicates guards against a race condition where a notification
-  // was marked read individually at the exact same moment.
   await prisma.notificationRead.createMany({
-    data: unreadNotifications.map((n) => ({
-      tenantId,
-      notificationId: n.id,
-      userId,
-    })),
+    data: unreadNotifications.map(
+      (notification) => ({
+        tenantId,
+        notificationId:
+          notification.id,
+        userId,
+      })
+    ),
+
     skipDuplicates: true,
   });
 
-  return { markedCount: unreadNotifications.length };
+  return {
+    markedCount:
+      unreadNotifications.length,
+  };
 };
 
 // =====================================================
 // DELETE ONE NOTIFICATION
 // =====================================================
 
-const deleteNotification = async (notificationId, user) => {
-  const { userId, tenantId, identity } = user;
+const deleteNotification = async (
+  notificationId,
+  user
+) => {
+  const {
+    userId,
+    tenantId,
+  } = user;
 
-  const id = parseInt(notificationId, 10);
+  const id = parseInt(
+    notificationId,
+    10
+  );
 
   if (Number.isNaN(id)) {
     return null;
   }
 
-  // Make sure this notification belongs to the
-  // current tenant and is actually visible to this user.
-  const notification = await prisma.notification.findFirst({
-    where: {
-      id,
-      tenantId,
-      isActive: true,
+  const visibility =
+    await getNotificationVisibility(user);
 
-      OR: [
-        { audience: 'all' },
-        { audience: identity },
-        {
-          audience: 'individual',
-          userId,
-        },
-      ],
-    },
-  });
+  const notification =
+    await prisma.notification.findFirst({
+      where: {
+        id,
+        tenantId,
+        isActive: true,
+
+        OR: visibility,
+      },
+    });
 
   if (!notification) {
     return null;
   }
 
-  // Soft delete the notification.
-  // We keep the database record but hide it from users.
   await prisma.notification.update({
     where: {
       id,
     },
+
     data: {
       isActive: false,
     },
   });
 
   return {
-    message: 'Notification deleted successfully',
+    message:
+      'Notification deleted successfully',
   };
 };
 
@@ -330,34 +506,34 @@ const deleteNotification = async (notificationId, user) => {
 // DELETE ALL NOTIFICATIONS
 // =====================================================
 
-const deleteAllNotifications = async (user) => {
-  const { userId, tenantId, identity } = user;
+const deleteAllNotifications = async (
+  user
+) => {
+  const {
+    tenantId,
+  } = user;
 
-  // Only delete notifications that are visible
-  // to the currently logged-in user.
-  const result = await prisma.notification.updateMany({
-    where: {
-      tenantId,
-      isActive: true,
+  const visibility =
+    await getNotificationVisibility(user);
 
-      OR: [
-        { audience: 'all' },
-        { audience: identity },
-        {
-          audience: 'individual',
-          userId,
-        },
-      ],
-    },
+  const result =
+    await prisma.notification.updateMany({
+      where: {
+        tenantId,
+        isActive: true,
 
-    // Soft delete
-    data: {
-      isActive: false,
-    },
-  });
+        OR: visibility,
+      },
+
+      data: {
+        isActive: false,
+      },
+    });
 
   return {
-    message: 'All notifications deleted successfully',
+    message:
+      'All notifications deleted successfully',
+
     deletedCount: result.count,
   };
 };
@@ -370,11 +546,14 @@ const createNotification = async ({
   tenantId,
   title,
   message,
-  type = 'general',
-  priority = 'normal',
-  audience = 'all',
+  type = "general",
+  priority = "normal",
+  audience = "all",
+  classId = null,
+  sectionId = null,
   userId = null,
   createdById = null,
+  expiresAt = null,
 }) => {
   return prisma.notification.create({
     data: {
@@ -384,8 +563,11 @@ const createNotification = async ({
       type,
       priority,
       audience,
+      classId,
+      sectionId,
       userId,
       createdById,
+      expiresAt,
     },
   });
 };
