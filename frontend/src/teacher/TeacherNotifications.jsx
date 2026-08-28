@@ -1,156 +1,56 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 
+import axiosClient from "../api/axios";
 import "./Notifications.css";
 
 /*
 ============================================================
-TEACHER NOTIFICATIONS
+ TEACHER NOTIFICATIONS
 ============================================================
 
-This version is frontend-safe.
+ Teacher can:
 
-It does NOT require:
-- TeacherTopbar.jsx
-- createNotification()
-- notification API
-- backend notification routes
+ 1. Receive notifications from Admin
+ 2. Receive automatic school notifications
+ 3. Send notifications to Admin / Parents / Students
+ 4. Mark notifications as read
+ 5. Mark notifications as important
+ 6. Delete notifications
+ 7. Search notifications
+ 8. Filter notifications
 
-You can connect the backend later.
+ IMPORTANT:
+
+ Received notifications are NOT hard-coded.
+
+ They are loaded from:
+
+ GET /api/v1/notifications
+
 ============================================================
 */
 
-/* ============================================================
-   SAMPLE RECEIVED NOTIFICATIONS
-============================================================ */
 
-const INITIAL_RECEIVED_NOTIFICATIONS = [
-  {
-    id: 1,
-    title: "New Student Added",
-    message:
-      "A new student, Aarav Sharma, has been added to Computer Science - Section A.",
-    type: "student",
-    sender: "Admin",
-    senderRole: "Administrator",
-    time: "10 minutes ago",
-    date: "Today",
-    read: false,
-    important: true,
-    system: true,
-  },
-  {
-    id: 2,
-    title: "New School Activity",
-    message:
-      "Annual Sports Day has been scheduled for 15 September 2026.",
-    type: "activity",
-    sender: "School Administration",
-    senderRole: "Management",
-    time: "1 hour ago",
-    date: "Today",
-    read: false,
-    important: true,
-    system: true,
-  },
-  {
-    id: 3,
-    title: "Section Assignment Updated",
-    message:
-      "You have been assigned as the teacher for Computer Science - Section B.",
-    type: "class",
-    sender: "Academic Department",
-    senderRole: "Admin",
-    time: "Yesterday",
-    date: "Yesterday",
-    read: true,
-    important: false,
-    system: true,
-  },
-  {
-    id: 4,
-    title: "Staff Meeting",
-    message:
-      "A staff meeting will be held tomorrow at 11:00 AM in the conference room.",
-    type: "meeting",
-    sender: "Principal",
-    senderRole: "Principal",
-    time: "Yesterday",
-    date: "Yesterday",
-    read: true,
-    important: false,
-    system: false,
-  },
-  {
-    id: 5,
-    title: "Exam Schedule Updated",
-    message:
-      "The internal examination schedule has been updated. Please check the examination module.",
-    type: "exam",
-    sender: "Examination Department",
-    senderRole: "Admin",
-    time: "2 days ago",
-    date: "2 days ago",
-    read: true,
-    important: false,
-    system: true,
-  },
-];
-
-/* ============================================================
-   SAMPLE SENT NOTIFICATIONS
-============================================================ */
-
-const INITIAL_SENT_NOTIFICATIONS = [
-  {
-    id: 101,
-    title: "Homework Reminder",
-    message:
-      "Please complete Chapter 4 exercises before Friday.",
-    type: "homework",
-    recipient: "Parents",
-    target: "Computer Science - Section A",
-    time: "Today, 9:30 AM",
-    status: "Delivered",
-    important: false,
-  },
-  {
-    id: 102,
-    title: "Parent Meeting",
-    message:
-      "Parent-teacher meeting will be conducted this Saturday.",
-    type: "meeting",
-    recipient: "Parents",
-    target: "Computer Science - Section A",
-    time: "Yesterday, 4:15 PM",
-    status: "Delivered",
-    important: true,
-  },
-  {
-    id: 103,
-    title: "Assignment Submission",
-    message:
-      "Students are requested to submit the DBMS assignment by Monday.",
-    type: "announcement",
-    recipient: "Students",
-    target: "Computer Science - Section B",
-    time: "2 days ago",
-    status: "Delivered",
-    important: false,
-  },
-];
-
-/* ============================================================
+/* ==========================================================
    ICON HELPER
-============================================================ */
+========================================================== */
 
 function getNotificationIcon(type) {
+
   switch (type) {
+
     case "student":
+    case "new_student":
       return "fa-solid fa-user-plus";
+
+    case "teacher":
+    case "new_teacher":
+      return "fa-solid fa-chalkboard-user";
 
     case "activity":
       return "fa-solid fa-calendar-check";
@@ -168,24 +68,37 @@ function getNotificationIcon(type) {
       return "fa-solid fa-file-lines";
 
     case "meeting":
+    case "parent_meeting":
       return "fa-solid fa-users";
 
     case "announcement":
       return "fa-solid fa-bullhorn";
 
+    case "section":
+      return "fa-solid fa-layer-group";
+
+    case "general":
     default:
       return "fa-solid fa-bell";
   }
 }
 
-/* ============================================================
-   TYPE LABEL
-============================================================ */
+
+/* ==========================================================
+   TYPE LABEL HELPER
+========================================================== */
 
 function getNotificationTypeLabel(type) {
+
   switch (type) {
+
     case "student":
+    case "new_student":
       return "Student Update";
+
+    case "teacher":
+    case "new_teacher":
+      return "Teacher Update";
 
     case "activity":
       return "Activity";
@@ -203,397 +116,1339 @@ function getNotificationTypeLabel(type) {
       return "Exam";
 
     case "meeting":
+    case "parent_meeting":
       return "Meeting";
+
+    case "section":
+      return "Section Update";
 
     case "announcement":
       return "Announcement";
 
+    case "general":
     default:
       return "General";
   }
 }
 
-/* ============================================================
+
+/* ==========================================================
+   AUDIENCE LABEL HELPER
+========================================================== */
+
+function getAudienceLabel(audience) {
+
+  switch (audience) {
+
+    case "admin":
+      return "Admin";
+
+    case "parent":
+      return "Parents";
+
+    case "student":
+      return "Students";
+
+    case "teacher":
+      return "Teachers";
+
+    default:
+      return "Unknown";
+  }
+}
+
+
+/* ==========================================================
+   TIME FORMATTER
+========================================================== */
+
+function formatNotificationTime(value) {
+
+  if (!value) {
+    return "Just now";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const now = new Date();
+
+  const difference =
+    Math.floor(
+      (now.getTime() - date.getTime()) / 1000
+    );
+
+  if (difference < 60) {
+    return "Just now";
+  }
+
+  if (difference < 3600) {
+
+    const minutes =
+      Math.floor(difference / 60);
+
+    return `${minutes} minute${
+      minutes === 1 ? "" : "s"
+    } ago`;
+  }
+
+  if (difference < 86400) {
+
+    const hours =
+      Math.floor(difference / 3600);
+
+    return `${hours} hour${
+      hours === 1 ? "" : "s"
+    } ago`;
+  }
+
+  if (difference < 172800) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }
+  );
+}
+
+
+/* ==========================================================
+   NORMALIZE BACKEND NOTIFICATION
+==========================================================
+
+ Backend notification structures can sometimes look like:
+
+ {
+   id,
+   title,
+   message,
+   type,
+   priority,
+   read,
+   createdAt,
+   sender,
+   senderRole,
+   system
+ }
+
+ or:
+
+ {
+   id,
+   title,
+   message,
+   type,
+   priority,
+   isRead,
+   created_at
+ }
+
+ This function converts everything into the structure
+ required by this frontend.
+
+========================================================== */
+
+function normalizeNotification(notification) {
+
+  if (!notification) {
+    return null;
+  }
+
+
+  const sender =
+    typeof notification.sender === "object"
+      ? (
+          notification.sender?.name ||
+          notification.sender?.fullName ||
+          notification.sender?.username ||
+          notification.sender?.email ||
+          "Admin"
+        )
+      : (
+          notification.sender ||
+          notification.senderName ||
+          "Admin"
+        );
+
+
+  const senderRole =
+    typeof notification.sender === "object"
+      ? (
+          notification.sender?.role ||
+          notification.senderRole ||
+          "Administrator"
+        )
+      : (
+          notification.senderRole ||
+          notification.sender_role ||
+          "Administrator"
+        );
+
+
+  const createdAt =
+    notification.createdAt ||
+    notification.created_at ||
+    notification.date ||
+    notification.timestamp;
+
+
+  const important =
+    notification.important === true ||
+    notification.priority === "high" ||
+    notification.priority === "HIGH" ||
+    notification.priority === "important";
+
+
+  const read =
+    notification.read === true ||
+    notification.isRead === true ||
+    notification.readAt !== null &&
+    notification.readAt !== undefined;
+
+
+  return {
+
+    ...notification,
+
+    id:
+      notification.id ||
+      notification._id ||
+      `${Date.now()}-${Math.random()}`,
+
+    title:
+      notification.title ||
+      "Notification",
+
+    message:
+      notification.message ||
+      notification.body ||
+      "",
+
+    type:
+      notification.type ||
+      "general",
+
+    sender,
+
+    senderRole,
+
+    time:
+      notification.time ||
+      formatNotificationTime(createdAt),
+
+    important,
+
+    read,
+
+    system:
+      notification.system === true ||
+      notification.isSystem === true ||
+      senderRole
+        ?.toLowerCase()
+        .includes("admin"),
+
+    audience:
+      notification.audience ||
+      notification.recipientType ||
+      notification.recipient_type ||
+      null,
+
+    createdAt,
+
+  };
+}
+
+
+/* ==========================================================
+   GET NOTIFICATION ARRAY FROM API RESPONSE
+========================================================== */
+
+function extractNotifications(responseData) {
+
+  if (Array.isArray(responseData)) {
+    return responseData;
+  }
+
+
+  if (
+    Array.isArray(
+      responseData?.data
+    )
+  ) {
+    return responseData.data;
+  }
+
+
+  if (
+    Array.isArray(
+      responseData?.data?.notifications
+    )
+  ) {
+    return responseData.data.notifications;
+  }
+
+
+  if (
+    Array.isArray(
+      responseData?.notifications
+    )
+  ) {
+    return responseData.notifications;
+  }
+
+
+  if (
+    Array.isArray(
+      responseData?.results
+    )
+  ) {
+    return responseData.results;
+  }
+
+
+  return [];
+}
+
+
+/* ==========================================================
    MAIN COMPONENT
-============================================================ */
+========================================================== */
 
 export default function TeacherNotifications() {
-  const [activeTab, setActiveTab] = useState("received");
 
-  const [receivedNotifications, setReceivedNotifications] =
-    useState(INITIAL_RECEIVED_NOTIFICATIONS);
 
-  const [sentNotifications, setSentNotifications] =
-    useState(INITIAL_SENT_NOTIFICATIONS);
+  /* ========================================================
+     ACTIVE TAB
+  ======================================================== */
 
-  const [search, setSearch] = useState("");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("received");
 
-  const [filter, setFilter] = useState("all");
 
-  const [showCompose, setShowCompose] = useState(false);
+  /* ========================================================
+     RECEIVED NOTIFICATIONS
+  ======================================================== */
 
-  const [selectedNotification, setSelectedNotification] =
-    useState(null);
+  const [
+    receivedNotifications,
+    setReceivedNotifications,
+  ] = useState([]);
 
-  const [sending, setSending] = useState(false);
 
-  const [form, setForm] = useState({
+  /* ========================================================
+     SENT NOTIFICATIONS
+  ======================================================== */
+
+  const [
+    sentNotifications,
+    setSentNotifications,
+  ] = useState([]);
+
+
+  /* ========================================================
+     LOADING
+  ======================================================== */
+
+  const [
+    loadingNotifications,
+    setLoadingNotifications,
+  ] = useState(true);
+
+
+  /* ========================================================
+     SEARCH
+  ======================================================== */
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+
+  /* ========================================================
+     FILTER
+  ======================================================== */
+
+  const [
+    filter,
+    setFilter,
+  ] = useState("all");
+
+
+  /* ========================================================
+     COMPOSE MODAL
+  ======================================================== */
+
+  const [
+    showCompose,
+    setShowCompose,
+  ] = useState(false);
+
+
+  /* ========================================================
+     SELECTED NOTIFICATION
+  ======================================================== */
+
+  const [
+    selectedNotification,
+    setSelectedNotification,
+  ] = useState(null);
+
+
+  /* ========================================================
+     SENDING STATE
+  ======================================================== */
+
+  const [
+    sending,
+    setSending,
+  ] = useState(false);
+
+
+  /* ========================================================
+     FORM
+  ======================================================== */
+
+  const [
+    form,
+    setForm,
+  ] = useState({
+
     title: "",
+
     message: "",
+
     type: "announcement",
-    recipient: "Parents",
+
+    audience: "admin",
+
     className: "",
+
     section: "",
+
     important: false,
+
   });
 
-  /* ============================================================
+
+  /* ========================================================
      RESET FORM
-  ============================================================ */
+  ======================================================== */
 
   const resetForm = useCallback(() => {
+
     setForm({
+
       title: "",
+
       message: "",
+
       type: "announcement",
-      recipient: "Parents",
+
+      audience: "admin",
+
       className: "",
+
       section: "",
+
       important: false,
+
     });
+
   }, []);
 
-  /* ============================================================
-     COUNTS
-  ============================================================ */
 
-  const unreadCount = useMemo(() => {
-    return receivedNotifications.filter(
-      (notification) => !notification.read
-    ).length;
-  }, [receivedNotifications]);
+  /* ========================================================
+     LOAD RECEIVED NOTIFICATIONS
+  ======================================================== */
 
-  const importantCount = useMemo(() => {
-    return receivedNotifications.filter(
-      (notification) => notification.important
-    ).length;
-  }, [receivedNotifications]);
+  const loadReceivedNotifications =
+    useCallback(
+      async () => {
 
-  const sentCount = sentNotifications.length;
+        try {
 
-  /* ============================================================
+          setLoadingNotifications(true);
+
+
+          console.log(
+            "================================"
+          );
+
+          console.log(
+            "LOADING TEACHER NOTIFICATIONS"
+          );
+
+          console.log(
+            "GET /notifications"
+          );
+
+          console.log(
+            "================================"
+          );
+
+
+          const response =
+            await axiosClient.get(
+              "/notifications"
+            );
+
+
+          console.log(
+            "NOTIFICATION API RESPONSE:",
+            response.data
+          );
+
+
+          const rawNotifications =
+            extractNotifications(
+              response.data
+            );
+
+
+          const normalizedNotifications =
+            rawNotifications
+              .map(normalizeNotification)
+              .filter(Boolean);
+
+
+          /*
+           Newest notifications first.
+          */
+
+          normalizedNotifications.sort(
+            (a, b) => {
+
+              const dateA =
+                new Date(
+                  a.createdAt || 0
+                ).getTime();
+
+              const dateB =
+                new Date(
+                  b.createdAt || 0
+                ).getTime();
+
+              return dateB - dateA;
+
+            }
+          );
+
+
+          setReceivedNotifications(
+            normalizedNotifications
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Failed to load notifications:",
+            error
+          );
+
+          console.error(
+            "Backend response:",
+            error.response?.data
+          );
+
+
+          /*
+           Do not destroy the existing
+           notifications if refresh fails.
+          */
+
+        } finally {
+
+          setLoadingNotifications(
+            false
+          );
+
+        }
+
+      },
+      []
+    );
+
+
+  /* ========================================================
+     LOAD NOTIFICATIONS WHEN PAGE OPENS
+  ======================================================== */
+
+  useEffect(() => {
+
+    let cancelled = false;
+
+
+    const load = async () => {
+
+      try {
+
+        setLoadingNotifications(true);
+
+
+        const response =
+          await axiosClient.get(
+            "/notifications"
+          );
+
+
+        if (cancelled) {
+          return;
+        }
+
+
+        const rawNotifications =
+          extractNotifications(
+            response.data
+          );
+
+
+        const normalizedNotifications =
+          rawNotifications
+            .map(normalizeNotification)
+            .filter(Boolean);
+
+
+        normalizedNotifications.sort(
+          (a, b) => {
+
+            const dateA =
+              new Date(
+                a.createdAt || 0
+              ).getTime();
+
+            const dateB =
+              new Date(
+                b.createdAt || 0
+              ).getTime();
+
+            return dateB - dateA;
+
+          }
+        );
+
+
+        setReceivedNotifications(
+          normalizedNotifications
+        );
+
+
+      } catch (error) {
+
+        if (!cancelled) {
+
+          console.error(
+            "Failed to load notifications:",
+            error
+          );
+
+        }
+
+      } finally {
+
+        if (!cancelled) {
+
+          setLoadingNotifications(
+            false
+          );
+
+        }
+
+      }
+
+    };
+
+
+    load();
+
+
+    /*
+     Refresh automatically every 15 seconds.
+
+     This means if Admin adds Nikki or Bhide,
+     the teacher page will automatically pick
+     up the notification without manually
+     refreshing the browser.
+    */
+
+    const interval =
+      setInterval(
+        load,
+        15000
+      );
+
+
+    /*
+     Reload when teacher returns to the tab.
+    */
+
+    const handleFocus = () => {
+      load();
+    };
+
+
+    window.addEventListener(
+      "focus",
+      handleFocus
+    );
+
+
+    return () => {
+
+      cancelled = true;
+
+      clearInterval(interval);
+
+      window.removeEventListener(
+        "focus",
+        handleFocus
+      );
+
+    };
+
+  }, []);
+
+
+  /* ========================================================
+     UNREAD COUNT
+  ======================================================== */
+
+  const unreadCount =
+    useMemo(() => {
+
+      return receivedNotifications.filter(
+        (notification) =>
+          !notification.read
+      ).length;
+
+    }, [
+      receivedNotifications,
+    ]);
+
+
+  /* ========================================================
+     IMPORTANT COUNT
+  ======================================================== */
+
+  const importantCount =
+    useMemo(() => {
+
+      return receivedNotifications.filter(
+        (notification) =>
+          notification.important
+      ).length;
+
+    }, [
+      receivedNotifications,
+    ]);
+
+
+  /* ========================================================
+     SENT COUNT
+  ======================================================== */
+
+  const sentCount =
+    sentNotifications.length;
+
+
+  /* ========================================================
      FILTER RECEIVED
-  ============================================================ */
+  ======================================================== */
 
-  const filteredReceived = useMemo(() => {
-    const value = search.trim().toLowerCase();
+  const filteredReceived =
+    useMemo(() => {
 
-    return receivedNotifications.filter((notification) => {
-      const searchableText = [
-        notification.title,
-        notification.message,
-        notification.sender,
-        notification.senderRole,
-        notification.type,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+      const value =
+        search
+          .trim()
+          .toLowerCase();
 
-      const matchesSearch =
-        !value || searchableText.includes(value);
 
-      let matchesFilter = true;
+      return receivedNotifications.filter(
+        (notification) => {
 
-      if (filter === "unread") {
-        matchesFilter = !notification.read;
-      }
+          const searchableText = [
 
-      if (filter === "important") {
-        matchesFilter = notification.important;
-      }
+            notification.title,
 
-      if (filter === "system") {
-        matchesFilter = notification.system;
-      }
+            notification.message,
 
-      if (filter === "messages") {
-        matchesFilter = !notification.system;
-      }
+            notification.sender,
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [
-    receivedNotifications,
-    search,
-    filter,
-  ]);
+            notification.senderRole,
 
-  /* ============================================================
+            notification.type,
+
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+
+          const matchesSearch =
+            !value ||
+            searchableText.includes(
+              value
+            );
+
+
+          let matchesFilter =
+            true;
+
+
+          if (
+            filter === "unread"
+          ) {
+
+            matchesFilter =
+              !notification.read;
+
+          }
+
+
+          if (
+            filter === "important"
+          ) {
+
+            matchesFilter =
+              notification.important;
+
+          }
+
+
+          if (
+            filter === "system"
+          ) {
+
+            matchesFilter =
+              notification.system;
+
+          }
+
+
+          if (
+            filter === "messages"
+          ) {
+
+            matchesFilter =
+              !notification.system;
+
+          }
+
+
+          return (
+            matchesSearch &&
+            matchesFilter
+          );
+
+        }
+      );
+
+    }, [
+      receivedNotifications,
+      search,
+      filter,
+    ]);
+
+
+  /* ========================================================
      FILTER SENT
-  ============================================================ */
+  ======================================================== */
 
-  const filteredSent = useMemo(() => {
-    const value = search.trim().toLowerCase();
+  const filteredSent =
+    useMemo(() => {
 
-    return sentNotifications.filter((notification) => {
-      const searchableText = [
-        notification.title,
-        notification.message,
-        notification.recipient,
-        notification.target,
-        notification.type,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+      const value =
+        search
+          .trim()
+          .toLowerCase();
 
-      const matchesSearch =
-        !value || searchableText.includes(value);
 
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "important" &&
-          notification.important);
+      return sentNotifications.filter(
+        (notification) => {
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [
-    sentNotifications,
-    search,
-    filter,
-  ]);
+          const searchableText = [
 
-  /* ============================================================
+            notification.title,
+
+            notification.message,
+
+            notification.recipient,
+
+            notification.target,
+
+            notification.type,
+
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+
+          const matchesSearch =
+            !value ||
+            searchableText.includes(
+              value
+            );
+
+
+          const matchesFilter =
+            filter === "all" ||
+            (
+              filter === "important" &&
+              notification.important
+            );
+
+
+          return (
+            matchesSearch &&
+            matchesFilter
+          );
+
+        }
+      );
+
+    }, [
+      sentNotifications,
+      search,
+      filter,
+    ]);
+
+
+  /* ========================================================
      MARK AS READ
-  ============================================================ */
+  ======================================================== */
 
-  const markAsRead = (id) => {
-    setReceivedNotifications((current) =>
-      current.map((notification) =>
-        notification.id === id
-          ? {
-              ...notification,
-              read: true,
-            }
-          : notification
-      )
-    );
-  };
+  const markAsRead = async (id) => {
 
-  /* ============================================================
-     MARK ALL AS READ
-  ============================================================ */
+    try {
 
-  const markAllAsRead = () => {
-    setReceivedNotifications((current) =>
-      current.map((notification) => ({
-        ...notification,
-        read: true,
-      }))
-    );
-  };
+      await axiosClient.put(
+        `/notifications/${id}/read`
+      );
 
-  /* ============================================================
-     TOGGLE IMPORTANT
-  ============================================================ */
 
-  const toggleImportant = (id) => {
-    setReceivedNotifications((current) =>
-      current.map((notification) =>
-        notification.id === id
-          ? {
-              ...notification,
-              important: !notification.important,
-            }
-          : notification
-      )
-    );
-  };
+    } catch (error) {
 
-  /* ============================================================
-     DELETE
-  ============================================================ */
+      console.error(
+        "Mark as read failed:",
+        error
+      );
 
-  const deleteNotification = (id) => {
-    setReceivedNotifications((current) =>
-      current.filter(
-        (notification) => notification.id !== id
-      )
-    );
-
-    if (selectedNotification?.id === id) {
-      setSelectedNotification(null);
     }
+
+
+    setReceivedNotifications(
+      (current) =>
+        current.map(
+          (notification) =>
+            notification.id === id
+              ? {
+                  ...notification,
+                  read: true,
+                }
+              : notification
+        )
+    );
+
   };
 
-  /* ============================================================
-     OPEN NOTIFICATION
-  ============================================================ */
 
-  const openNotification = (notification) => {
-    markAsRead(notification.id);
-    setSelectedNotification(notification);
-  };
+  /* ========================================================
+     MARK ALL AS READ
+  ======================================================== */
 
-  /* ============================================================
-     SEND NOTIFICATION
-  ============================================================ */
+  const markAllAsRead = async () => {
 
-  const handleSendNotification = async (event) => {
-    event.preventDefault();
-
-    if (
-      !form.title.trim() ||
-      !form.message.trim()
-    ) {
+    if (unreadCount === 0) {
       return;
     }
 
+
     try {
-      setSending(true);
 
-      /*
-       * IMPORTANT:
-       *
-       * We are NOT calling createNotification()
-       * here because that function/file does not exist yet.
-       *
-       * This currently saves the notification
-       * in frontend state so you can test the UI.
-       */
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 500)
+      await axiosClient.put(
+        "/notifications/read-all"
       );
 
-      const target = form.className
-        ? `${form.className}${
-            form.section
-              ? ` - Section ${form.section}`
-              : ""
-          }`
-        : form.recipient;
 
-      const newNotification = {
-        id: Date.now(),
-        title: form.title.trim(),
-        message: form.message.trim(),
-        type: form.type,
-        recipient: form.recipient,
-        target,
-        time: "Just now",
-        status: "Delivered",
-        important: form.important,
-      };
-
-      setSentNotifications((current) => [
-        newNotification,
-        ...current,
-      ]);
-
-      resetForm();
-
-      setShowCompose(false);
-
-      setActiveTab("sent");
     } catch (error) {
+
       console.error(
-        "Failed to send notification:",
+        "Mark all as read failed:",
         error
       );
-    } finally {
-      setSending(false);
+
     }
+
+
+    setReceivedNotifications(
+      (current) =>
+        current.map(
+          (notification) => ({
+            ...notification,
+            read: true,
+          })
+        )
+    );
+
   };
 
-  /* ============================================================
+
+  /* ========================================================
+     TOGGLE IMPORTANT
+  ======================================================== */
+
+  const toggleImportant = (id) => {
+
+    setReceivedNotifications(
+      (current) =>
+        current.map(
+          (notification) =>
+            notification.id === id
+              ? {
+                  ...notification,
+                  important:
+                    !notification.important,
+                }
+              : notification
+        )
+    );
+
+  };
+
+
+  /* ========================================================
+     DELETE NOTIFICATION
+  ======================================================== */
+
+  const deleteNotification =
+    async (id) => {
+
+      try {
+
+        await axiosClient.delete(
+          `/notifications/${id}`
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Delete notification failed:",
+          error
+        );
+
+      }
+
+
+      setReceivedNotifications(
+        (current) =>
+          current.filter(
+            (notification) =>
+              notification.id !== id
+          )
+      );
+
+
+      if (
+        selectedNotification?.id === id
+      ) {
+
+        setSelectedNotification(
+          null
+        );
+
+      }
+
+    };
+
+
+  /* ========================================================
+     OPEN NOTIFICATION
+  ======================================================== */
+
+  const openNotification =
+    (notification) => {
+
+      markAsRead(
+        notification.id
+      );
+
+
+      setSelectedNotification(
+        {
+          ...notification,
+          read: true,
+        }
+      );
+
+    };
+
+
+  /* ========================================================
+     SEND NOTIFICATION
+  ======================================================== */
+
+  const handleSendNotification =
+    async (event) => {
+
+      event.preventDefault();
+
+
+      if (!form.title.trim()) {
+
+        alert(
+          "Please enter notification title."
+        );
+
+        return;
+      }
+
+
+      if (!form.message.trim()) {
+
+        alert(
+          "Please enter notification message."
+        );
+
+        return;
+      }
+
+
+      if (!form.audience) {
+
+        alert(
+          "Please select who should receive the notification."
+        );
+
+        return;
+      }
+
+
+      const allowedAudiences = [
+        "admin",
+        "parent",
+        "student",
+      ];
+
+
+      if (
+        !allowedAudiences.includes(
+          form.audience
+        )
+      ) {
+
+        alert(
+          "Invalid notification audience."
+        );
+
+        return;
+      }
+
+
+      try {
+
+        setSending(true);
+
+
+        const payload = {
+
+          title:
+            form.title.trim(),
+
+          message:
+            form.message.trim(),
+
+          type:
+            form.type,
+
+          priority:
+            form.important
+              ? "high"
+              : "normal",
+
+          audience:
+            form.audience,
+
+          classId:
+            null,
+
+          sectionId:
+            null,
+
+          userId:
+            null,
+
+          expiresAt:
+            null,
+
+        };
+
+
+        console.log(
+          "SENDING NOTIFICATION:",
+          payload
+        );
+
+
+        const response =
+          await axiosClient.post(
+            "/notifications",
+            payload
+          );
+
+
+        console.log(
+          "NOTIFICATION RESPONSE:",
+          response.data
+        );
+
+
+        if (
+          !response.data ||
+          response.data.success !== true
+        ) {
+
+          throw new Error(
+            response.data?.message ||
+            "Failed to send notification"
+          );
+
+        }
+
+
+        const newNotification = {
+
+          id:
+            response.data.data?.id ||
+            Date.now(),
+
+          title:
+            form.title.trim(),
+
+          message:
+            form.message.trim(),
+
+          type:
+            form.type,
+
+          recipient:
+            getAudienceLabel(
+              form.audience
+            ),
+
+          target:
+            form.className
+              ? `${form.className}${
+                  form.section
+                    ? ` - Section ${form.section}`
+                    : ""
+                }`
+              : getAudienceLabel(
+                  form.audience
+                ),
+
+          time:
+            "Just now",
+
+          status:
+            "Delivered",
+
+          important:
+            form.important,
+
+        };
+
+
+        setSentNotifications(
+          (current) => [
+            newNotification,
+            ...current,
+          ]
+        );
+
+
+        resetForm();
+
+        setShowCompose(false);
+
+        setActiveTab("sent");
+
+
+        alert(
+          "Notification sent successfully!"
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "FAILED TO SEND NOTIFICATION:",
+          error
+        );
+
+
+        console.error(
+          "RESPONSE:",
+          error.response?.data
+        );
+
+
+        alert(
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to send notification. Please try again."
+        );
+
+
+      } finally {
+
+        setSending(false);
+
+      }
+
+    };
+
+
+  /* ========================================================
      OPEN COMPOSE
-  ============================================================ */
+  ======================================================== */
 
   const openCompose = () => {
+
     resetForm();
+
     setShowCompose(true);
+
   };
 
-  /* ============================================================
-     CLOSE MODALS
-  ============================================================ */
 
-  const closeCompose = () => {
-    if (!sending) {
-      setShowCompose(false);
-    }
-  };
-
-  const closeNotification = () => {
-    setSelectedNotification(null);
-  };
-
-  /* ============================================================
+  /* ========================================================
      RENDER
-  ============================================================ */
+  ======================================================== */
 
   return (
+
     <div className="teacher-panel">
 
-      {/* ======================================================
-          TOPBAR
-      ====================================================== */}
-
-      <header className="teacher-notification-topbar">
-
-        <div className="teacher-topbar-title">
-          <h2>Teacher Portal</h2>
-          <span>Notifications</span>
-        </div>
-
-        <div className="teacher-topbar-search">
-
-          <i className="fa-solid fa-magnifying-glass"></i>
-
-          <input
-            type="text"
-            value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
-            placeholder="Search notifications..."
-          />
-
-        </div>
-
-        <div className="teacher-topbar-actions">
-
-          <button
-            type="button"
-            title="Notifications"
-          >
-            <i className="fa-solid fa-bell"></i>
-
-            {unreadCount > 0 && (
-              <span className="teacher-notification-count">
-                {unreadCount}
-              </span>
-            )}
-
-          </button>
-
-          <div className="teacher-avatar">
-            T
-          </div>
-
-        </div>
-
-      </header>
-
-      {/* ======================================================
-          MAIN
-      ====================================================== */}
 
       <main className="teacher-main-content notifications-page">
 
-        {/* HEADER */}
+
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
         <section className="notifications-heading">
 
@@ -608,37 +1463,46 @@ export default function TeacherNotifications() {
             </h1>
 
             <p>
-              Send announcements, receive school
-              updates and stay connected with
-              students, parents and administration.
+              Send announcements and stay
+              connected with administrators,
+              parents and students.
             </p>
 
           </div>
+
 
           <button
             type="button"
             className="compose-notification-button"
             onClick={openCompose}
           >
+
             <i className="fa-solid fa-pen-to-square"></i>
+
             New Notification
+
           </button>
 
         </section>
 
-        {/* ====================================================
+
+        {/* ==================================================
             STATISTICS
-        ==================================================== */}
+        ================================================== */}
 
         <section className="notification-stat-grid">
+
 
           <div className="notification-stat-card">
 
             <div className="notification-stat-icon blue">
+
               <i className="fa-solid fa-bell"></i>
+
             </div>
 
             <div>
+
               <strong>
                 {receivedNotifications.length}
               </strong>
@@ -646,17 +1510,22 @@ export default function TeacherNotifications() {
               <span>
                 Total Notifications
               </span>
+
             </div>
 
           </div>
 
+
           <div className="notification-stat-card">
 
             <div className="notification-stat-icon red">
+
               <i className="fa-solid fa-envelope"></i>
+
             </div>
 
             <div>
+
               <strong>
                 {unreadCount}
               </strong>
@@ -664,17 +1533,22 @@ export default function TeacherNotifications() {
               <span>
                 Unread
               </span>
+
             </div>
 
           </div>
 
+
           <div className="notification-stat-card">
 
             <div className="notification-stat-icon yellow">
+
               <i className="fa-solid fa-star"></i>
+
             </div>
 
             <div>
+
               <strong>
                 {importantCount}
               </strong>
@@ -682,17 +1556,22 @@ export default function TeacherNotifications() {
               <span>
                 Important
               </span>
+
             </div>
 
           </div>
 
+
           <div className="notification-stat-card">
 
             <div className="notification-stat-icon green">
+
               <i className="fa-solid fa-paper-plane"></i>
+
             </div>
 
             <div>
+
               <strong>
                 {sentCount}
               </strong>
@@ -700,21 +1579,28 @@ export default function TeacherNotifications() {
               <span>
                 Sent By You
               </span>
+
             </div>
 
           </div>
 
+
         </section>
 
-        {/* ====================================================
+
+        {/* ==================================================
             WORKSPACE
-        ==================================================== */}
+        ================================================== */}
 
         <section className="notification-workspace">
 
-          {/* TABS */}
+
+          {/* =================================================
+              TABS
+          ================================================= */}
 
           <div className="notification-tabs">
+
 
             <button
               type="button"
@@ -724,7 +1610,9 @@ export default function TeacherNotifications() {
                   : "notification-tab"
               }
               onClick={() =>
-                setActiveTab("received")
+                setActiveTab(
+                  "received"
+                )
               }
             >
 
@@ -733,12 +1621,17 @@ export default function TeacherNotifications() {
               Received
 
               {unreadCount > 0 && (
+
                 <span className="notification-tab-count">
+
                   {unreadCount}
+
                 </span>
+
               )}
 
             </button>
+
 
             <button
               type="button"
@@ -748,7 +1641,9 @@ export default function TeacherNotifications() {
                   : "notification-tab"
               }
               onClick={() =>
-                setActiveTab("sent")
+                setActiveTab(
+                  "sent"
+                )
               }
             >
 
@@ -758,11 +1653,16 @@ export default function TeacherNotifications() {
 
             </button>
 
+
           </div>
 
-          {/* TOOLBAR */}
+
+          {/* =================================================
+              TOOLBAR
+          ================================================= */}
 
           <div className="notification-toolbar">
+
 
             <div className="notification-toolbar-search">
 
@@ -772,7 +1672,9 @@ export default function TeacherNotifications() {
                 type="text"
                 value={search}
                 onChange={(event) =>
-                  setSearch(event.target.value)
+                  setSearch(
+                    event.target.value
+                  )
                 }
                 placeholder={
                   activeTab === "received"
@@ -783,10 +1685,13 @@ export default function TeacherNotifications() {
 
             </div>
 
+
             <select
               value={filter}
               onChange={(event) =>
-                setFilter(event.target.value)
+                setFilter(
+                  event.target.value
+                )
               }
             >
 
@@ -794,8 +1699,11 @@ export default function TeacherNotifications() {
                 All Notifications
               </option>
 
+
               {activeTab === "received" && (
+
                 <>
+
                   <option value="unread">
                     Unread
                   </option>
@@ -811,44 +1719,82 @@ export default function TeacherNotifications() {
                   <option value="messages">
                     Messages
                   </option>
+
                 </>
+
               )}
 
+
               {activeTab === "sent" && (
+
                 <option value="important">
                   Important
                 </option>
+
               )}
 
             </select>
 
+
             {activeTab === "received" && (
+
               <button
                 type="button"
                 className="mark-all-read-button"
                 onClick={markAllAsRead}
-                disabled={unreadCount === 0}
+                disabled={
+                  unreadCount === 0
+                }
               >
+
                 <i className="fa-solid fa-check-double"></i>
+
                 Mark All Read
+
               </button>
+
             )}
 
           </div>
 
-          {/* ====================================================
-              RECEIVED NOTIFICATIONS
-          ==================================================== */}
+
+          {/* =================================================
+              RECEIVED
+          ================================================= */}
 
           {activeTab === "received" && (
+
             <div className="notification-list">
 
-              {filteredReceived.length === 0 ? (
+
+              {loadingNotifications ? (
 
                 <div className="notification-empty">
 
                   <div className="notification-empty-icon">
+
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+
+                  </div>
+
+                  <h3>
+                    Loading Notifications
+                  </h3>
+
+                  <p>
+                    Please wait while we load your notifications.
+                  </p>
+
+                </div>
+
+              ) : filteredReceived.length === 0 ? (
+
+                <div className="notification-empty">
+
+                  <div className="notification-empty-icon">
+
                     <i className="fa-solid fa-bell-slash"></i>
+
                   </div>
 
                   <h3>
@@ -856,9 +1802,8 @@ export default function TeacherNotifications() {
                   </h3>
 
                   <p>
-                    There are no notifications
-                    matching your current search
-                    or filter.
+                    You currently have no
+                    received notifications.
                   </p>
 
                 </div>
@@ -874,8 +1819,11 @@ export default function TeacherNotifications() {
                           ? "notification-card"
                           : "notification-card unread"
                       }
-                      key={notification.id}
+                      key={
+                        notification.id
+                      }
                     >
+
 
                       <div
                         className={
@@ -891,23 +1839,34 @@ export default function TeacherNotifications() {
 
                       </div>
 
+
                       <div className="notification-card-content">
+
 
                         <div className="notification-card-top">
 
+
                           <div>
+
 
                             <div className="notification-card-title-row">
 
                               <h3>
-                                {notification.title}
+                                {
+                                  notification.title
+                                }
                               </h3>
 
+
                               {!notification.read && (
+
                                 <span className="unread-dot"></span>
+
                               )}
 
+
                               {notification.important && (
+
                                 <span className="important-label">
 
                                   <i className="fa-solid fa-star"></i>
@@ -915,31 +1874,53 @@ export default function TeacherNotifications() {
                                   Important
 
                                 </span>
+
                               )}
 
                             </div>
 
+
                             <div className="notification-meta">
 
+
                               <span>
+
                                 <i className="fa-solid fa-user"></i>
-                                {notification.sender}
+
+                                {
+                                  notification.sender
+                                }
+
                               </span>
 
-                              <span>
-                                {notification.senderRole}
-                              </span>
 
                               <span>
+
+                                {
+                                  notification.senderRole
+                                }
+
+                              </span>
+
+
+                              <span>
+
                                 <i className="fa-regular fa-clock"></i>
-                                {notification.time}
+
+                                {
+                                  notification.time
+                                }
+
                               </span>
+
 
                             </div>
 
                           </div>
 
+
                           <div className="notification-card-menu">
+
 
                             <button
                               type="button"
@@ -961,6 +1942,7 @@ export default function TeacherNotifications() {
 
                             </button>
 
+
                             <button
                               type="button"
                               title="Delete"
@@ -975,27 +1957,42 @@ export default function TeacherNotifications() {
 
                             </button>
 
+
                           </div>
+
 
                         </div>
 
+
                         <p className="notification-message-preview">
-                          {notification.message}
+
+                          {
+                            notification.message
+                          }
+
                         </p>
 
+
                         <div className="notification-card-footer">
+
 
                           <span
                             className={
                               `notification-type-badge ${notification.type}`
                             }
                           >
-                            {getNotificationTypeLabel(
-                              notification.type
-                            )}
+
+                            {
+                              getNotificationTypeLabel(
+                                notification.type
+                              )
+                            }
+
                           </span>
 
+
                           {notification.system && (
+
                             <span className="system-badge">
 
                               <i className="fa-solid fa-gear"></i>
@@ -1003,7 +2000,9 @@ export default function TeacherNotifications() {
                               System Update
 
                             </span>
+
                           )}
+
 
                           <button
                             type="button"
@@ -1021,9 +2020,12 @@ export default function TeacherNotifications() {
 
                           </button>
 
+
                         </div>
 
+
                       </div>
+
 
                     </article>
 
@@ -1033,21 +2035,27 @@ export default function TeacherNotifications() {
               )}
 
             </div>
+
           )}
 
-          {/* ====================================================
-              SENT NOTIFICATIONS
-          ==================================================== */}
+
+          {/* =================================================
+              SENT
+          ================================================= */}
 
           {activeTab === "sent" && (
+
             <div className="notification-list">
+
 
               {filteredSent.length === 0 ? (
 
                 <div className="notification-empty">
 
                   <div className="notification-empty-icon">
+
                     <i className="fa-solid fa-paper-plane"></i>
+
                   </div>
 
                   <h3>
@@ -1058,6 +2066,7 @@ export default function TeacherNotifications() {
                     You haven't sent any
                     notifications yet.
                   </p>
+
 
                   <button
                     type="button"
@@ -1080,8 +2089,11 @@ export default function TeacherNotifications() {
 
                     <article
                       className="notification-card sent-card"
-                      key={notification.id}
+                      key={
+                        notification.id
+                      }
                     >
+
 
                       <div
                         className={
@@ -1097,19 +2109,27 @@ export default function TeacherNotifications() {
 
                       </div>
 
+
                       <div className="notification-card-content">
+
 
                         <div className="notification-card-top">
 
+
                           <div>
+
 
                             <div className="notification-card-title-row">
 
                               <h3>
-                                {notification.title}
+                                {
+                                  notification.title
+                                }
                               </h3>
 
+
                               {notification.important && (
+
                                 <span className="important-label">
 
                                   <i className="fa-solid fa-star"></i>
@@ -1117,66 +2137,99 @@ export default function TeacherNotifications() {
                                   Important
 
                                 </span>
+
                               )}
 
                             </div>
 
+
                             <div className="notification-meta">
+
 
                               <span>
 
                                 <i className="fa-solid fa-paper-plane"></i>
 
                                 To:{" "}
-                                {notification.recipient}
+
+                                {
+                                  notification.recipient
+                                }
 
                               </span>
+
 
                               <span>
-                                {notification.target}
+
+                                {
+                                  notification.target
+                                }
+
                               </span>
+
 
                               <span>
 
                                 <i className="fa-regular fa-clock"></i>
 
-                                {notification.time}
+                                {
+                                  notification.time
+                                }
 
                               </span>
+
 
                             </div>
 
                           </div>
 
+
                           <span className="delivered-badge">
 
                             <i className="fa-solid fa-check-double"></i>
 
-                            {notification.status}
+                            {
+                              notification.status
+                            }
 
                           </span>
 
+
                         </div>
 
+
                         <p className="notification-message-preview">
-                          {notification.message}
+
+                          {
+                            notification.message
+                          }
+
                         </p>
 
+
                         <div className="notification-card-footer">
+
 
                           <span
                             className={
                               `notification-type-badge ${notification.type}`
                             }
                           >
-                            {getNotificationTypeLabel(
-                              notification.type
-                            )}
+
+                            {
+                              getNotificationTypeLabel(
+                                notification.type
+                              )
+                            }
+
                           </span>
+
 
                         </div>
 
+
                       </div>
+
 
                     </article>
 
@@ -1186,22 +2239,28 @@ export default function TeacherNotifications() {
               )}
 
             </div>
+
           )}
 
         </section>
 
       </main>
 
-      {/* ======================================================
+
+      {/* ====================================================
           COMPOSE MODAL
-      ====================================================== */}
+      ==================================================== */}
 
       {showCompose && (
 
         <div
           className="notification-modal-overlay"
-          onMouseDown={closeCompose}
+          onMouseDown={() =>
+            !sending &&
+            setShowCompose(false)
+          }
         >
+
 
           <div
             className="notification-compose-modal"
@@ -1210,7 +2269,9 @@ export default function TeacherNotifications() {
             }
           >
 
+
             <div className="notification-modal-header">
+
 
               <div>
 
@@ -1223,47 +2284,63 @@ export default function TeacherNotifications() {
                 </h2>
 
                 <p>
-                  Communicate important
-                  information to parents,
-                  students or administration.
+                  Send a message to Admin,
+                  Parents or Students.
                 </p>
 
               </div>
 
+
               <button
                 type="button"
-                onClick={closeCompose}
-                disabled={sending}
+                onClick={() =>
+                  !sending &&
+                  setShowCompose(false)
+                }
               >
 
                 <i className="fa-solid fa-xmark"></i>
 
               </button>
 
+
             </div>
+
 
             <form
               className="notification-compose-body"
-              onSubmit={handleSendNotification}
+              onSubmit={
+                handleSendNotification
+              }
             >
 
-              {/* TITLE */}
 
               <div className="notification-form-field">
 
                 <label>
+
                   Notification Title
-                  <span>*</span>
+
+                  <span>
+                    *
+                  </span>
+
                 </label>
+
 
                 <input
                   type="text"
-                  value={form.title}
+                  value={
+                    form.title
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      title: event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        title:
+                          event.target.value,
+                      })
+                    )
                   }
                   placeholder="Example: Homework Reminder"
                   maxLength={100}
@@ -1272,9 +2349,9 @@ export default function TeacherNotifications() {
 
               </div>
 
-              {/* TYPE AND RECIPIENT */}
 
               <div className="notification-form-row">
+
 
                 <div className="notification-form-field">
 
@@ -1282,13 +2359,19 @@ export default function TeacherNotifications() {
                     Notification Type
                   </label>
 
+
                   <select
-                    value={form.type}
+                    value={
+                      form.type
+                    }
                     onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        type: event.target.value,
-                      }))
+                      setForm(
+                        (current) => ({
+                          ...current,
+                          type:
+                            event.target.value,
+                        })
+                      )
                     }
                   >
 
@@ -1328,40 +2411,46 @@ export default function TeacherNotifications() {
 
                 </div>
 
+
                 <div className="notification-form-field">
 
                   <label>
+
                     Send To
+
+                    <span>
+                      *
+                    </span>
+
                   </label>
 
+
                   <select
-                    value={form.recipient}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        recipient: event.target.value,
-                      }))
+                    value={
+                      form.audience
                     }
+                    onChange={(event) =>
+                      setForm(
+                        (current) => ({
+                          ...current,
+                          audience:
+                            event.target.value,
+                        })
+                      )
+                    }
+                    required
                   >
 
-                    <option value="Parents">
-                      Parents
-                    </option>
-
-                    <option value="Students">
-                      Students
-                    </option>
-
-                    <option value="Admin">
+                    <option value="admin">
                       Admin
                     </option>
 
-                    <option value="Management">
-                      Management
+                    <option value="parent">
+                      Parents
                     </option>
 
-                    <option value="Principal">
-                      Principal
+                    <option value="student">
+                      Students
                     </option>
 
                   </select>
@@ -1370,77 +2459,104 @@ export default function TeacherNotifications() {
 
               </div>
 
-              {/* CLASS AND SECTION */}
 
               <div className="notification-form-row">
+
 
                 <div className="notification-form-field">
 
                   <label>
+
                     Class
+
                     <small>
                       Optional
                     </small>
+
                   </label>
+
 
                   <input
                     type="text"
-                    value={form.className}
+                    value={
+                      form.className
+                    }
                     onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        className:
-                          event.target.value,
-                      }))
+                      setForm(
+                        (current) => ({
+                          ...current,
+                          className:
+                            event.target.value,
+                        })
+                      )
                     }
                     placeholder="Example: Computer Science"
                   />
 
                 </div>
 
+
                 <div className="notification-form-field">
 
                   <label>
+
                     Section
+
                     <small>
                       Optional
                     </small>
+
                   </label>
+
 
                   <input
                     type="text"
-                    value={form.section}
+                    value={
+                      form.section
+                    }
                     onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        section:
-                          event.target.value,
-                      }))
+                      setForm(
+                        (current) => ({
+                          ...current,
+                          section:
+                            event.target.value,
+                        })
+                      )
                     }
                     placeholder="Example: A"
                   />
 
                 </div>
 
+
               </div>
 
-              {/* MESSAGE */}
 
               <div className="notification-form-field">
 
                 <label>
+
                   Message
-                  <span>*</span>
+
+                  <span>
+                    *
+                  </span>
+
                 </label>
 
+
                 <textarea
-                  value={form.message}
+                  value={
+                    form.message
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      message:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        message:
+                          event.target.value,
+                      })
+                    )
                   }
                   placeholder="Write your notification message here..."
                   rows={6}
@@ -1448,31 +2564,46 @@ export default function TeacherNotifications() {
                   required
                 />
 
+
                 <div className="notification-character-count">
-                  {form.message.length} / 1000
+
+                  {
+                    form.message.length
+                  }
+
+                  {" "} / 1000
+
                 </div>
 
               </div>
 
-              {/* IMPORTANT */}
 
               <label className="important-checkbox">
 
+
                 <input
                   type="checkbox"
-                  checked={form.important}
+                  checked={
+                    form.important
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      important:
-                        event.target.checked,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        important:
+                          event.target.checked,
+                      })
+                    )
                   }
                 />
 
+
                 <span className="custom-checkbox">
+
                   <i className="fa-solid fa-check"></i>
+
                 </span>
+
 
                 <div>
 
@@ -1488,13 +2619,15 @@ export default function TeacherNotifications() {
 
                 </div>
 
+
               </label>
 
-              {/* INFO */}
 
               <div className="notification-compose-info">
 
+
                 <i className="fa-solid fa-circle-info"></i>
+
 
                 <div>
 
@@ -1502,27 +2635,41 @@ export default function TeacherNotifications() {
                     Who will receive this?
                   </strong>
 
+
                   <p>
 
                     This notification will
                     be sent to{" "}
 
                     <b>
-                      {form.recipient}
+                      {
+                        getAudienceLabel(
+                          form.audience
+                        )
+                      }
                     </b>
 
+
                     {form.className && (
+
                       <>
+
                         {" "}for{" "}
 
                         <b>
-                          {form.className}
+
+                          {
+                            form.className
+                          }
 
                           {form.section
                             ? ` - Section ${form.section}`
                             : ""}
+
                         </b>
+
                       </>
+
                     )}
 
                     .
@@ -1533,18 +2680,25 @@ export default function TeacherNotifications() {
 
               </div>
 
-              {/* FOOTER */}
 
               <div className="notification-modal-footer">
+
 
                 <button
                   type="button"
                   className="notification-cancel-button"
-                  onClick={closeCompose}
-                  disabled={sending}
+                  onClick={() =>
+                    setShowCompose(false)
+                  }
+                  disabled={
+                    sending
+                  }
                 >
+
                   Cancel
+
                 </button>
+
 
                 <button
                   type="submit"
@@ -1552,25 +2706,38 @@ export default function TeacherNotifications() {
                   disabled={
                     sending ||
                     !form.title.trim() ||
-                    !form.message.trim()
+                    !form.message.trim() ||
+                    !form.audience
                   }
                 >
 
                   {sending ? (
+
                     <>
+
                       <i className="fa-solid fa-spinner fa-spin"></i>
+
                       Sending...
+
                     </>
+
                   ) : (
+
                     <>
+
                       <i className="fa-solid fa-paper-plane"></i>
+
                       Send Notification
+
                     </>
+
                   )}
 
                 </button>
 
+
               </div>
+
 
             </form>
 
@@ -1580,16 +2747,22 @@ export default function TeacherNotifications() {
 
       )}
 
-      {/* ======================================================
+
+      {/* ====================================================
           VIEW NOTIFICATION MODAL
-      ====================================================== */}
+      ==================================================== */}
 
       {selectedNotification && (
 
         <div
           className="notification-modal-overlay"
-          onMouseDown={closeNotification}
+          onMouseDown={() =>
+            setSelectedNotification(
+              null
+            )
+          }
         >
+
 
           <div
             className="notification-view-modal"
@@ -1598,7 +2771,9 @@ export default function TeacherNotifications() {
             }
           >
 
+
             <div className="notification-view-header">
+
 
               <div
                 className={
@@ -1614,34 +2789,53 @@ export default function TeacherNotifications() {
 
               </div>
 
+
               <div>
 
                 <span>
-                  {getNotificationTypeLabel(
-                    selectedNotification.type
-                  )}
+
+                  {
+                    getNotificationTypeLabel(
+                      selectedNotification.type
+                    )
+                  }
+
                 </span>
 
+
                 <h2>
-                  {selectedNotification.title}
+
+                  {
+                    selectedNotification.title
+                  }
+
                 </h2>
 
               </div>
 
+
               <button
                 type="button"
-                onClick={closeNotification}
+                onClick={() =>
+                  setSelectedNotification(
+                    null
+                  )
+                }
               >
 
                 <i className="fa-solid fa-xmark"></i>
 
               </button>
 
+
             </div>
+
 
             <div className="notification-view-body">
 
+
               <div className="notification-view-meta">
+
 
                 <div>
 
@@ -1650,10 +2844,15 @@ export default function TeacherNotifications() {
                   </span>
 
                   <strong>
-                    {selectedNotification.sender}
+
+                    {
+                      selectedNotification.sender
+                    }
+
                   </strong>
 
                 </div>
+
 
                 <div>
 
@@ -1662,10 +2861,15 @@ export default function TeacherNotifications() {
                   </span>
 
                   <strong>
-                    {selectedNotification.senderRole}
+
+                    {
+                      selectedNotification.senderRole
+                    }
+
                   </strong>
 
                 </div>
+
 
                 <div>
 
@@ -1674,12 +2878,18 @@ export default function TeacherNotifications() {
                   </span>
 
                   <strong>
-                    {selectedNotification.time}
+
+                    {
+                      selectedNotification.time
+                    }
+
                   </strong>
 
                 </div>
 
+
               </div>
+
 
               {selectedNotification.important && (
 
@@ -1696,6 +2906,7 @@ export default function TeacherNotifications() {
 
               )}
 
+
               <div className="notification-full-message">
 
                 <h4>
@@ -1703,24 +2914,39 @@ export default function TeacherNotifications() {
                 </h4>
 
                 <p>
-                  {selectedNotification.message}
+
+                  {
+                    selectedNotification.message
+                  }
+
                 </p>
 
               </div>
 
+
             </div>
 
+
             <div className="notification-view-footer">
+
 
               <button
                 type="button"
                 className="notification-cancel-button"
-                onClick={closeNotification}
+                onClick={() =>
+                  setSelectedNotification(
+                    null
+                  )
+                }
               >
+
                 Close
+
               </button>
 
+
             </div>
+
 
           </div>
 
@@ -1729,5 +2955,6 @@ export default function TeacherNotifications() {
       )}
 
     </div>
+
   );
 }

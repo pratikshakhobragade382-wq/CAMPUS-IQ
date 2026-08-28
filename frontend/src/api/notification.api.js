@@ -1,21 +1,75 @@
 import axiosClient from "./axios";
 
-// Get the latest notifications
+// =====================================================
+// GET LATEST NOTIFICATIONS
+// =====================================================
+
 export const getNotifications = async () => {
   const response = await axiosClient.get("/notifications");
-
   return response.data;
 };
 
-// Get the number of unread notifications
+// =====================================================
+// GET ALL NOTIFICATIONS
+// =====================================================
+
+export const getAllNotifications = async () => {
+  const response = await axiosClient.get("/notifications/all");
+  return response.data;
+};
+
+// =====================================================
+// GET UNREAD COUNT
+// =====================================================
+
 export const getUnreadNotificationCount = async () => {
-  const response = await axiosClient.get("/notifications/unread-count");
+  const response = await axiosClient.get(
+    "/notifications/unread-count"
+  );
 
   return response.data;
 };
 
-// Mark one notification as read
-export const markNotificationAsRead = async (notificationId) => {
+// =====================================================
+// CREATE NOTIFICATION
+// =====================================================
+
+export const createNotification = async ({
+  title,
+  message,
+  type = "general",
+  priority = "normal",
+  audience,
+  userId = null,
+  classId = null,
+  sectionId = null,
+  expiresAt = null,
+}) => {
+  const response = await axiosClient.post(
+    "/notifications",
+    {
+      title,
+      message,
+      type,
+      priority,
+      audience,
+      userId,
+      classId,
+      sectionId,
+      expiresAt,
+    }
+  );
+
+  return response.data;
+};
+
+// =====================================================
+// MARK ONE AS READ
+// =====================================================
+
+export const markNotificationAsRead = async (
+  notificationId
+) => {
   const response = await axiosClient.put(
     `/notifications/${notificationId}/read`
   );
@@ -23,22 +77,25 @@ export const markNotificationAsRead = async (notificationId) => {
   return response.data;
 };
 
-// Mark ALL notifications as read
+// =====================================================
+// MARK ALL AS READ
+// =====================================================
+
 export const markAllNotificationsAsRead = async () => {
-  const response = await axiosClient.put("/notifications/read-all");
+  const response = await axiosClient.put(
+    "/notifications/read-all"
+  );
 
   return response.data;
 };
 
-// Get all notifications from the past 15 days
-export const getAllNotifications = async () => {
-  const response = await axiosClient.get("/notifications/all");
+// =====================================================
+// DELETE ONE
+// =====================================================
 
-  return response.data;
-};
-
-// Delete one notification
-export const deleteNotification = async (notificationId) => {
+export const deleteNotification = async (
+  notificationId
+) => {
   const response = await axiosClient.delete(
     `/notifications/${notificationId}`
   );
@@ -46,9 +103,14 @@ export const deleteNotification = async (notificationId) => {
   return response.data;
 };
 
-// Delete ALL notifications
+// =====================================================
+// DELETE ALL
+// =====================================================
+
 export const deleteAllNotifications = async () => {
-  const response = await axiosClient.delete("/notifications");
+  const response = await axiosClient.delete(
+    "/notifications"
+  );
 
   return response.data;
 };
