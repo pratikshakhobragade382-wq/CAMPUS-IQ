@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { SidebarProvider } from "./context/SidebarContext";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import Chatbot from "./components/chatbot/chatbot";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 // =====================================================
@@ -98,67 +99,29 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <SidebarProvider>
-
           <Routes>
-
             {/* =====================================================
                 PUBLIC ROUTES
             ===================================================== */}
 
-            <Route
-              path="/"
-              element={<IndexPage />}
-            />
+            <Route path="/" element={<IndexPage />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/features" element={<Features />} />
 
-            <Route
-              path="/about"
-              element={<About />}
-            />
+            {/* ADMIN LOGIN */}
+            <Route path="/login" element={<Login />} />
 
-            <Route
-              path="/features"
-              element={<Features />}
-            />
+            {/* PORTAL LOGIN */}
+            <Route path="/portal-login" element={<PortalLogin />} />
 
-            {/* =====================================================
-                ADMIN LOGIN
-            ===================================================== */}
+            {/* TEACHER LOGIN */}
+            <Route path="/teacher-login" element={<TeacherLogin />} />
 
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-
-            {/* =====================================================
-                PORTAL LOGIN
-            ===================================================== */}
-
-            <Route
-              path="/portal-login"
-              element={<PortalLogin />}
-            />
-
-            {/* =====================================================
-                TEACHER LOGIN
-            ===================================================== */}
-
-            <Route
-              path="/teacher-login"
-              element={<TeacherLogin />}
-            />
-
-            {/* =====================================================
-                REGISTER
-            ===================================================== */}
-
-            <Route
-              path="/register"
-              element={<Register />}
-            />
+            {/* REGISTER */}
+            <Route path="/register" element={<Register />} />
 
             {/* =====================================================
                 TEACHER ROUTES
-                Protected - Teacher Only
             ===================================================== */}
 
             <Route
@@ -168,91 +131,35 @@ function App() {
                 </ProtectedRoute>
               }
             >
-
-              {/* -----------------------------------------------------
-                  TEACHER DASHBOARD
-              ----------------------------------------------------- */}
+              <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
 
               <Route
-                path="/teacher/dashboard"
-                element={<TeacherDashboard />}
-              />
-              {/* -----------------------------------------------------
-                  TEACHER NOTIFICATIONS
-              ----------------------------------------------------- */}
-              <Route
-  path="/teacher/notifications"
-  element={
-    <ProtectedRoute allowedRoles={["teacher"]}>
-      <TeacherNotifications />
-    </ProtectedRoute>
-  }
-/>
-
-              {/* -----------------------------------------------------
-                  TEACHER STUDENTS
-              ----------------------------------------------------- */}
-
-              <Route
-                path="/teacher/students"
-                element={<TeacherStudents />}
+                path="/teacher/notifications"
+                element={
+                  <ProtectedRoute allowedRoles={["teacher"]}>
+                    <TeacherNotifications />
+                  </ProtectedRoute>
+                }
               />
 
-              {/* -----------------------------------------------------
-                  TEACHER PROFILE
-              ----------------------------------------------------- */}
+              <Route path="/teacher/students" element={<TeacherStudents />} />
+              <Route path="/teacher/profile" element={<TeacherProfile />} />
+              <Route path="/teacher/settings" element={<TeacherSettings />} />
+              <Route path="/teacher/ai-copilot" element={<AICopilot />} />
+              <Route path="/teacher/classes" element={<MyClasses />} />
 
               <Route
-                path="/teacher/profile"
-                element={<TeacherProfile />}
+                path="/teacher/attendance"
+                element={
+                  <ProtectedRoute allowedRoles={["teacher"]}>
+                    <TeacherAttendance />
+                  </ProtectedRoute>
+                }
               />
-
-              {/* -----------------------------------------------------
-                  TEACHER SETTINGS
-              ----------------------------------------------------- */}
-
-              <Route
-                path="/teacher/settings"
-                element={<TeacherSettings />}
-              />
-
-              {/* -----------------------------------------------------
-                  AI TEACHER CO-PILOT
-              ----------------------------------------------------- */}
-
-              <Route
-                path="/teacher/ai-copilot"
-                element={<AICopilot />}
-              />
-
-              {/* -----------------------------------------------------
-                  TEACHER CLASSES
-              ----------------------------------------------------- */}
-
-              <Route
-                path="/teacher/classes"
-                element={<MyClasses />}
-              />
-
-              {/* -----------------------------------------------------
-                  TEACHER ATTENDANCE
-                  IMPORTANT: INSIDE TEACHER PROTECTED ROUTE
-              ----------------------------------------------------- */}
-
-              <Route
-  path="/teacher/attendance"
-  element={
-    <ProtectedRoute allowedRoles={["teacher"]}>
-      <TeacherAttendance />
-    </ProtectedRoute>
-  }
-/>
-
             </Route>
 
             {/* =====================================================
                 ADMIN ROUTES
-                Protected - Admin Only
             ===================================================== */}
 
             <Route
@@ -262,225 +169,43 @@ function App() {
                 </ProtectedRoute>
               }
             >
-
-              {/* =================================================
-                  ADMIN DASHBOARD
-              ================================================= */}
-
-              <Route
-                path="/dashboard"
-                element={<Dashboard />}
-              />
-
-              {/* =================================================
-                  ACADEMIC YEAR
-              ================================================= */}
-
-              <Route
-                path="/academic-year"
-                element={<AcademicYear />}
-              />
-
-              {/* =================================================
-                  MASTER
-              ================================================= */}
-
-              <Route
-                path="/master"
-                element={<Master />}
-              />
-
-              {/* =================================================
-                  MASTER DATA
-              ================================================= */}
-
-              <Route
-                path="/master-data"
-                element={<MasterData />}
-              />
-
-              {/* =================================================
-                  DEPARTMENT
-              ================================================= */}
-
-              <Route
-                path="/department"
-                element={<Department />}
-              />
-
-              {/* =================================================
-                  CLASS
-              ================================================= */}
-
-              <Route
-                path="/class"
-                element={<ClassPage />}
-              />
-
-              {/* =================================================
-                  SECTION
-              ================================================= */}
-
-              <Route
-                path="/section"
-                element={<Section />}
-              />
-
-              {/* =================================================
-                  STUDENT
-              ================================================= */}
-
-              <Route
-                path="/student"
-                element={<Student />}
-              />
-
-              <Route
-                path="/student/new"
-                element={<StudentForm />}
-              />
-
-              <Route
-                path="/student/:id"
-                element={<StudentView />}
-              />
-
-              <Route
-                path="/student/:id/edit"
-                element={<StudentForm />}
-              />
-
-              {/* =================================================
-                  ADMIN ATTENDANCE
-              ================================================= */}
-
-              <Route
-                path="/attendance"
-                element={<Attendance />}
-              />
-
-              {/* =================================================
-                  EXAM
-              ================================================= */}
-
-              <Route
-                path="/exam"
-                element={<Exam />}
-              />
-
-              {/* =================================================
-                  FEE
-              ================================================= */}
-
-              <Route
-                path="/fee"
-                element={<Fee />}
-              />
-
-              {/* =================================================
-                  HOLIDAY
-              ================================================= */}
-
-              <Route
-                path="/holiday"
-                element={<Holiday />}
-              />
-
-              {/* =================================================
-                  TIMETABLE
-              ================================================= */}
-
-              <Route
-                path="/timetable"
-                element={<Timetable />}
-              />
-
-              {/* =================================================
-                  CUSTOM FIELDS
-              ================================================= */}
-
-              <Route
-                path="/custom-fields"
-                element={<CustomFields />}
-              />
-
-              {/* =================================================
-                  SETTINGS
-              ================================================= */}
-
-              <Route
-                path="/settings"
-                element={<Settings />}
-              />
-
-              {/* =================================================
-                  NOTIFICATIONS
-              ================================================= */}
-
-              <Route
-                path="/notifications"
-                element={<Notifications />}
-              />
-
-              {/* =================================================
-                  PROFILE
-              ================================================= */}
-
-              <Route
-                path="/profile"
-                element={<Profile />}
-              />
-
-              {/* =================================================
-                  STAFF
-              ================================================= */}
-
-              <Route
-                path="/staff"
-                element={<Staff />}
-              />
-
-              <Route
-                path="/staff/new"
-                element={<AddStaff />}
-              />
-
-              <Route
-                path="/staff/:id/edit"
-                element={<EditStaff />}
-              />
-
-              {/* =================================================
-                  ADMIN USER MANAGEMENT
-              ================================================= */}
-
-              <Route
-                path="/users/new"
-                element={<AddUser />}
-              />
-
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/academic-year" element={<AcademicYear />} />
+              <Route path="/master" element={<Master />} />
+              <Route path="/master-data" element={<MasterData />} />
+              <Route path="/department" element={<Department />} />
+              <Route path="/class" element={<ClassPage />} />
+              <Route path="/section" element={<Section />} />
+              <Route path="/student" element={<Student />} />
+              <Route path="/student/new" element={<StudentForm />} />
+              <Route path="/student/:id" element={<StudentView />} />
+              <Route path="/student/:id/edit" element={<StudentForm />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/exam" element={<Exam />} />
+              <Route path="/fee" element={<Fee />} />
+              <Route path="/holiday" element={<Holiday />} />
+              <Route path="/timetable" element={<Timetable />} />
+              <Route path="/custom-fields" element={<CustomFields />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/staff/new" element={<AddStaff />} />
+              <Route path="/staff/:id/edit" element={<EditStaff />} />
+              <Route path="/users/new" element={<AddUser />} />
             </Route>
 
-            {/* =====================================================
-                FALLBACK
-            ===================================================== */}
-
+            {/* FALLBACK */}
             <Route
               path="*"
-              element={
-                <Navigate
-                  to="/portal-login"
-                  replace
-                />
-              }
+              element={<Navigate to="/portal-login" replace />}
             />
-
           </Routes>
 
+          <Chatbot />
         </SidebarProvider>
 
         <ToastContainer />
-
       </AuthProvider>
     </BrowserRouter>
   );

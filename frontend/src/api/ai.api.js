@@ -5,37 +5,8 @@ import api from "./axios";
  * CAMPUS IQ
  * AI TEACHER CO-PILOT API
  * =====================================================
- *
- * Supports:
- * - Text-only AI questions
- * - Image-only analysis
- * - Text + image analysis
- * - Existing conversation
- * - Conversation history
- * - Opening a previous conversation
- *
- * Backend:
- * POST /api/v1/ai/chat
- * GET  /api/v1/ai/conversations
- * GET  /api/v1/ai/conversations/:id
- *
- * AI:
- * Ollama + Qwen2.5-VL 7B
  */
 
-/**
- * =====================================================
- * SEND MESSAGE TO AI
- * =====================================================
- *
- * conversationId is optional.
- *
- * If conversationId is NOT provided:
- * → Backend creates a new conversation.
- *
- * If conversationId IS provided:
- * → Backend continues that conversation.
- */
 export async function chatWithAI(
   message = "",
   image = null,
@@ -43,100 +14,68 @@ export async function chatWithAI(
 ) {
   const formData = new FormData();
 
-  // ===================================================
-  // MESSAGE
-  // ===================================================
-
   if (message && message.trim()) {
-    formData.append(
-      "message",
-      message.trim()
-    );
+    formData.append("message", message.trim());
   }
-
-  // ===================================================
-  // CONVERSATION ID
-  // ===================================================
 
   if (conversationId) {
-    formData.append(
-      "conversationId",
-      String(conversationId)
-    );
+    formData.append("conversationId", String(conversationId));
   }
-
-  // ===================================================
-  // IMAGE
-  // ===================================================
 
   if (image) {
-    formData.append(
-      "image",
-      image
-    );
+    formData.append("image", image);
   }
 
-  // ===================================================
-  // REQUEST
-  // ===================================================
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken");
 
-  const response = await api.post(
-    "/ai/chat",
-    formData,
-    {
-      // Qwen2.5-VL can take some time on CPU.
-      timeout: 120000,
+  const response = await api.post("/ai/chat", formData, {
+    timeout: 120000,
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
+  });
 
-      // Do NOT manually set Content-Type.
-      //
-      // Axios automatically creates:
-      // multipart/form-data
-      // with the correct boundary.
-    }
-  );
-
-  return response.data;
+  // Backend returns:
+  // { success: true, data: { conversationId, reply } }
+  return response.data.data;
 }
 
-
-/**
- * =====================================================
- * GET ALL AI CONVERSATIONS
- * =====================================================
- *
- * Returns conversations belonging only to
- * the authenticated teacher.
- */
 export async function getAIConversations() {
-  const response = await api.get(
-    "/ai/conversations"
-  );
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken");
 
-  return response.data;
+  const response = await api.get("/ai/conversations", {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
+  });
+
+  return response.data.data;
 }
 
-
-/**
- * =====================================================
- * GET ONE AI CONVERSATION
- * =====================================================
- *
- * Returns:
- * - conversation details
- * - complete saved messages
- */
-export async function getAIConversation(
-  conversationId
-) {
+export async function getAIConversation(conversationId) {
   if (!conversationId) {
-    throw new Error(
-      "Conversation ID is required"
-    );
+    throw new Error("Conversation ID is required");
   }
 
-  const response = await api.get(
-    `/ai/conversations/${conversationId}`
-  );
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken");
 
-  return response.data;
+  const response = await api.get(`/ai/conversations/${conversationId}`, {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
+  });
+
+  return response.data.data;
 }

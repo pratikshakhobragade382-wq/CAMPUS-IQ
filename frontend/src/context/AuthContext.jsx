@@ -1,17 +1,18 @@
 import { createContext, useContext, useState } from "react";
 import axiosClient from "../api/axios";
+import { STORAGE_KEYS } from "../utils/constants";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_DATA);
 
     try {
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
       console.error("Invalid stored user:", error);
-      localStorage.removeItem("user");
+      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
       return null;
     }
   });
@@ -24,14 +25,6 @@ export function AuthProvider({ children }) {
   // =========================================================
   // LOGIN
   // =========================================================
-  //
-  // Local development:
-  // Backend cannot determine the school from localhost.
-  // Therefore tenantId = 1 is sent while developing locally.
-  //
-  // Production:
-  // Backend can resolve the tenant from the school's subdomain.
-  // =========================================================
 
   const login = async ({ email, password }) => {
     setLoading(true);
@@ -43,22 +36,12 @@ export function AuthProvider({ children }) {
         password,
       };
 
-      // -----------------------------------------------------
-      // LOCAL DEVELOPMENT
-      // -----------------------------------------------------
-
+      // Local development
       if (import.meta.env.DEV) {
         loginData.tenantId = 1;
       }
 
-      // -----------------------------------------------------
-      // LOGIN REQUEST
-      // -----------------------------------------------------
-
-      const res = await axiosClient.post(
-        "/auth/login",
-        loginData
-      );
+      const res = await axiosClient.post("/auth/login", loginData);
 
       const responseData = res.data?.data;
 
@@ -70,26 +53,16 @@ export function AuthProvider({ children }) {
       const loggedInUser = responseData.user;
       const token = responseData.token;
 
-      // -----------------------------------------------------
-      // SAVE AUTHENTICATION
-      // -----------------------------------------------------
-
-      localStorage.setItem("token", token);
+      // SAVE AUTH DATA (same keys that axios.js reads)
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
       localStorage.setItem(
-        "user",
+        STORAGE_KEYS.USER_DATA,
         JSON.stringify(loggedInUser)
       );
 
-      // -----------------------------------------------------
-      // UPDATE REACT STATE
-      // -----------------------------------------------------
-
       setUser(loggedInUser);
 
-      // Return the user so login pages can perform
-      // portal-specific validation and navigation.
       return loggedInUser;
-
     } catch (err) {
       console.error("Login failed:", err);
 
@@ -100,7 +73,6 @@ export function AuthProvider({ children }) {
       );
 
       return false;
-
     } finally {
       setLoading(false);
     }
@@ -111,16 +83,12 @@ export function AuthProvider({ children }) {
   // =========================================================
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
 
     setUser(null);
     setError("");
   };
-
-  // =========================================================
-  // AUTH CONTEXT
-  // =========================================================
 
   return (
     <AuthContext.Provider
@@ -138,10 +106,6 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
-// =========================================================
-// CUSTOM HOOK
-// =========================================================
 
 export function useAuth() {
   return useContext(AuthContext);

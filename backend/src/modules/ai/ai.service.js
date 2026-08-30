@@ -8,16 +8,10 @@
 const prisma = require("../../prisma/prismaClient");
 
 const OLLAMA_URL = "http://127.0.0.1:11434/api/chat";
-const MODEL_NAME = "qwen2.5vl:7b";
+const MODEL_NAME = "qwen2.5:3b";
 
 // =====================================================
 // OLLAMA TIMEOUT
-// =====================================================
-// Qwen2.5-VL 7B is running locally on CPU.
-// The first response can take a while.
-//
-// 5 minutes gives the model enough time to load,
-// process the prompt/image and generate a response.
 // =====================================================
 
 const OLLAMA_TIMEOUT = 5 * 60 * 1000;
@@ -51,12 +45,10 @@ When an image is provided:
 - Do not invent information that is not visible in the image.
 - If something is unclear, say so.
 
-Use the previous conversation messages as context.
-Maintain continuity when the teacher asks follow-up questions.
+Use previous conversation as context.
+Maintain continuity for follow-up questions.
 
-Do not unnecessarily make responses very long.
-
-Always be helpful, accurate and teacher-friendly.
+Keep answers concise unless the teacher asks for detail.
 `;
 
 // =====================================================
@@ -87,15 +79,10 @@ async function chatWithAI(
         tenantId,
         userId,
       },
-
       orderBy: {
         createdAt: "asc",
       },
-
-      // Prevent sending an unnecessarily huge history
-      // to the local model.
-      take: 30,
-
+      take: 10,
       select: {
         role: true,
         content: true,
@@ -104,7 +91,7 @@ async function chatWithAI(
   }
 
   // ---------------------------------------------------
-  // BUILD OLLAMA MESSAGES
+  // BUILD OLLAMA MESSAGE ARRAY
   // ---------------------------------------------------
 
   const messages = [
@@ -114,44 +101,28 @@ async function chatWithAI(
     },
   ];
 
-  // Add previous conversation messages.
-  for (const previousMessage of previousMessages) {
-    // Ollama accepts user/assistant roles.
-    if (
-      previousMessage.role === "user" ||
-      previousMessage.role === "assistant"
-    ) {
+  for (const msg of previousMessages) {
+    if (msg.role === "user" || msg.role === "assistant") {
       messages.push({
-        role: previousMessage.role,
-        content: previousMessage.content,
+        role: msg.role,
+        content: msg.content,
       });
     }
   }
 
-  // ---------------------------------------------------
-  // CURRENT USER MESSAGE
-  // ---------------------------------------------------
-
   const userMessage = {
     role: "user",
-    content:
-      message?.trim() || "Please analyze this image.",
+    content: message?.trim() || "Please analyze this image.",
   };
 
-  // ---------------------------------------------------
-  // ADD IMAGE
-  // ---------------------------------------------------
-
   if (image) {
-    userMessage.images = [
-      image.buffer.toString("base64"),
-    ];
+    userMessage.images = [image.buffer.toString("base64")];
   }
 
   messages.push(userMessage);
 
   // ---------------------------------------------------
-  // CREATE ABORT CONTROLLER
+  // TIMEOUT CONTROLLER
   // ---------------------------------------------------
 
   const controller = new AbortController();
@@ -161,82 +132,58 @@ async function chatWithAI(
   }, OLLAMA_TIMEOUT);
 
   try {
-    // -------------------------------------------------
-    // SEND REQUEST TO OLLAMA
-    // -------------------------------------------------
-
-    console.log(
-      `AI: Sending request to Ollama (${MODEL_NAME})...`
-    );
+    console.log(`AI: Sending request to Ollama (${MODEL_NAME})...`);
 
     const response = await fetch(OLLAMA_URL, {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
       },
-
+      signal: controller.signal,
       body: JSON.stringify({
         model: MODEL_NAME,
         messages,
         stream: false,
+        keep_alive: "30m",
+        options: {
+          num_predict: 80,
+          temperature: 0.2,
+          num_ctx: 1024,
+          num_gpu: 0,
+        },
       }),
-
-      signal: controller.signal,
     });
-
-    // -------------------------------------------------
-    // HANDLE OLLAMA HTTP ERRORS
-    // -------------------------------------------------
 
     if (!response.ok) {
       const errorText = await response.text();
-
       throw new Error(
         `Ollama request failed: ${response.status} ${errorText}`
       );
     }
 
-    // -------------------------------------------------
-    // READ RESPONSE
-    // -------------------------------------------------
-
     const data = await response.json();
 
     const aiResponse =
-      data.message?.content ||
-      "No response generated.";
+      data?.message?.content?.trim() || "No response generated.";
 
     console.log("AI: Ollama response received.");
 
     return aiResponse;
   } catch (error) {
-    // -------------------------------------------------
-    // HANDLE TIMEOUT
-    // -------------------------------------------------
-
     if (error?.name === "AbortError") {
       throw new Error(
         "The local AI model took too long to respond. Please try again."
       );
     }
 
-    // -------------------------------------------------
-    // HANDLE CONNECTION ERRORS
-    // -------------------------------------------------
-
     if (
-      error?.cause?.code === "ECONNREFUSED" ||
-      error?.code === "ECONNREFUSED"
+      error?.code === "ECONNREFUSED" ||
+      error?.cause?.code === "ECONNREFUSED"
     ) {
       throw new Error(
         "Ollama is not running. Please start Ollama and try again."
       );
     }
-
-    // -------------------------------------------------
-    // RE-THROW ORIGINAL ERROR
-    // -------------------------------------------------
 
     throw error;
   } finally {

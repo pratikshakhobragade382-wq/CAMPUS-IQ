@@ -72,25 +72,29 @@ async function chat(req, res, next) {
         });
       }
     } else {
-      // -------------------------------------------------
-      // CREATE NEW CONVERSATION
-      // -------------------------------------------------
+  // -------------------------------------------------
+  // CREATE NEW CONVERSATION
+  // -------------------------------------------------
 
-      const conversationTitle =
-        message && message.trim()
-          ? message.trim().slice(0, 80)
-          : image
-            ? "Image Analysis"
-            : "New Chat";
+  const conversationTitle =
+    message && message.trim()
+      ? message.trim().slice(0, 80)
+      : image
+      ? "Image Analysis"
+      : "New Chat";
 
-      conversation = await prisma.aIConversation.create({
-        data: {
-          tenantId,
-          userId,
-          title: conversationTitle,
-        },
-      });
-    }
+  conversation = await prisma.aIConversation.create({
+    data: {
+      title: conversationTitle,
+      tenant: {
+        connect: { id: tenantId },
+      },
+      user: {
+        connect: { id: userId },
+      },
+    },
+  });
+}
 
     // ---------------------------------------------------
     // SEND MESSAGE TO LOCAL AI
