@@ -2,19 +2,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const existing = await prisma.department.findFirst({
-    orderBy: { id: 'asc' },
-  });
-
-  if (!existing) {
-    throw new Error(
-      'No existing Department rows found — cannot infer tenantId. ' +
-      'Pass a tenantId manually by editing this script.'
-    );
-  }
-
-  const tenantId = existing.tenantId;
-  console.log(`Using tenantId=${tenantId} (copied from existing record id=${existing.id})`);
+  const tenantId = 1;
+  console.log(`Using tenantId=${tenantId}`);
 
   const names = [
     'Physics', 'Chemistry', 'Mathematics', 'Biology', 'Computer Science',

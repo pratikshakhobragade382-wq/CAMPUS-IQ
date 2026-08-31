@@ -42,6 +42,9 @@ import TeacherAttendance from "./teacher/Attendance/Attendance";
 
 import AICopilot from "./teacher/Ai Copilot/AICopilot";
 import MyClasses from "./teacher/classes/MyClasses";
+import TeacherTimetable from "./teacher/timetable/TeacherTimetable";
+import TeacherExams from "./teacher/exams/TeacherExams";
+import TeacherAssignments from "./teacher/assignments/TeacherAssignments";
 
 // =====================================================
 // ADMIN DASHBOARD
@@ -147,6 +150,9 @@ function App() {
               <Route path="/teacher/settings" element={<TeacherSettings />} />
               <Route path="/teacher/ai-copilot" element={<AICopilot />} />
               <Route path="/teacher/classes" element={<MyClasses />} />
+              <Route path="/teacher/assignments" element={<TeacherAssignments />} />
+              <Route path="/teacher/timetable" element={<TeacherTimetable />} />
+              <Route path="/teacher/exams" element={<TeacherExams />} />
 
               <Route
                 path="/teacher/attendance"
