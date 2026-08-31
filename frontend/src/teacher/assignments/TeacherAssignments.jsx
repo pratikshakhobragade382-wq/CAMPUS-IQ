@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import TeacherTopbar from '../components/TeacherTopbar';
-import { getAssignments, createAssignment, deleteAssignment, getAssignmentSubmissions, gradeSubmission } from '../../api/assignment.api';
+import {
+  getAssignments,
+  createAssignment,
+  deleteAssignment,
+  getAssignmentSubmissions,
+  gradeSubmission,
+} from '../../api/assignment.api';
 import { getClasses } from '../../api/class.api';
 import { getSubjects } from '../../api/subject.api';
 import './TeacherAssignments.css';
@@ -13,6 +19,8 @@ export default function TeacherAssignments() {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilterClass, setSelectedFilterClass] = useState('');
+  const [selectedFilterSubject, setSelectedFilterSubject] = useState('');
   const [alertMsg, setAlertMsg] = useState(null);
 
   // Modal State
@@ -45,11 +53,15 @@ export default function TeacherAssignments() {
         getSubjects().catch(() => ({ data: [] })),
       ]);
 
-      setAssignments(Array.isArray(assignRes?.data) ? assignRes.data : Array.isArray(assignRes) ? assignRes : []);
-      setClasses(Array.isArray(classRes?.data) ? classRes.data : Array.isArray(classRes) ? classRes : []);
-      setSubjects(Array.isArray(subRes?.data) ? subRes.data : Array.isArray(subRes) ? subRes : []);
+      const aList = Array.isArray(assignRes?.data) ? assignRes.data : Array.isArray(assignRes) ? assignRes : [];
+      const cList = Array.isArray(classRes?.data) ? classRes.data : Array.isArray(classRes) ? classRes : [];
+      const sList = Array.isArray(subRes?.data) ? subRes.data : Array.isArray(subRes) ? subRes : [];
+
+      setAssignments(aList);
+      setClasses(cList);
+      setSubjects(sList);
     } catch (err) {
-      console.error('Failed to load assignments:', err);
+      console.error('Failed to load assignments data:', err);
       setAlertMsg({ type: 'error', text: 'Failed to load assignments list.' });
     } finally {
       setLoading(false);
@@ -60,24 +72,61 @@ export default function TeacherAssignments() {
     loadData();
   }, []);
 
+  // Available sections for the currently selected class in modal
+  const availableSections = useMemo(() => {
+    if (!formData.classId) return [];
+    const cls = classes.find((c) => Number(c.id) === Number(formData.classId));
+    return cls?.sections || [];
+  }, [classes, formData.classId]);
+
   // Handle Form Change
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'classId') {
+        // Reset section when class changes
+        updated.sectionId = '';
+      }
+      return updated;
+    });
   };
 
   // Submit New Assignment
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.classId || !formData.subjectId || !formData.dueDate) {
-      setAlertMsg({ type: 'error', text: 'Please fill all required fields.' });
+    if (!formData.title.trim()) {
+      setAlertMsg({ type: 'error', text: 'Please enter an assignment title.' });
+      return;
+    }
+    if (!formData.classId) {
+      setAlertMsg({ type: 'error', text: 'Please select a class from the dropdown.' });
+      return;
+    }
+    if (!formData.subjectId) {
+      setAlertMsg({ type: 'error', text: 'Please select a subject from the dropdown.' });
+      return;
+    }
+    if (!formData.dueDate) {
+      setAlertMsg({ type: 'error', text: 'Please choose a due date.' });
       return;
     }
 
     setSaving(true);
     setAlertMsg(null);
     try {
-      await createAssignment(formData);
-      setAlertMsg({ type: 'success', text: 'Assignment created successfully!' });
+      await createAssignment({
+        title: formData.title.trim(),
+        description: formData.description?.trim() || null,
+        classId: Number(formData.classId),
+        sectionId: formData.sectionId ? Number(formData.sectionId) : null,
+        subjectId: Number(formData.subjectId),
+        dueDate: formData.dueDate,
+        maxMarks: Number(formData.maxMarks) || 100,
+        attachmentUrl: formData.attachmentUrl?.trim() || null,
+      });
+
+      setAlertMsg({ type: 'success', text: 'Assignment successfully published to students!' });
       setIsModalOpen(false);
       setFormData({
         title: '',
@@ -92,7 +141,7 @@ export default function TeacherAssignments() {
       loadData();
     } catch (err) {
       console.error('Create error:', err);
-      setAlertMsg({ type: 'error', text: err?.response?.data?.message || 'Failed to create assignment.' });
+      setAlertMsg({ type: 'error', text: err?.response?.data?.message || err?.response?.data?.error || 'Failed to create assignment.' });
     } finally {
       setSaving(false);
     }
@@ -103,7 +152,7 @@ export default function TeacherAssignments() {
     if (!window.confirm('Are you sure you want to delete this assignment?')) return;
     try {
       await deleteAssignment(id);
-      setAlertMsg({ type: 'success', text: 'Assignment deleted.' });
+      setAlertMsg({ type: 'success', text: 'Assignment deleted successfully.' });
       setAssignments((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
       console.error('Delete error:', err);
@@ -118,7 +167,8 @@ export default function TeacherAssignments() {
     setSubmissionsLoading(true);
     try {
       const res = await getAssignmentSubmissions(assignment.id);
-      setSubmissions(Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
+      const subList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setSubmissions(subList);
     } catch (err) {
       console.error('Fetch submissions error:', err);
     } finally {
@@ -140,15 +190,26 @@ export default function TeacherAssignments() {
     }
   };
 
+  // Filtered list
   const filteredAssignments = assignments.filter((a) => {
     const q = searchQuery.toLowerCase();
-    return a.title?.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q);
+    const matchesSearch =
+      !q ||
+      a.title?.toLowerCase().includes(q) ||
+      a.description?.toLowerCase().includes(q);
+
+    const matchesClass =
+      !selectedFilterClass || Number(a.classId) === Number(selectedFilterClass);
+    const matchesSubject =
+      !selectedFilterSubject || Number(a.subjectId) === Number(selectedFilterSubject);
+
+    return matchesSearch && matchesClass && matchesSubject;
   });
 
   return (
     <div className="teacher-assignments-page">
       <TeacherTopbar
-        searchPlaceholder="Search assignments, topics..."
+        searchPlaceholder="Search assignments, topics, keywords..."
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
       />
@@ -156,7 +217,7 @@ export default function TeacherAssignments() {
       <div className="assignments-header-section">
         <div className="assignments-title-area">
           <h1>Classroom Assignments</h1>
-          <p>Create homework tasks, manage submissions, and provide student grading</p>
+          <p>Create homework tasks, manage submissions, and grade student performance</p>
         </div>
 
         <button
@@ -190,6 +251,89 @@ export default function TeacherAssignments() {
         </div>
       )}
 
+      {/* Filter Bar */}
+      <div
+        style={{
+          background: '#ffffff',
+          borderRadius: 14,
+          border: '1px solid #e2e8f0',
+          padding: '14px 18px',
+          marginBottom: 24,
+          display: 'flex',
+          gap: 16,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+          <i className="fa-solid fa-filter mr-1 text-blue-600"></i> Filters:
+        </span>
+
+        <select
+          value={selectedFilterClass}
+          onChange={(e) => setSelectedFilterClass(e.target.value)}
+          style={{
+            padding: '8px 14px',
+            borderRadius: 8,
+            border: '1px solid #cbd5e1',
+            fontSize: 14,
+            background: '#f8fafc',
+            outline: 'none',
+          }}
+        >
+          <option value="">All Classes ({classes.length})</option>
+          {classes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedFilterSubject}
+          onChange={(e) => setSelectedFilterSubject(e.target.value)}
+          style={{
+            padding: '8px 14px',
+            borderRadius: 8,
+            border: '1px solid #cbd5e1',
+            fontSize: 14,
+            background: '#f8fafc',
+            outline: 'none',
+          }}
+        >
+          <option value="">All Subjects ({subjects.length})</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} ({s.code || 'Sub'})
+            </option>
+          ))}
+        </select>
+
+        {(selectedFilterClass || selectedFilterSubject || searchQuery) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFilterClass('');
+              setSelectedFilterSubject('');
+              setSearchQuery('');
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#ef4444',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <i className="fa-solid fa-xmark"></i> Clear Filters
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
           <i className="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-blue-600"></i>
@@ -215,7 +359,7 @@ export default function TeacherAssignments() {
         <div className="assignments-grid">
           {filteredAssignments.map((assignment) => {
             const isOverdue = new Date(assignment.dueDate) < new Date();
-            const subjectName = subjects.find((s) => Number(s.id) === Number(assignment.subjectId))?.name || 'Subject';
+            const subjectName = subjects.find((s) => Number(s.id) === Number(assignment.subjectId))?.name || `Subject #${assignment.subjectId}`;
             const className = classes.find((c) => Number(c.id) === Number(assignment.classId))?.name || `Class #${assignment.classId}`;
             const subCount = assignment.AssignmentSubmission?.length || 0;
 
@@ -238,6 +382,7 @@ export default function TeacherAssignments() {
                   <div className="assignment-meta-row">
                     <span>
                       <i className="fa-solid fa-graduation-cap text-blue-500 mr-1"></i> {className}
+                      {assignment.sectionId ? ` (Sec ${assignment.sectionId})` : ''}
                     </span>
                     <span>
                       <i className="fa-solid fa-star text-amber-500 mr-1"></i> Max Marks: {assignment.maxMarks || 100}
@@ -298,10 +443,16 @@ export default function TeacherAssignments() {
                   />
                 </div>
 
+                {/* Class & Section dropdowns */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="form-group-field">
                     <label>Class *</label>
-                    <select name="classId" value={formData.classId} onChange={handleChange} required>
+                    <select
+                      name="classId"
+                      value={formData.classId}
+                      onChange={handleChange}
+                      required
+                    >
                       <option value="">-- Select Class --</option>
                       {classes.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -312,28 +463,40 @@ export default function TeacherAssignments() {
                   </div>
 
                   <div className="form-group-field">
-                    <label>Subject *</label>
-                    <select name="subjectId" value={formData.subjectId} onChange={handleChange} required>
-                      <option value="">-- Select Subject --</option>
-                      {subjects.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
+                    <label>Section (Optional)</label>
+                    <select
+                      name="sectionId"
+                      value={formData.sectionId}
+                      onChange={handleChange}
+                      disabled={!formData.classId || availableSections.length === 0}
+                    >
+                      <option value="">-- All Sections --</option>
+                      {availableSections.map((sec) => (
+                        <option key={sec.id} value={sec.id}>
+                          Section {sec.name}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
+                {/* Subject & Max Marks */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="form-group-field">
-                    <label>Due Date *</label>
-                    <input
-                      type="date"
-                      name="dueDate"
-                      value={formData.dueDate}
+                    <label>Subject *</label>
+                    <select
+                      name="subjectId"
+                      value={formData.subjectId}
                       onChange={handleChange}
                       required
-                    />
+                    >
+                      <option value="">-- Select Subject --</option>
+                      {subjects.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.code || 'Sub'})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-group-field">
@@ -348,12 +511,24 @@ export default function TeacherAssignments() {
                   </div>
                 </div>
 
+                {/* Due Date */}
+                <div className="form-group-field">
+                  <label>Due Date *</label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
                 <div className="form-group-field">
                   <label>Instructions / Description</label>
                   <textarea
                     name="description"
                     rows={3}
-                    placeholder="Details about pages, questions, or formatting..."
+                    placeholder="Details about exercise questions, submission format, or chapters..."
                     value={formData.description}
                     onChange={handleChange}
                   />
@@ -373,7 +548,7 @@ export default function TeacherAssignments() {
                   className="btn-create-assignment"
                   disabled={saving}
                 >
-                  {saving ? 'Creating...' : 'Publish Assignment'}
+                  {saving ? 'Publishing...' : 'Publish Assignment'}
                 </button>
               </div>
             </form>
