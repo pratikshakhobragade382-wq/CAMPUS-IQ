@@ -33,6 +33,7 @@ exports.createAssignment = async ({
       maxMarks: maxMarks ? Number(maxMarks) : 100,
       attachmentUrl: attachmentUrl || null,
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
