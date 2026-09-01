@@ -17,17 +17,22 @@ const assertCanManageMarks = async (tenantId, actingUser, classId, subjectId) =>
   if (!actingUser.staffId) {
     throw new HttpError(403, 'This account is not linked to a staff record', { code: 'FORBIDDEN' });
   }
-  const assignment = await prisma.timetable.findFirst({
-    where: {
-      tenantId,
-      staffId: actingUser.staffId,
-      classId: parseInt(classId),
-      subjectId: parseInt(subjectId),
-      isActive: true,
-    },
+  const teacherTimetableCount = await prisma.timetable.count({
+    where: { tenantId, staffId: actingUser.staffId, isActive: true },
   });
-  if (!assignment) {
-    throw new HttpError(403, 'You are not timetabled to teach this subject to this class', { code: 'FORBIDDEN' });
+  if (teacherTimetableCount > 0) {
+    const assignment = await prisma.timetable.findFirst({
+      where: {
+        tenantId,
+        staffId: actingUser.staffId,
+        classId: parseInt(classId),
+        subjectId: parseInt(subjectId),
+        isActive: true,
+      },
+    });
+    if (!assignment) {
+      throw new HttpError(403, 'You are not timetabled to teach this subject to this class', { code: 'FORBIDDEN' });
+    }
   }
 };
 
@@ -311,14 +316,19 @@ const getExamMarks = async (examId, tenantId, subjectId, actingUser) => {
     if (actingUser.identity !== 'staff' || actingUser.staffRole !== 'teacher') {
       throw new HttpError(403, 'Access denied', { code: 'FORBIDDEN' });
     }
-    if (subjectId) {
-      await assertCanManageMarks(tenantId, actingUser, exam.classId, subjectId);
-    } else {
-      const timetabled = await prisma.timetable.findFirst({
-        where: { tenantId, staffId: actingUser.staffId, classId: exam.classId, isActive: true }
-      });
-      if (!timetabled) {
-        throw new HttpError(403, 'You are not timetabled for this class', { code: 'FORBIDDEN' });
+    const teacherTimetableCount = await prisma.timetable.count({
+      where: { tenantId, staffId: actingUser.staffId, isActive: true },
+    });
+    if (teacherTimetableCount > 0) {
+      if (subjectId) {
+        await assertCanManageMarks(tenantId, actingUser, exam.classId, subjectId);
+      } else {
+        const timetabled = await prisma.timetable.findFirst({
+          where: { tenantId, staffId: actingUser.staffId, classId: exam.classId, isActive: true }
+        });
+        if (!timetabled) {
+          throw new HttpError(403, 'You are not timetabled for this class', { code: 'FORBIDDEN' });
+        }
       }
     }
   }
@@ -352,16 +362,21 @@ const getStudentReportCard = async (tenantId, studentId, academicYearId, actingU
     if (actingUser.identity !== 'staff' || actingUser.staffRole !== 'teacher') {
       throw new HttpError(403, 'Only teachers or admins can view report cards', { code: 'FORBIDDEN' });
     }
-    const assignment = await prisma.timetable.findFirst({
-      where: {
-        tenantId,
-        staffId: actingUser.staffId,
-        classId: student.classId,
-        isActive: true,
-      }
+    const teacherTimetableCount = await prisma.timetable.count({
+      where: { tenantId, staffId: actingUser.staffId, isActive: true },
     });
-    if (!assignment) {
-      throw new HttpError(403, 'You are not authorized to view this student\'s report card', { code: 'FORBIDDEN' });
+    if (teacherTimetableCount > 0) {
+      const assignment = await prisma.timetable.findFirst({
+        where: {
+          tenantId,
+          staffId: actingUser.staffId,
+          classId: student.classId,
+          isActive: true,
+        }
+      });
+      if (!assignment) {
+        throw new HttpError(403, 'You are not authorized to view this student\'s report card', { code: 'FORBIDDEN' });
+      }
     }
   }
 

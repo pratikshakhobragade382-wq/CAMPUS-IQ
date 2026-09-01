@@ -747,7 +747,7 @@ model Assignment {
   maxMarks             Int?                   @default(100)
   isActive             Boolean                @default(true)
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime               @default(now()) @updatedAt
   AssignmentSubmission AssignmentSubmission[]
 
   @@index([tenantId, classId, sectionId, subjectId])
@@ -768,7 +768,7 @@ model AssignmentSubmission {
   gradedById    Int?
   gradedAt      DateTime?
   createdAt     DateTime                 @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime                 @default(now()) @updatedAt
   Assignment    Assignment               @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, assignmentId, studentId])

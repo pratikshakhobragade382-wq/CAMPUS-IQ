@@ -22,6 +22,7 @@ const attendanceRoutes = require('../modules/attendance/attendance.routes');
 const holidayRoutes = require('../modules/holiday/holiday.routes');
 const feeRoutes = require('../modules/fee/fee.routes');
 const examRoutes = require('../modules/exam/exam.routes');
+const assignmentRoutes = require('../modules/assignment/assignment.routes');
 const settingsRoutes = require('../modules/settings/settings.routes');
 const notificationRoutes = require('../modules/notification/notification.routes');
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
@@ -160,6 +161,12 @@ registerRoute(
   '/exams',
   examRoutes,
   'exams'
+);
+
+registerRoute(
+  '/assignments',
+  assignmentRoutes,
+  'assignments'
 );
 
 registerRoute(
