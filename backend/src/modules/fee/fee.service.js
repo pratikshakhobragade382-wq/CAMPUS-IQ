@@ -238,11 +238,27 @@ const collectFee = async (data, tenantId, actingUser) => {
   throw new HttpError(409, 'Could not generate a unique receipt number after multiple attempts', { code: 'CONFLICT' });
 };
 
-const getStudentFeeStatus = async (tenantId, studentId, academicYearId) => {
-  const student = await prisma.student.findFirst({
-    where: { id: parseInt(studentId), tenantId, isDeleted: false },
+// Resolves a student by either a numeric primary key or a human-entered
+// identifier such as an admission number (e.g. "S010"). Passing a non-numeric
+// string straight into an Int `where` filter (e.g. via parseInt -> NaN) makes
+// Prisma reject the whole query instead of just matching nothing, so we
+// branch on whether the identifier is actually numeric first.
+const findStudentByIdentifier = async (tenantId, identifier) => {
+  const numericId = Number(identifier);
+  const isNumeric = identifier !== '' && identifier !== null && identifier !== undefined && Number.isInteger(numericId);
+
+  return prisma.student.findFirst({
+    where: {
+      tenantId,
+      isDeleted: false,
+      ...(isNumeric ? { id: numericId } : { admissionNo: String(identifier) }),
+    },
     select: { id: true, studentName: true, admissionNo: true, classId: true },
   });
+};
+
+const getStudentFeeStatus = async (tenantId, studentId, academicYearId) => {
+  const student = await findStudentByIdentifier(tenantId, studentId);
   if (!student) throw new HttpError(404, 'Student not found', { code: 'NOT_FOUND' });
 
   const structures = await prisma.feeStructure.findMany({
@@ -286,11 +302,11 @@ const getStudentFeeStatus = async (tenantId, studentId, academicYearId) => {
 };
 
 const getStudentPaymentHistory = async (tenantId, studentId) => {
-  const student = await prisma.student.findFirst({ where: { id: parseInt(studentId), tenantId, isDeleted: false } });
+  const student = await findStudentByIdentifier(tenantId, studentId);
   if (!student) throw new HttpError(404, 'Student not found', { code: 'NOT_FOUND' });
 
   return prisma.feeCollection.findMany({
-    where: { tenantId, studentId: parseInt(studentId) },
+    where: { tenantId, studentId: student.id },
     include: {
       feeStructure: { include: { feeCategory: { select: { id: true, name: true } } } },
       collectedBy: { select: { id: true, name: true } },
