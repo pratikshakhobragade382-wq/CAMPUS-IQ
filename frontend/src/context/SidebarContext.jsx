@@ -11,22 +11,19 @@ const SidebarContext = createContext();
 export const SidebarProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Initialize sidebar state from localStorage
+  // Clear any existing collapsed state from localStorage so it stays always expanded
   useEffect(() => {
-    const storedState = localStorage.getItem(STORAGE_KEYS.SIDEBAR_STATE);
-    if (storedState !== null) {
-      setIsCollapsed(JSON.parse(storedState));
-    }
+    localStorage.removeItem(STORAGE_KEYS.SIDEBAR_STATE);
+    setIsCollapsed(false);
   }, []);
 
   const toggleSidebar = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem(STORAGE_KEYS.SIDEBAR_STATE, JSON.stringify(newState));
+    // Keep sidebar always expanded
+    setIsCollapsed(false);
   };
 
   const value = {
-    isCollapsed,
+    isCollapsed: false,
     toggleSidebar,
   };
 

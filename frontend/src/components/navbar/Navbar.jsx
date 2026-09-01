@@ -63,10 +63,7 @@ export const Navbar = () => {
 
   return (
     <nav
-      className={clsx(
-        'fixed top-0 right-0 h-16 bg-white border-b border-gray-200 transition-all duration-300 z-30',
-        isCollapsed ? 'left-20' : 'left-64'
-      )}
+      className="fixed top-0 right-0 left-64 h-16 bg-white border-b border-gray-200 transition-all duration-300 z-30"
     >
       <div className="h-full px-6 flex items-center justify-between">
 
