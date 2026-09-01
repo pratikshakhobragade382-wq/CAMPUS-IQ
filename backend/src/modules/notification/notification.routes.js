@@ -21,12 +21,18 @@ router.use(authMiddleware);
 // Example:
 //
 // {
-//   "title": "Parent Meeting",
-//   "message": "Parent meeting will be held on Monday.",
-//   "type": "parent_meeting",
-//   "priority": "high",
-//   "audience": "parent"
+//   "title": "Important Announcement",
+//   "message": "Please check your portal.",
+//   "type": "announcement",
+//   "priority": "normal",
+//   "audience": "admin"
 // }
+//
+// audience can be:
+//
+// admin
+// parent
+// student
 //
 // =====================================================
 
@@ -122,7 +128,7 @@ router.delete(
 );
 
 // =====================================================
-// EXPORT ROUTER
+// EXPORT
 // =====================================================
 
 module.exports = router;

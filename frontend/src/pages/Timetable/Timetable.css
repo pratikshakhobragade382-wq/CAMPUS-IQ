@@ -1,0 +1,896 @@
+/* ============================================================
+   TIMETABLE PAGE
+============================================================ */
+
+.timetable-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  background: #f8fafc;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   PAGE HEADER
+============================================================ */
+
+.tt-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.tt-page-header h1 {
+  margin: 6px 0 0;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tt-page-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.tt-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tt-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tt-header-actions button,
+.tt-header-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ============================================================
+   ALERTS
+============================================================ */
+
+.tt-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 14px;
+}
+
+.tt-alert span {
+  flex: 1;
+}
+
+.tt-alert button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 3px;
+}
+
+.tt-alert-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.tt-alert-success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+/* ============================================================
+   CARD HEADER
+============================================================ */
+
+.tt-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.tt-card-description {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ============================================================
+   CLASS / TEACHER SWITCH
+============================================================ */
+
+.tt-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.tt-mode-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tt-mode-switch button:hover {
+  color: #334155;
+}
+
+.tt-mode-switch button.active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+/* ============================================================
+   FILTERS
+============================================================ */
+
+.tt-filter-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.tt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.tt-field-label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tt-required {
+  color: #dc2626;
+}
+
+.tt-select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 36px 8px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+
+  appearance: none;
+
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent 50%,
+      #64748b 50%
+    ),
+    linear-gradient(
+      135deg,
+      #64748b 50%,
+      transparent 50%
+    );
+
+  background-position:
+    calc(100% - 16px) 17px,
+    calc(100% - 11px) 17px;
+
+  background-size:
+    5px 5px,
+    5px 5px;
+
+  background-repeat: no-repeat;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tt-select:hover {
+  border-color: #94a3b8;
+}
+
+.tt-select:focus {
+  border-color: #64748b;
+  box-shadow:
+    0 0 0 3px rgba(100, 116, 139, 0.12);
+}
+
+.tt-select:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.tt-select option {
+  color: #111827;
+  background: #ffffff;
+}
+
+/* ============================================================
+   SEARCH
+============================================================ */
+
+.tt-search {
+  position: relative;
+  width: 100%;
+}
+
+.tt-search > svg {
+  position: absolute;
+  z-index: 2;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.tt-search input {
+  width: 100%;
+  padding-left: 36px;
+  box-sizing: border-box;
+}
+
+.tt-load-button {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ============================================================
+   DAYS
+============================================================ */
+
+.tt-days {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 20px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.tt-days button {
+  flex: 0 0 auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.tt-days button:hover {
+  border-color: #94a3b8;
+  color: #334155;
+}
+
+.tt-days button.active {
+  background: #111827;
+  border-color: #111827;
+  color: #ffffff;
+}
+
+/* ============================================================
+   TABLE
+============================================================ */
+
+.tt-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.tt-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tt-table thead {
+  background: #f8fafc;
+}
+
+.tt-table th {
+  padding: 12px 14px;
+  text-align: left;
+  white-space: nowrap;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tt-table td {
+  padding: 13px 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.tt-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tt-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tt-table td strong {
+  color: #111827;
+}
+
+.tt-time-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.tt-time-cell span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.tt-table td small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+/* ============================================================
+   TABLE ACTIONS
+============================================================ */
+
+.tt-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.tt-action-buttons button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ============================================================
+   EMPTY STATE
+============================================================ */
+
+.tt-empty-state {
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* ============================================================
+   TIME SLOT GRID
+============================================================ */
+
+.tt-slot-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tt-slot-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tt-slot-card:hover {
+  border-color: #cbd5e1;
+  box-shadow:
+    0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+.tt-slot-number {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tt-slot-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tt-slot-content > strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  font-size: 14px;
+}
+
+.tt-slot-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.tt-slot-time svg {
+  flex: 0 0 auto;
+}
+
+.tt-slot-type {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tt-slot-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tt-slot-actions button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.tt-slot-actions button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #111827;
+}
+
+/* ============================================================
+   MODAL
+============================================================ */
+
+.tt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.55);
+
+  overflow-y: auto;
+}
+
+.tt-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 40px);
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+  border-radius: 14px;
+
+  box-shadow:
+    0 20px 50px rgba(15, 23, 42, 0.22);
+
+  overflow: hidden;
+}
+
+.tt-modal-wide {
+  max-width: 760px;
+}
+
+.tt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  padding: 18px 20px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tt-modal-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.tt-close-button {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+  color: #64748b;
+
+  cursor: pointer;
+}
+
+.tt-close-button:hover {
+  background: #f1f5f9;
+  color: #111827;
+}
+
+.tt-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   FORM
+============================================================ */
+
+.tt-form {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.tt-form > .tt-field:nth-child(1),
+.tt-form > .tt-field:nth-child(2),
+.tt-form > .tt-field:nth-child(3),
+.tt-form > .tt-field:nth-child(4),
+.tt-form > .tt-form-actions {
+  /* normal grid behaviour */
+}
+
+.tt-form-actions {
+  grid-column: 1 / -1;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 5px;
+  padding-top: 17px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+.tt-form-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ============================================================
+   TIME HELP
+============================================================ */
+
+.tt-time-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 7px;
+
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.tt-time-help svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.tt-time-help strong {
+  color: #334155;
+}
+
+/* ============================================================
+   SLOT PREVIEW
+============================================================ */
+
+.tt-slot-preview {
+  grid-column: 1 / -1;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  padding: 13px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.tt-slot-preview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tt-slot-preview strong {
+  color: #334155;
+  font-size: 12px;
+}
+
+.tt-slot-preview span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ============================================================
+   SPINNER
+============================================================ */
+
+.tt-spin {
+  animation: tt-spin-animation 0.9s linear infinite;
+}
+
+@keyframes tt-spin-animation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   RESPONSIVE - TABLET
+============================================================ */
+
+@media (max-width: 1100px) {
+  .tt-filter-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-slot-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tt-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE - MOBILE
+============================================================ */
+
+@media (max-width: 700px) {
+  .timetable-page {
+    padding: 16px;
+  }
+
+  .tt-page-header h1 {
+    font-size: 25px;
+  }
+
+  .tt-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .tt-header-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tt-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tt-mode-switch {
+    width: 100%;
+  }
+
+  .tt-mode-switch button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .tt-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tt-load-button {
+    align-items: stretch;
+  }
+
+  .tt-load-button button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tt-days {
+    margin-right: -5px;
+    padding-bottom: 6px;
+  }
+
+  .tt-slot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tt-form {
+    grid-template-columns: 1fr;
+  }
+
+  .tt-form-actions {
+    grid-column: 1;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .tt-form-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tt-modal-overlay {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
+  .tt-modal {
+    max-height: calc(100vh - 20px);
+    margin-top: 10px;
+  }
+
+  .tt-modal-header {
+    padding: 15px;
+  }
+
+  .tt-modal-body {
+    padding: 15px;
+  }
+}
+
+/* ============================================================
+   VERY SMALL SCREENS
+============================================================ */
+
+@media (max-width: 420px) {
+  .timetable-page {
+    padding: 12px;
+  }
+
+  .tt-page-header h1 {
+    font-size: 23px;
+  }
+
+  .tt-mode-switch button {
+    padding: 8px 7px;
+    font-size: 12px;
+  }
+
+  .tt-slot-card {
+    padding: 11px;
+  }
+
+  .tt-slot-number {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+}

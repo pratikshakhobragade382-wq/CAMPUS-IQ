@@ -14,6 +14,7 @@ const getNotifications = async (req, res, next) => {
       data: notifications,
     });
   } catch (error) {
+    console.error("GET NOTIFICATIONS ERROR:", error);
     return next(error);
   }
 };
@@ -32,6 +33,7 @@ const getAllNotifications = async (req, res, next) => {
       data: notifications,
     });
   } catch (error) {
+    console.error("GET ALL NOTIFICATIONS ERROR:", error);
     return next(error);
   }
 };
@@ -52,6 +54,7 @@ const getUnreadCount = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error("GET UNREAD COUNT ERROR:", error);
     return next(error);
   }
 };
@@ -80,6 +83,7 @@ const markAsRead = async (req, res, next) => {
       message: "Notification marked as read",
     });
   } catch (error) {
+    console.error("MARK AS READ ERROR:", error);
     return next(error);
   }
 };
@@ -98,6 +102,7 @@ const markAllAsRead = async (req, res, next) => {
       message: `${result.markedCount} notification(s) marked as read`,
     });
   } catch (error) {
+    console.error("MARK ALL AS READ ERROR:", error);
     return next(error);
   }
 };
@@ -126,6 +131,7 @@ const deleteNotification = async (req, res, next) => {
       message: result.message,
     });
   } catch (error) {
+    console.error("DELETE NOTIFICATION ERROR:", error);
     return next(error);
   }
 };
@@ -149,6 +155,7 @@ const deleteAllNotifications = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error("DELETE ALL NOTIFICATIONS ERROR:", error);
     return next(error);
   }
 };
@@ -156,53 +163,153 @@ const deleteAllNotifications = async (req, res, next) => {
 // =====================================================
 // CREATE NOTIFICATION
 // =====================================================
-// Used by admin / teacher to send announcements.
 //
 // POST /api/v1/notifications
+//
+// Supported audiences:
+//
+// admin
+// parent
+// student
+//
 // =====================================================
 
 const createNotification = async (req, res, next) => {
   try {
+    console.log("==========================================");
+    console.log("CREATE NOTIFICATION REQUEST");
+    console.log("BODY:", req.body);
+    console.log("USER:", req.user);
+    console.log("==========================================");
+
     const {
       title,
       message,
       type,
       priority,
+
+      // New frontend format
       audience,
+
+      // Old frontend format
+      recipient,
+
       userId,
       classId,
       sectionId,
       expiresAt,
     } = req.body;
 
-    // -------------------------------------------------
-    // Basic validation
-    // -------------------------------------------------
+    // =================================================
+    // TITLE VALIDATION
+    // =================================================
 
-    if (!title || !title.trim()) {
+    if (
+      typeof title !== "string" ||
+      !title.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "Notification title is required",
       });
     }
 
-    if (!message || !message.trim()) {
+    // =================================================
+    // MESSAGE VALIDATION
+    // =================================================
+
+    if (
+      typeof message !== "string" ||
+      !message.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "Notification message is required",
       });
     }
 
-    if (!audience) {
+    // =================================================
+    // RESOLVE AUDIENCE
+    // =================================================
+    //
+    // Frontend may send:
+    //
+    // audience: "admin"
+    //
+    // OR old code may send:
+    //
+    // recipient: "Admin"
+    //
+    // We support both.
+    // =================================================
+
+    let resolvedAudience = audience;
+
+    if (!resolvedAudience && recipient) {
+      const recipientMap = {
+        Admin: "admin",
+        admin: "admin",
+
+        Parents: "parent",
+        Parent: "parent",
+        parents: "parent",
+        parent: "parent",
+
+        Students: "student",
+        Student: "student",
+        students: "student",
+        student: "student",
+      };
+
+      resolvedAudience =
+        recipientMap[recipient] || recipient.toLowerCase();
+    }
+
+    // =================================================
+    // AUDIENCE REQUIRED
+    // =================================================
+
+    if (!resolvedAudience) {
       return res.status(400).json({
         success: false,
         message: "Notification audience is required",
       });
     }
 
-    // -------------------------------------------------
-    // Allowed notification types
-    // -------------------------------------------------
+    // =================================================
+    // NORMALIZE AUDIENCE
+    // =================================================
+
+    resolvedAudience =
+      String(resolvedAudience)
+        .trim()
+        .toLowerCase();
+
+    // =================================================
+    // ONLY THESE 3 AUDIENCES ARE ALLOWED
+    // =================================================
+
+    const allowedAudiences = [
+      "admin",
+      "parent",
+      "student",
+    ];
+
+    if (
+      !allowedAudiences.includes(
+        resolvedAudience
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid notification audience. Only admin, parent and student are allowed.",
+      });
+    }
+
+    // =================================================
+    // ALLOWED TYPES
+    // =================================================
 
     const allowedTypes = [
       "general",
@@ -219,16 +326,23 @@ const createNotification = async (req, res, next) => {
       "important",
     ];
 
-    if (type && !allowedTypes.includes(type)) {
+    const notificationType =
+      type || "general";
+
+    if (
+      !allowedTypes.includes(
+        notificationType
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid notification type",
       });
     }
 
-    // -------------------------------------------------
-    // Allowed priorities
-    // -------------------------------------------------
+    // =================================================
+    // ALLOWED PRIORITIES
+    // =================================================
 
     const allowedPriorities = [
       "low",
@@ -237,9 +351,13 @@ const createNotification = async (req, res, next) => {
       "urgent",
     ];
 
+    const notificationPriority =
+      priority || "normal";
+
     if (
-      priority &&
-      !allowedPriorities.includes(priority)
+      !allowedPriorities.includes(
+        notificationPriority
+      )
     ) {
       return res.status(400).json({
         success: false,
@@ -247,34 +365,49 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // -------------------------------------------------
-    // Allowed audiences
-    // -------------------------------------------------
+    // =================================================
+    // USER INFORMATION
+    // =================================================
 
-    const allowedAudiences = [
-      "all",
-      "admin",
-      "staff",
-      "teacher",
-      "student",
-      "parent",
-      "class",
-      "individual",
-    ];
+    const tenantId =
+      req.user?.tenantId;
 
-    if (!allowedAudiences.includes(audience)) {
+    const createdById =
+      req.user?.userId ||
+      req.user?.id;
+
+    if (!tenantId) {
+      console.error(
+        "Tenant ID missing from req.user:",
+        req.user
+      );
+
       return res.status(400).json({
         success: false,
-        message: "Invalid notification audience",
+        message:
+          "Tenant information is missing",
       });
     }
 
-    // -------------------------------------------------
-    // Individual notification requires userId
-    // -------------------------------------------------
+    if (!createdById) {
+      console.error(
+        "User ID missing from req.user:",
+        req.user
+      );
+
+      return res.status(401).json({
+        success: false,
+        message:
+          "Logged-in user information is missing",
+      });
+    }
+
+    // =================================================
+    // INDIVIDUAL USER VALIDATION
+    // =================================================
 
     if (
-      audience === "individual" &&
+      resolvedAudience === "individual" &&
       !userId
     ) {
       return res.status(400).json({
@@ -284,12 +417,12 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // -------------------------------------------------
-    // Class notification requires classId
-    // -------------------------------------------------
+    // =================================================
+    // CLASS VALIDATION
+    // =================================================
 
     if (
-      audience === "class" &&
+      resolvedAudience === "class" &&
       !classId
     ) {
       return res.status(400).json({
@@ -299,47 +432,83 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // -------------------------------------------------
-    // Resolve logged-in user
-    // -------------------------------------------------
+    // =================================================
+    // EXPIRY DATE
+    // =================================================
 
-    const tenantId = req.user.tenantId;
-    const createdById = req.user.userId;
+    let notificationExpiresAt = null;
 
-    if (!tenantId) {
-      return res.status(400).json({
-        success: false,
-        message: "Tenant information is missing",
-      });
+    if (expiresAt) {
+      const parsedDate =
+        new Date(expiresAt);
+
+      if (
+        Number.isNaN(
+          parsedDate.getTime()
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid notification expiry date",
+        });
+      }
+
+      notificationExpiresAt =
+        parsedDate;
     }
 
-    // -------------------------------------------------
-    // Create notification
-    // -------------------------------------------------
+    // =================================================
+    // CREATE NOTIFICATION
+    // =================================================
 
     const notification =
       await notificationService.createNotification({
         tenantId,
+
         title: title.trim(),
+
         message: message.trim(),
-        type: type || "general",
-        priority: priority || "normal",
-        audience,
+
+        type: notificationType,
+
+        priority: notificationPriority,
+
+        audience: resolvedAudience,
+
         userId: userId || null,
+
         classId: classId || null,
+
         sectionId: sectionId || null,
-        expiresAt: expiresAt
-          ? new Date(expiresAt)
-          : null,
+
+        expiresAt:
+          notificationExpiresAt,
+
         createdById,
       });
 
+    // =================================================
+    // SUCCESS
+    // =================================================
+
+    console.log(
+      "Notification created successfully:",
+      notification
+    );
+
     return res.status(201).json({
       success: true,
-      message: "Notification created successfully",
+      message:
+        "Notification created successfully",
       data: notification,
     });
   } catch (error) {
+    console.error(
+      "CREATE NOTIFICATION ERROR:",
+      error
+    );
+
     return next(error);
   }
 };
