@@ -47,21 +47,26 @@ const assertCanMarkClassAttendance = async (tenantId, actingUser, classId, secti
     throw new HttpError(403, 'This account is not linked to a staff record', { code: 'FORBIDDEN' });
   }
 
-  const dayOfWeek = new Date(attendanceDate).getDay(); // 1=Mon..6=Sat, matches Timetable.dayOfWeek
-
-  const assignment = await prisma.timetable.findFirst({
-    where: {
-      tenantId,
-      staffId: actingUser.staffId,
-      classId: parseInt(classId),
-      ...(sectionId && { sectionId: parseInt(sectionId) }),
-      dayOfWeek,
-      isActive: true,
-    },
+  const teacherTimetableCount = await prisma.timetable.count({
+    where: { tenantId, staffId: actingUser.staffId, isActive: true },
   });
+  if (teacherTimetableCount > 0) {
+    const dayOfWeek = new Date(attendanceDate).getDay(); // 1=Mon..6=Sat, matches Timetable.dayOfWeek
 
-  if (!assignment) {
-    throw new HttpError(403, 'You are not timetabled to teach this class on this day', { code: 'FORBIDDEN' });
+    const assignment = await prisma.timetable.findFirst({
+      where: {
+        tenantId,
+        staffId: actingUser.staffId,
+        classId: parseInt(classId),
+        ...(sectionId && { sectionId: parseInt(sectionId) }),
+        dayOfWeek,
+        isActive: true,
+      },
+    });
+
+    if (!assignment) {
+      throw new HttpError(403, 'You are not timetabled to teach this class on this day', { code: 'FORBIDDEN' });
+    }
   }
 };
 

@@ -95,12 +95,12 @@ export default function TeacherExams() {
     }
     async function loadStudents() {
       try {
-        const params = { classId: Number(reportClassId) };
+        const params = { classId: Number(reportClassId), limit: 200 };
         if (reportSectionId) params.sectionId = Number(reportSectionId);
 
         const res = await getStudents(params);
-        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-        setStudentListForReport(list);
+        const list = res?.data?.students || res?.data || (Array.isArray(res) ? res : []);
+        setStudentListForReport(Array.isArray(list) ? list : []);
       } catch (err) {
         console.error('Failed to load students for report card:', err);
       }
@@ -126,7 +126,7 @@ export default function TeacherExams() {
     setLoading(true);
     setAlertMsg(null);
     try {
-      const studentParams = { classId: Number(selectedClassId) };
+      const studentParams = { classId: Number(selectedClassId), limit: 200 };
       if (selectedSectionId) studentParams.sectionId = Number(selectedSectionId);
 
       const [studentsRes, existingMarksRes] = await Promise.all([
@@ -134,7 +134,8 @@ export default function TeacherExams() {
         getExamMarks(selectedExamId, { subjectId: Number(selectedSubjectId) }).catch(() => ({ data: [] })),
       ]);
 
-      const students = Array.isArray(studentsRes?.data) ? studentsRes.data : Array.isArray(studentsRes) ? studentsRes : [];
+      const rawStudents = studentsRes?.data?.students || studentsRes?.data || (Array.isArray(studentsRes) ? studentsRes : []);
+      const students = Array.isArray(rawStudents) ? rawStudents : [];
       const existingMarks = Array.isArray(existingMarksRes?.data) ? existingMarksRes.data : Array.isArray(existingMarksRes) ? existingMarksRes : [];
 
       if (students.length === 0) {
