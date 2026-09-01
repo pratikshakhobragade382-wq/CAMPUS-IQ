@@ -358,45 +358,9 @@ const getTeacherTimetable = async (
       staffId,
     } = req.query;
 
-    const isPrivileged = [
-      "admin",
-      "management",
-      "principal",
-    ].includes(
-      req.user.identity
-    );
-
-
-    /*
-     * Normal teacher:
-     * only their own timetable.
-     */
-
-    if (!isPrivileged) {
-      if (!req.user.staffId) {
-        return res.status(403).json({
-          success: false,
-
-          error:
-            "This account is not linked to a staff record",
-        });
-      }
-
-      if (
-        staffId &&
-        Number(staffId) !==
-          Number(req.user.staffId)
-      ) {
-        return res.status(403).json({
-          success: false,
-
-          error:
-            "You may only view your own timetable",
-        });
-      }
-
-      staffId =
-        req.user.staffId;
+    // Default to logged-in user's staffId if not specified
+    if (!staffId && !teacherName && req.user.staffId) {
+      staffId = req.user.staffId;
     }
 
 

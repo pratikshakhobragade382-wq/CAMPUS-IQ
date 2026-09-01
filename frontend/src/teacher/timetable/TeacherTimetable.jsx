@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import TeacherTopbar from '../components/TeacherTopbar';
 import { getTeacherTimetable, getPeriodSlots } from '../../api/timetable.api';
+import { getAllStaff } from '../../api/staff.api';
 import './TeacherTimetable.css';
 
 const DAYS = [
@@ -15,26 +16,68 @@ const DAYS = [
 
 export default function TeacherTimetable() {
   const { user } = useAuth();
+  const loggedInStaffId = user?.staff?.id || user?.staffId || user?.id;
+
   const [selectedDay, setSelectedDay] = useState(new Date().getDay() === 0 ? 1 : new Date().getDay());
   const [timetableData, setTimetableData] = useState([]);
   const [periodSlots, setPeriodSlots] = useState([]);
+  const [teachersList, setTeachersList] = useState([]);
+  const [selectedStaffId, setSelectedStaffId] = useState(loggedInStaffId ? String(loggedInStaffId) : '');
   const [loading, setLoading] = useState(true);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const staffId = user?.staff?.id || user?.staffId || user?.id;
+  // Fetch all staff / teachers
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      setLoadingTeachers(true);
+      try {
+        const res = await getAllStaff({ limit: 100 });
+        const rawStaff = res?.data?.staff || res?.data || res?.staff || res;
+        const list = Array.isArray(rawStaff) ? rawStaff : [];
+        setTeachersList(list);
 
-  const loadTimetable = async () => {
+        // If no teacher selected yet, default to logged in staff or first teacher in list
+        if (!selectedStaffId) {
+          if (loggedInStaffId) {
+            setSelectedStaffId(String(loggedInStaffId));
+          } else if (list.length > 0) {
+            setSelectedStaffId(String(list[0].id));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load teachers list:', err);
+      } finally {
+        setLoadingTeachers(false);
+      }
+    };
+
+    fetchTeachers();
+  }, [loggedInStaffId]);
+
+  // Load timetable for currently selected teacher
+  const loadTimetable = useCallback(async (staffIdToFetch) => {
+    const targetStaffId = staffIdToFetch || selectedStaffId || loggedInStaffId;
+    if (!targetStaffId) return;
+
     setLoading(true);
     setError('');
     try {
       const [slotsRes, ttRes] = await Promise.all([
         getPeriodSlots().catch(() => ({ data: [] })),
-        getTeacherTimetable({ staffId }).catch(() => ({ data: [] })),
+        getTeacherTimetable({ staffId: targetStaffId }).catch(() => ({ data: [] })),
       ]);
 
       const slots = Array.isArray(slotsRes?.data) ? slotsRes.data : Array.isArray(slotsRes) ? slotsRes : [];
-      const tt = Array.isArray(ttRes?.data) ? ttRes.data : Array.isArray(ttRes) ? ttRes : [];
+      
+      const rawTT = ttRes?.data || ttRes;
+      let tt = [];
+      if (Array.isArray(rawTT)) {
+        tt = rawTT;
+      } else if (rawTT && typeof rawTT === 'object') {
+        tt = Object.values(rawTT).flat();
+      }
 
       setPeriodSlots(slots);
       setTimetableData(tt);
@@ -44,11 +87,21 @@ export default function TeacherTimetable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStaffId, loggedInStaffId]);
 
   useEffect(() => {
-    loadTimetable();
-  }, [staffId]);
+    if (selectedStaffId) {
+      loadTimetable(selectedStaffId);
+    }
+  }, [selectedStaffId, loadTimetable]);
+
+  const handleTeacherChange = (e) => {
+    const newStaffId = e.target.value;
+    setSelectedStaffId(newStaffId);
+  };
+
+  const selectedTeacher = teachersList.find((t) => String(t.id) === String(selectedStaffId));
+  const isViewingSelf = loggedInStaffId && String(loggedInStaffId) === String(selectedStaffId);
 
   // Current day periods
   const daySchedule = useMemo(() => {
@@ -94,18 +147,52 @@ export default function TeacherTimetable() {
 
       <div className="timetable-header-section">
         <div className="timetable-title-area">
-          <h1>My Weekly Timetable</h1>
-          <p>View your scheduled lectures, class timings, and period slots</p>
+          <h1>
+            {isViewingSelf
+              ? 'My Weekly Timetable'
+              : selectedTeacher
+              ? `${selectedTeacher.name}'s Timetable`
+              : 'Teacher Timetable'}
+          </h1>
+          <p>
+            {selectedTeacher
+              ? `Viewing schedule for ${selectedTeacher.name} ${
+                  selectedTeacher.department?.name ? `(${selectedTeacher.department.name})` : ''
+                }`
+              : 'View scheduled lectures, class timings, and period slots'}
+          </p>
         </div>
 
         <div className="timetable-header-actions">
-          <button type="button" className="btn-timetable-action" onClick={loadTimetable}>
-            <i className="fa-solid fa-arrows-rotate"></i>
+          {/* Teacher Selector Dropdown */}
+          <div className="teacher-select-wrapper">
+            <i className="fa-solid fa-user-tie teacher-select-icon"></i>
+            <select
+              className="teacher-select-dropdown"
+              value={selectedStaffId}
+              onChange={handleTeacherChange}
+              disabled={loadingTeachers}
+            >
+              {teachersList.length === 0 ? (
+                <option value="">{loadingTeachers ? 'Loading teachers...' : 'No teachers found'}</option>
+              ) : (
+                teachersList.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name} {String(teacher.id) === String(loggedInStaffId) ? '(You)' : ''}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            className="btn-timetable-action"
+            onClick={() => loadTimetable(selectedStaffId)}
+            title="Refresh timetable"
+          >
+            <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`}></i>
             Refresh
-          </button>
-          <button type="button" className="btn-timetable-action btn-timetable-primary" onClick={() => window.print()}>
-            <i className="fa-solid fa-print"></i>
-            Print Schedule
           </button>
         </div>
       </div>
