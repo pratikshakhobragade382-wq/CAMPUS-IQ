@@ -145,57 +145,62 @@ export default function TeacherTimetable() {
         onSearchChange={setSearchQuery}
       />
 
-      <div className="timetable-header-section">
-        <div className="timetable-title-area">
-          <h1>
-            {isViewingSelf
-              ? 'My Weekly Timetable'
-              : selectedTeacher
-              ? `${selectedTeacher.name}'s Timetable`
-              : 'Teacher Timetable'}
-          </h1>
-          <p>
-            {selectedTeacher
-              ? `Viewing schedule for ${selectedTeacher.name} ${
-                  selectedTeacher.department?.name ? `(${selectedTeacher.department.name})` : ''
-                }`
-              : 'View scheduled lectures, class timings, and period slots'}
-          </p>
-        </div>
-
-        <div className="timetable-header-actions">
-          {/* Teacher Selector Dropdown */}
-          <div className="teacher-select-wrapper">
-            <i className="fa-solid fa-user-tie teacher-select-icon"></i>
-            <select
-              className="teacher-select-dropdown"
-              value={selectedStaffId}
-              onChange={handleTeacherChange}
-              disabled={loadingTeachers}
-            >
-              {teachersList.length === 0 ? (
-                <option value="">{loadingTeachers ? 'Loading teachers...' : 'No teachers found'}</option>
-              ) : (
-                teachersList.map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {teacher.name} {String(teacher.id) === String(loggedInStaffId) ? '(You)' : ''}
-                  </option>
-                ))
-              )}
-            </select>
+      <div className="timetable-content-container">
+        <div className="timetable-header-section">
+          <div className="timetable-title-area">
+            <h1>
+              {isViewingSelf
+                ? 'My Weekly Timetable'
+                : selectedTeacher
+                ? `${selectedTeacher.name}'s Timetable`
+                : 'Teacher Timetable'}
+            </h1>
+            <p>
+              {selectedTeacher
+                ? `Viewing schedule for ${selectedTeacher.name} ${
+                    selectedTeacher.department?.name ? `(${selectedTeacher.department.name})` : ''
+                  }`
+                : 'View scheduled lectures, class timings, and period slots'}
+            </p>
           </div>
 
-          <button
-            type="button"
-            className="btn-timetable-action"
-            onClick={() => loadTimetable(selectedStaffId)}
-            title="Refresh timetable"
-          >
-            <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`}></i>
-            Refresh
-          </button>
+          <div className="timetable-header-actions">
+            {/* Teacher Selector Dropdown */}
+            <div className="teacher-select-wrapper">
+              <div className="teacher-select-icon-badge">
+                <i className="fa-solid fa-user-tie"></i>
+              </div>
+              <select
+                className="teacher-select-dropdown"
+                value={selectedStaffId}
+                onChange={handleTeacherChange}
+                disabled={loadingTeachers}
+                aria-label="Select Teacher Timetable"
+              >
+                {teachersList.length === 0 ? (
+                  <option value="">{loadingTeachers ? 'Loading teachers...' : 'No teachers found'}</option>
+                ) : (
+                  teachersList.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.name} {String(teacher.id) === String(loggedInStaffId) ? '(You)' : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+              <i className="fa-solid fa-chevron-down teacher-select-chevron"></i>
+            </div>
+
+            <button
+              type="button"
+              className="btn-timetable-action"
+              onClick={() => loadTimetable(selectedStaffId)}
+              title="Refresh timetable"
+            >
+              <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`}></i>
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* Stats Row */}
       <div className="timetable-stats-row">
@@ -352,5 +357,6 @@ export default function TeacherTimetable() {
         )}
       </div>
     </div>
-  );
+  </div>
+);
 }

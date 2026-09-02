@@ -1,35 +1,45 @@
 /* TeacherAssignments.css */
 .teacher-assignments-page {
-  padding: 24px 32px;
   background-color: #f8fafc;
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.assignments-content-container {
+  padding: 28px 32px 48px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .assignments-header-section {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
+  align-items: center;
+  margin-bottom: 28px;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
 }
 
 .assignments-title-area h1 {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
 }
 
 .assignments-title-area p {
   font-size: 14px;
   color: #64748b;
   margin: 0;
+  font-weight: 400;
 }
 
 .btn-create-assignment {
-  background: #2563eb;
+  background: #0ea5e9;
   color: #ffffff;
   padding: 10px 20px;
   border-radius: 10px;
@@ -41,11 +51,13 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.2);
 }
 
 .btn-create-assignment:hover {
-  background: #1d4ed8;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  background: #0284c7;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+  transform: translateY(-1px);
 }
 
 /* Assignments Grid */
@@ -85,8 +97,8 @@
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 6px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 .due-badge {
@@ -259,9 +271,9 @@
 .form-group-field input:focus,
 .form-group-field select:focus,
 .form-group-field textarea:focus {
-  border-color: #2563eb;
+  border-color: #0ea5e9;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
 }
 
 .modal-actions-footer {

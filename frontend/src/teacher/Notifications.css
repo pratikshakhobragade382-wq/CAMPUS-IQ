@@ -60,24 +60,17 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-
   min-height: 42px;
   padding: 0 17px;
-
   border: none;
   border-radius: 8px;
-
   background: #0ea5e9;
   color: #ffffff;
-
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
-
   cursor: pointer;
-
-  box-shadow: 0 2px 5px rgba(14, 165, 233, 0.18);
-
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -157,7 +150,104 @@
   flex: 0 0 43px;
   width: 43px;
   height: 43px;
+  border-radius: 10px;
+}
 
+.notification-stat-icon.red {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.notification-stat-icon.yellow {
+  background: #fffbeb;
+  color: #eab308;
+}
+
+.notification-stat-icon.green {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+/* =========================================================
+   WORKSPACE
+========================================================= */
+
+.notification-workspace {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.notification-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 18px;
+}
+
+.notification-tab {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 17px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.notification-tab.active {
+  color: #0ea5e9;
+}
+
+.notification-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  background: #0ea5e9;
+  border-radius: 5px 5px 0 0;
+}
+
+.notification-tab-count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 20px;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.notification-toolbar {
+  padding: 15px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.notification-toolbar-search {
+  flex: 1;
+  min-width: 180px;
+  height: 40px;
+  border: 1px solid #dbe2ea;
+>>>>>>> 2c93cb1 (fix(teacher): refine module header spacing, unify sky blue buttons, and add dynamic Ollama model detection)
   border-radius: 9px;
   font-size: 17px;
 }
@@ -634,6 +724,21 @@
   line-height: 1.6;
 }
 
+.empty-compose-button {
+  border: none;
+  border-radius: 8px;
+  background: #0ea5e9;
+  color: white;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  transition: 0.2s ease;
+}
+
+.empty-compose-button:hover {
+  background: #0284c7;
+}
 
 /* ============================================================
    MODAL OVERLAY
@@ -943,32 +1048,25 @@
   display: flex;
   align-items: flex-start;
   gap: 11px;
-
   margin-bottom: 20px;
   padding: 13px 14px;
-
   border: 1px solid #bae6fd;
   border-radius: 8px;
-
   background: #f0f9ff;
 }
 
 .notification-compose-info > i {
   flex: 0 0 auto;
-
   margin-top: 2px;
-
   color: #0284c7;
   font-size: 14px;
 }
 
 .notification-compose-info strong {
   display: block;
-
   margin-bottom: 3px;
-
   color: #0369a1;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1016,12 +1114,7 @@
   font-weight: 600;
 
   cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    opacity 0.2s ease;
+  transition: 0.2s ease;
 }
 
 .notification-cancel-button {
@@ -1037,10 +1130,10 @@
 }
 
 .notification-send-button {
-  border: 1px solid #0ea5e9;
-
+  border: none;
   background: #0ea5e9;
   color: #ffffff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
 .notification-send-button:hover {

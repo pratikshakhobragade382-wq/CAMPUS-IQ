@@ -68,7 +68,7 @@
   border-radius: 10px;
   background: #0ea5e9;
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.18);
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.25);
 }
 
 .create-class-button:hover {
@@ -498,8 +498,15 @@
 .empty-create-button {
   padding: 11px 16px;
   border-radius: 9px;
-  background: #2563eb;
+  background: #0ea5e9;
   color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.empty-create-button:hover {
+  background: #0284c7;
 }
 
 /* ============================================================
@@ -654,8 +661,13 @@
 
 .modal-primary-button {
   border: none;
-  background: #2563eb;
+  background: #0ea5e9;
   color: #ffffff;
+  transition: 0.2s ease;
+}
+
+.modal-primary-button:hover {
+  background: #0284c7;
 }
 
 /* ============================================================

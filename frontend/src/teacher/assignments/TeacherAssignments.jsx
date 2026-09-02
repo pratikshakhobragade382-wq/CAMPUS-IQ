@@ -214,13 +214,14 @@ export default function TeacherAssignments() {
         onSearchChange={setSearchQuery}
       />
 
-      <div className="assignments-header-section">
-        <div className="assignments-title-area">
-          <h1>Classroom Assignments</h1>
-          <p>Create homework tasks, manage submissions, and grade student performance</p>
-        </div>
+      <div className="assignments-content-container">
+        <div className="assignments-header-section">
+          <div className="assignments-title-area">
+            <h1>Classroom Assignments</h1>
+            <p>Create homework tasks, manage submissions, and grade student performance</p>
+          </div>
 
-        <button
+          <button
           type="button"
           className="btn-create-assignment"
           onClick={() => setIsModalOpen(true)}
@@ -637,6 +638,7 @@ export default function TeacherAssignments() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

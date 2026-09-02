@@ -251,12 +251,13 @@ export default function TeacherExams() {
         onSearchChange={setSearchQuery}
       />
 
-      <div className="exams-header-section">
-        <div className="exams-title-area">
-          <h1>Examinations & Assessment</h1>
-          <p>Schedule exams, enter subject marks, and view complete student performance reports</p>
+      <div className="exams-content-container">
+        <div className="exams-header-section">
+          <div className="exams-title-area">
+            <h1>Examinations & Assessment</h1>
+            <p>Schedule exams, enter subject marks, and view complete student performance reports</p>
+          </div>
         </div>
-      </div>
 
       {alertMsg && (
         <div
@@ -734,6 +735,7 @@ export default function TeacherExams() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
