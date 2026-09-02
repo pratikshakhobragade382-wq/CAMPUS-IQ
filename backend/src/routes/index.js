@@ -27,7 +27,7 @@ const settingsRoutes = require('../modules/settings/settings.routes');
 const notificationRoutes = require('../modules/notification/notification.routes');
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
 const aiRoutes = require('../modules/ai/ai.routes');
-
+const chatbotRoutes = require("../modules/chatbot/chatbot.routes");
 // =========================================================
 // ROUTE CHECKER
 // =========================================================
@@ -186,7 +186,11 @@ registerRoute(
   aiRoutes,
   'ai'
 );
-
+registerRoute(
+  "/chatbot",
+  chatbotRoutes,
+  "chatbot"
+);
 // =========================================================
 // EXPORT ROUTER
 // =========================================================

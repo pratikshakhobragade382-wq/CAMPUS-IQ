@@ -1,9 +1,11 @@
+const express = require("express");
 
-const express = require('express');
 const router = express.Router();
 
-const { chatWithBot } = require('./chatbot.controller');
+const { chatWithBot } = require("./chatbot.controller");
+const authMiddleware = require("../../middleware/authMiddleware");
 
-router.post('/', chatWithBot);
+// Login ke baad hi chatbot use hoga
+router.post("/", authMiddleware, chatWithBot);
 
 module.exports = router;
