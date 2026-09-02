@@ -3,7 +3,6 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("./class.controller");
-
 const auth = require("../../middleware/authMiddleware");
 const authorize = require("../../middleware/authorize");
 const validateRequest = require("../../middleware/validateRequest");
@@ -106,7 +105,7 @@ router.delete(
 
 /**
  * ============================================================
- * ADD SECTION TO CLASS
+ * ADD SECTION
  * POST /classes/:classId/sections
  * ============================================================
  */
@@ -128,12 +127,16 @@ router.post(
 
 /**
  * ============================================================
- * GET SECTIONS FOR A CLASS
+ * GET SECTIONS BY CLASS
  * GET /classes/:classId/sections
+ * ============================================================
  *
- * IMPORTANT:
- * This route was missing before.
- * Attendance uses this endpoint when a class is selected.
+ * Used by Teacher Portal Student filters.
+ *
+ * Example:
+ * GET /classes/10/sections
+ *
+ * Returns sections belonging to class 10.
  * ============================================================
  */
 router.get(
