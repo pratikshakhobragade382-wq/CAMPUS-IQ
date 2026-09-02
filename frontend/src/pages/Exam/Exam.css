@@ -1,0 +1,589 @@
+/* =========================================================
+   EXAM MODULE
+   Dedicated styling for Exam.jsx
+========================================================= */
+
+.exam-page {
+  width: 100%;
+  padding: 0;
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.exam-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.exam-page-title-section {
+  min-width: 0;
+}
+
+.exam-page-title {
+  margin: 0;
+  color: #111827;
+  font-size: 30px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.exam-page-description {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   HEADER ACTIONS
+========================================================= */
+
+.exam-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.exam-search-input {
+  min-width: 260px;
+}
+
+/* =========================================================
+   PRIMARY BUTTON
+   SAME BLUE USED BY OTHER MODULES
+========================================================= */
+
+.exam-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 42px;
+  padding: 10px 18px;
+
+  border: 1px solid #0ea5e9;
+  border-radius: 10px;
+
+  background: #0ea5e9;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.16);
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.exam-primary-button:hover:not(:disabled) {
+  background: #0284c7;
+  border-color: #0284c7;
+
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.22);
+
+  transform: translateY(-1px);
+}
+
+.exam-primary-button:active:not(:disabled) {
+  background: #0369a1;
+  border-color: #0369a1;
+
+  transform: translateY(0);
+}
+
+.exam-primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.exam-primary-button svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   EXAM CARDS
+========================================================= */
+
+.exam-page .space-y-6 > * + * {
+  margin-top: 24px;
+}
+
+.exam-page .space-y-4 > * + * {
+  margin-top: 16px;
+}
+
+/* =========================================================
+   FILTER SECTION
+========================================================= */
+
+.exam-filter-card {
+  margin-bottom: 24px;
+}
+
+.exam-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.exam-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-height: 100%;
+}
+
+/* =========================================================
+   TABLE SECTION
+========================================================= */
+
+.exam-table-card {
+  margin-top: 24px;
+}
+
+.exam-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.exam-table-actions button {
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   MARKS ENTRY
+========================================================= */
+
+.exam-marks-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.exam-marks-action {
+  display: flex;
+  align-items: flex-end;
+  min-height: 100%;
+}
+
+.exam-marks-message {
+  margin-top: 16px;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.exam-marks-warning {
+  margin-bottom: 16px;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.exam-marks-error {
+  margin-top: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.exam-marks-success {
+  margin-top: 16px;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #15803d;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   MARKS TABLE
+========================================================= */
+
+.exam-marks-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.exam-marks-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.exam-marks-table th {
+  padding: 10px 12px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.exam-marks-table td {
+  padding: 10px 12px;
+  color: #374151;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.exam-marks-table input[type='number'],
+.exam-marks-table input[type='text'] {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.exam-marks-table input[type='number']:focus,
+.exam-marks-table input[type='text']:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.exam-marks-table input:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   REPORT CARD
+========================================================= */
+
+.exam-report-card {
+  margin-top: 24px;
+}
+
+.exam-report-search {
+  position: relative;
+}
+
+.exam-report-student-options {
+  margin-top: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.exam-report-student-option {
+  display: block;
+  width: 100%;
+
+  border: 0;
+  background: transparent;
+
+  padding: 10px 12px;
+
+  color: #374151;
+  font-size: 14px;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: background-color 0.15s ease;
+}
+
+.exam-report-student-option:hover {
+  background: #f9fafb;
+}
+
+.exam-report-student-option.selected {
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+/* =========================================================
+   REPORT SUMMARY
+========================================================= */
+
+.exam-report-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  margin-top: 20px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  background: #f9fafb;
+  padding: 16px;
+}
+
+.exam-report-summary-item {
+  min-width: 0;
+}
+
+.exam-report-summary-label {
+  margin: 0 0 4px;
+
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.exam-report-summary-value {
+  margin: 0;
+
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   REPORT EXAM BLOCK
+========================================================= */
+
+.exam-report-block {
+  margin-top: 16px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  padding: 16px;
+}
+
+.exam-report-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.exam-report-block-title {
+  margin: 0;
+
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.exam-report-block-subtitle {
+  margin: 4px 0 0;
+
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =========================================================
+   MODAL FORM SPACING
+========================================================= */
+
+.exam-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exam-modal-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.exam-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+/* =========================================================
+   DETAILS MODAL
+========================================================= */
+
+.exam-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+.exam-details-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+
+  margin-top: 20px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  background: #f9fafb;
+  padding: 16px;
+}
+
+.exam-details-summary-label {
+  margin: 0 0 4px;
+
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.exam-details-summary-value {
+  margin: 0;
+
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   EMPTY STATES
+========================================================= */
+
+.exam-empty-state {
+  padding: 24px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* =========================================================
+   RESPONSIVE - TABLET
+========================================================= */
+
+@media (max-width: 1024px) {
+  .exam-filter-grid,
+  .exam-marks-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exam-page-header {
+    align-items: flex-start;
+  }
+
+  .exam-page-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .exam-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .exam-page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .exam-search-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .exam-filter-grid,
+  .exam-marks-grid,
+  .exam-report-summary,
+  .exam-details-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .exam-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exam-modal-form-row,
+  .exam-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exam-modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .exam-page-actions button,
+  .exam-modal-actions button {
+    min-height: 40px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 480px) {
+  .exam-page-title {
+    font-size: 25px;
+  }
+
+  .exam-page-description {
+    font-size: 14px;
+  }
+
+  .exam-primary-button {
+    width: 100%;
+  }
+
+  .exam-page-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exam-report-block {
+    padding: 12px;
+  }
+
+  .exam-report-block-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

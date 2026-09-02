@@ -1,4 +1,14 @@
-const timetableService = require("./timetable.service");
+const timetableService =
+  require("./timetable.service");
+
+const {
+  notifyTeacher,
+} =
+  require("../notification/teacherNotification");
+
+const prisma =
+  require("../../prisma/prismaClient");
+
 
 /* ============================================================
    PERIOD SLOTS
@@ -17,13 +27,16 @@ const createPeriodSlot = async (
 
     return res.status(201).json({
       success: true,
+
       message:
         "Time slot created successfully",
+
       data,
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     const status =
       message.includes("already")
@@ -36,6 +49,7 @@ const createPeriodSlot = async (
     });
   }
 };
+
 
 const getAllPeriodSlots = async (
   req,
@@ -54,12 +68,14 @@ const getAllPeriodSlots = async (
   } catch (error) {
     return res.status(500).json({
       success: false,
+
       error:
         error?.message ||
         "Failed to fetch time slots",
     });
   }
 };
+
 
 const updatePeriodSlot = async (
   req,
@@ -75,13 +91,16 @@ const updatePeriodSlot = async (
 
     return res.status(200).json({
       success: true,
+
       message:
         "Time slot updated successfully",
+
       data,
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     const status =
       message ===
@@ -97,6 +116,7 @@ const updatePeriodSlot = async (
     });
   }
 };
+
 
 const deletePeriodSlot = async (
   req,
@@ -115,7 +135,8 @@ const deletePeriodSlot = async (
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     const status =
       message ===
@@ -132,6 +153,7 @@ const deletePeriodSlot = async (
   }
 };
 
+
 const seedDefaultSlots = async (
   req,
   res
@@ -144,13 +166,16 @@ const seedDefaultSlots = async (
 
     return res.status(201).json({
       success: true,
+
       message:
         "Default time slots created",
+
       data,
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     return res.status(409).json({
       success: false,
@@ -158,6 +183,7 @@ const seedDefaultSlots = async (
     });
   }
 };
+
 
 /* ============================================================
    CREATE TIMETABLE
@@ -174,17 +200,48 @@ const createTimetableEntry = async (
         req.user.tenantId
       );
 
+
+    /* ========================================================
+       NOTIFY ASSIGNED TEACHER
+    ======================================================== */
+
+    await notifyTeacher({
+      tenantId:
+        req.user.tenantId,
+
+      staffId:
+        data.staff?.id ||
+        data.staffId,
+
+      title:
+        "Timetable Created",
+
+      message:
+        `A new timetable entry has been created for ${data.subject?.name || "your subject"} in ${data.class?.name || "your class"}.`,
+
+      type:
+        "class",
+
+      priority:
+        "normal",
+    });
+
+
     return res.status(201).json({
       success: true,
+
       message:
         "Timetable created successfully",
+
       data,
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
-    let status = 500;
+    let status =
+      500;
 
     if (
       message.includes("already") ||
@@ -213,6 +270,7 @@ const createTimetableEntry = async (
   }
 };
 
+
 /* ============================================================
    CLASS TIMETABLE
 ============================================================ */
@@ -226,7 +284,6 @@ const getClassTimetable = async (
       classId,
       sectionId,
       academicYearId,
-
       className,
       sectionName,
       academicYearName,
@@ -238,6 +295,7 @@ const getClassTimetable = async (
     ) {
       return res.status(400).json({
         success: false,
+
         error:
           "Class is required",
       });
@@ -248,23 +306,30 @@ const getClassTimetable = async (
         req.user.tenantId,
 
         classId,
+
         sectionId,
+
         academicYearId,
 
         className,
+
         sectionName,
+
         academicYearName
       );
 
     return res.status(200).json({
       success: true,
+
       message:
         "Class timetable fetched",
+
       data,
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     return res.status(500).json({
       success: false,
@@ -272,6 +337,7 @@ const getClassTimetable = async (
     });
   }
 };
+
 
 /* ============================================================
    TEACHER TIMETABLE
@@ -300,6 +366,7 @@ const getTeacherTimetable = async (
       req.user.identity
     );
 
+
     /*
      * Normal teacher:
      * only their own timetable.
@@ -309,6 +376,7 @@ const getTeacherTimetable = async (
       if (!req.user.staffId) {
         return res.status(403).json({
           success: false,
+
           error:
             "This account is not linked to a staff record",
         });
@@ -321,6 +389,7 @@ const getTeacherTimetable = async (
       ) {
         return res.status(403).json({
           success: false,
+
           error:
             "You may only view your own timetable",
         });
@@ -330,36 +399,46 @@ const getTeacherTimetable = async (
         req.user.staffId;
     }
 
+
     if (
       !staffId &&
       !teacherName
     ) {
       return res.status(400).json({
         success: false,
+
         error:
           "Teacher is required",
       });
     }
+
 
     const data =
       await timetableService.getTeacherTimetable(
         req.user.tenantId,
 
         staffId,
+
         academicYearId,
+
         academicYearName,
+
         teacherName
       );
 
+
     return res.status(200).json({
       success: true,
+
       message:
         "Teacher timetable fetched",
+
       data,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
+
       error:
         error?.message ||
         "Failed to fetch teacher timetable",
@@ -367,8 +446,9 @@ const getTeacherTimetable = async (
   }
 };
 
+
 /* ============================================================
-   UPDATE
+   UPDATE TIMETABLE
 ============================================================ */
 
 const updateTimetableEntry = async (
@@ -383,15 +463,45 @@ const updateTimetableEntry = async (
         req.user.tenantId
       );
 
+
+    /* ========================================================
+       NOTIFY ASSIGNED TEACHER
+    ======================================================== */
+
+    await notifyTeacher({
+      tenantId:
+        req.user.tenantId,
+
+      staffId:
+        data.staff?.id ||
+        data.staffId,
+
+      title:
+        "Timetable Updated",
+
+      message:
+        `Your timetable has been updated for ${data.subject?.name || "your subject"} in ${data.class?.name || "your class"}.`,
+
+      type:
+        "class",
+
+      priority:
+        "normal",
+    });
+
+
     return res.status(200).json({
       success: true,
+
       message:
         "Timetable updated successfully",
+
       data,
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     const status =
       message ===
@@ -406,8 +516,9 @@ const updateTimetableEntry = async (
   }
 };
 
+
 /* ============================================================
-   DELETE
+   DELETE TIMETABLE
 ============================================================ */
 
 const deleteTimetableEntry = async (
@@ -415,11 +526,79 @@ const deleteTimetableEntry = async (
   res
 ) => {
   try {
+    /*
+     * Get the existing entry BEFORE deleting it,
+     * so we still know which teacher should be notified.
+     */
+
+    const existing =
+      await prisma.timetable.findFirst({
+        where: {
+          id:
+            Number(req.params.id),
+
+          tenantId:
+            req.user.tenantId,
+        },
+
+        include: {
+          class: true,
+
+          subject: true,
+
+          staff: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          section: true,
+        },
+      });
+
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+
+        error:
+          "Timetable entry not found",
+      });
+    }
+
+
     const result =
       await timetableService.deleteTimetableEntry(
         req.params.id,
         req.user.tenantId
       );
+
+
+    /* ========================================================
+       NOTIFY TEACHER
+    ======================================================== */
+
+    await notifyTeacher({
+      tenantId:
+        req.user.tenantId,
+
+      staffId:
+        existing.staffId,
+
+      title:
+        "Timetable Removed",
+
+      message:
+        `A timetable entry for ${existing.subject?.name || "your subject"} in ${existing.class?.name || "your class"} has been removed.`,
+
+      type:
+        "class",
+
+      priority:
+        "normal",
+    });
+
 
     return res.status(200).json({
       success: true,
@@ -427,7 +606,8 @@ const deleteTimetableEntry = async (
     });
   } catch (error) {
     const message =
-      error?.message || "Request failed";
+      error?.message ||
+      "Request failed";
 
     const status =
       message ===
@@ -442,21 +622,29 @@ const deleteTimetableEntry = async (
   }
 };
 
+
 /* ============================================================
    EXPORT
 ============================================================ */
 
 module.exports = {
   createPeriodSlot,
+
   getAllPeriodSlots,
+
   updatePeriodSlot,
+
   deletePeriodSlot,
+
   seedDefaultSlots,
 
   createTimetableEntry,
+
   getClassTimetable,
+
   getTeacherTimetable,
 
   updateTimetableEntry,
+
   deleteTimetableEntry,
 };

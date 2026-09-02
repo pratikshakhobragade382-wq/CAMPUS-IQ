@@ -1,7 +1,8 @@
 const notificationService = require("./notification.service");
+const prisma = require("../../prisma/prismaClient");
 
 // =====================================================
-// GET NOTIFICATIONS FOR BELL
+// GET NOTIFICATIONS FOR CURRENT USER
 // =====================================================
 
 const getNotifications = async (req, res, next) => {
@@ -20,7 +21,7 @@ const getNotifications = async (req, res, next) => {
 };
 
 // =====================================================
-// GET ALL NOTIFICATIONS
+// GET ALL NOTIFICATIONS FOR CURRENT USER
 // =====================================================
 
 const getAllNotifications = async (req, res, next) => {
@@ -155,7 +156,11 @@ const deleteAllNotifications = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error("DELETE ALL NOTIFICATIONS ERROR:", error);
+    console.error(
+      "DELETE ALL NOTIFICATIONS ERROR:",
+      error
+    );
+
     return next(error);
   }
 };
@@ -164,13 +169,13 @@ const deleteAllNotifications = async (req, res, next) => {
 // CREATE NOTIFICATION
 // =====================================================
 //
-// POST /api/v1/notifications
+// Teacher can manually send to:
 //
-// Supported audiences:
+// 1. Admin
+// 2. Parents
+// 3. Students
 //
-// admin
-// parent
-// student
+// Teacher cannot manually send to another teacher/staff.
 //
 // =====================================================
 
@@ -187,22 +192,17 @@ const createNotification = async (req, res, next) => {
       message,
       type,
       priority,
-
-      // New frontend format
       audience,
-
-      // Old frontend format
       recipient,
-
       userId,
       classId,
       sectionId,
       expiresAt,
     } = req.body;
 
-    // =================================================
-    // TITLE VALIDATION
-    // =================================================
+    // ===================================================
+    // TITLE
+    // ===================================================
 
     if (
       typeof title !== "string" ||
@@ -214,9 +214,9 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
-    // MESSAGE VALIDATION
-    // =================================================
+    // ===================================================
+    // MESSAGE
+    // ===================================================
 
     if (
       typeof message !== "string" ||
@@ -228,20 +228,9 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
+    // ===================================================
     // RESOLVE AUDIENCE
-    // =================================================
-    //
-    // Frontend may send:
-    //
-    // audience: "admin"
-    //
-    // OR old code may send:
-    //
-    // recipient: "Admin"
-    //
-    // We support both.
-    // =================================================
+    // ===================================================
 
     let resolvedAudience = audience;
 
@@ -262,12 +251,9 @@ const createNotification = async (req, res, next) => {
       };
 
       resolvedAudience =
-        recipientMap[recipient] || recipient.toLowerCase();
+        recipientMap[recipient] ||
+        String(recipient).toLowerCase();
     }
-
-    // =================================================
-    // AUDIENCE REQUIRED
-    // =================================================
 
     if (!resolvedAudience) {
       return res.status(400).json({
@@ -276,18 +262,15 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
-    // NORMALIZE AUDIENCE
-    // =================================================
+    resolvedAudience = String(
+      resolvedAudience
+    )
+      .trim()
+      .toLowerCase();
 
-    resolvedAudience =
-      String(resolvedAudience)
-        .trim()
-        .toLowerCase();
-
-    // =================================================
-    // ONLY THESE 3 AUDIENCES ARE ALLOWED
-    // =================================================
+    // ===================================================
+    // ONLY ALLOW ADMIN / PARENT / STUDENT
+    // ===================================================
 
     const allowedAudiences = [
       "admin",
@@ -307,9 +290,9 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
-    // ALLOWED TYPES
-    // =================================================
+    // ===================================================
+    // NOTIFICATION TYPE
+    // ===================================================
 
     const allowedTypes = [
       "general",
@@ -324,6 +307,8 @@ const createNotification = async (req, res, next) => {
       "class",
       "section",
       "important",
+      "assignment",
+      "timetable",
     ];
 
     const notificationType =
@@ -340,9 +325,9 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
-    // ALLOWED PRIORITIES
-    // =================================================
+    // ===================================================
+    // PRIORITY
+    // ===================================================
 
     const allowedPriorities = [
       "low",
@@ -365,9 +350,9 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
-    // USER INFORMATION
-    // =================================================
+    // ===================================================
+    // LOGGED-IN USER
+    // ===================================================
 
     const tenantId =
       req.user?.tenantId;
@@ -402,41 +387,118 @@ const createNotification = async (req, res, next) => {
       });
     }
 
-    // =================================================
-    // INDIVIDUAL USER VALIDATION
-    // =================================================
+    // ===================================================
+    // STUDENT CLASS / SECTION VALIDATION
+    // ===================================================
 
     if (
-      resolvedAudience === "individual" &&
-      !userId
+      resolvedAudience === "student"
+    ) {
+      if (
+        sectionId &&
+        !classId
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "classId is required when sectionId is provided",
+        });
+      }
+
+      if (classId) {
+        const numericClassId =
+          Number(classId);
+
+        if (
+          !Number.isInteger(
+            numericClassId
+          )
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid classId",
+          });
+        }
+
+        const validClass =
+          await prisma.class.findFirst({
+            where: {
+              id: numericClassId,
+              tenantId,
+              isDeleted: false,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        if (!validClass) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid class for this school",
+          });
+        }
+      }
+
+      if (sectionId) {
+        const numericSectionId =
+          Number(sectionId);
+
+        const numericClassId =
+          Number(classId);
+
+        if (
+          !Number.isInteger(
+            numericSectionId
+          )
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid sectionId",
+          });
+        }
+
+        const validSection =
+          await prisma.section.findFirst({
+            where: {
+              id: numericSectionId,
+              classId: numericClassId,
+              tenantId,
+              isDeleted: false,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        if (!validSection) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid section for the selected class",
+          });
+        }
+      }
+    } else if (
+      classId ||
+      sectionId
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "userId is required for individual notifications",
+          "Class and section can only be used for student notifications",
       });
     }
 
-    // =================================================
-    // CLASS VALIDATION
-    // =================================================
-
-    if (
-      resolvedAudience === "class" &&
-      !classId
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "classId is required for class notifications",
-      });
-    }
-
-    // =================================================
+    // ===================================================
     // EXPIRY DATE
-    // =================================================
+    // ===================================================
 
-    let notificationExpiresAt = null;
+    let notificationExpiresAt =
+      null;
 
     if (expiresAt) {
       const parsedDate =
@@ -458,9 +520,9 @@ const createNotification = async (req, res, next) => {
         parsedDate;
     }
 
-    // =================================================
-    // CREATE NOTIFICATION
-    // =================================================
+    // ===================================================
+    // CREATE
+    // ===================================================
 
     const notification =
       await notificationService.createNotification({
@@ -472,29 +534,41 @@ const createNotification = async (req, res, next) => {
 
         type: notificationType,
 
-        priority: notificationPriority,
+        priority:
+          notificationPriority,
 
-        audience: resolvedAudience,
+        audience:
+          resolvedAudience,
 
-        userId: userId || null,
+        userId:
+          userId
+            ? Number(userId)
+            : null,
 
-        classId: classId || null,
+        classId:
+          classId
+            ? Number(classId)
+            : null,
 
-        sectionId: sectionId || null,
+        sectionId:
+          sectionId
+            ? Number(sectionId)
+            : null,
 
         expiresAt:
           notificationExpiresAt,
 
-        createdById,
+        createdById:
+          Number(createdById),
       });
 
-    // =================================================
+    // ===================================================
     // SUCCESS
-    // =================================================
+    // ===================================================
 
     console.log(
-      "Notification created successfully:",
-      notification
+      "NOTIFICATION CREATED SUCCESSFULLY:",
+      notification.id
     );
 
     return res.status(201).json({
