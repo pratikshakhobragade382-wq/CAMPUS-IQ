@@ -1,20 +1,17 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
 import "./TeacherSidebar.css";
 
 export default function TeacherSidebar() {
   const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
   const teacherName =
     user?.staff?.name ||
     user?.name ||
     user?.fullName ||
     "Teacher";
-
-  // =========================================================
-  // MENU ITEMS
-  // =========================================================
 
   const menuItems = [
     {
@@ -52,12 +49,11 @@ export default function TeacherSidebar() {
       icon: "fa-solid fa-file-lines",
       path: "/teacher/exams",
     },
-
     {
-     label: "AI Teacher Co-Pilot",
-     path: "/teacher/ai-copilot",
-     icon: "fa-solid fa-robot",
-},
+      label: "AI Teacher Co-Pilot",
+      icon: "fa-solid fa-robot",
+      path: "/teacher/ai-copilot",
+    },
   ];
 
   const bottomItems = [
@@ -78,64 +74,31 @@ export default function TeacherSidebar() {
     },
   ];
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
-
   const handleLogout = () => {
     logout();
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
-
   return (
     <aside className="teacher-sidebar">
 
-      {/* =====================================================
-          LOGO
-      ====================================================== */}
-
+      {/* LOGO */}
       <div className="teacher-sidebar-logo">
-
-        <img
-          src={logo}
-          alt="Campus IQ"
-        />
-
+        <img src={logo} alt="Campus IQ" />
       </div>
 
-
-      {/* =====================================================
-          TEACHER PROFILE
-      ====================================================== */}
-
+      {/* TEACHER PROFILE */}
       <div className="teacher-sidebar-profile">
-
         <div className="teacher-sidebar-avatar">
           {teacherName.charAt(0).toUpperCase()}
         </div>
 
         <div className="teacher-sidebar-profile-info">
-
-          <strong>
-            {teacherName}
-          </strong>
-
-          <span>
-            Teacher
-          </span>
-
+          <strong>{teacherName}</strong>
+          <span>Teacher</span>
         </div>
-
       </div>
 
-
-      {/* =====================================================
-          MAIN NAVIGATION
-      ====================================================== */}
-
+      {/* NAVIGATION */}
       <nav className="teacher-sidebar-nav">
 
         <p className="teacher-sidebar-section-title">
@@ -143,7 +106,6 @@ export default function TeacherSidebar() {
         </p>
 
         {menuItems.map((item) => (
-
           <NavLink
             key={item.path}
             to={item.path}
@@ -153,28 +115,16 @@ export default function TeacherSidebar() {
               }`
             }
           >
-
             <i className={item.icon}></i>
-
-            <span>
-              {item.label}
-            </span>
-
+            <span>{item.label}</span>
           </NavLink>
-
         ))}
-
-
-        {/* =================================================
-            OTHER
-        ================================================== */}
 
         <p className="teacher-sidebar-section-title teacher-sidebar-other-title">
           OTHER
         </p>
 
         {bottomItems.map((item) => (
-
           <NavLink
             key={item.path}
             to={item.path}
@@ -184,40 +134,23 @@ export default function TeacherSidebar() {
               }`
             }
           >
-
             <i className={item.icon}></i>
-
-            <span>
-              {item.label}
-            </span>
-
+            <span>{item.label}</span>
           </NavLink>
-
         ))}
 
       </nav>
 
-
-      {/* =====================================================
-          LOGOUT
-      ====================================================== */}
-
+      {/* LOGOUT */}
       <div className="teacher-sidebar-footer">
-
         <button
           type="button"
           className="teacher-sidebar-logout"
           onClick={handleLogout}
         >
-
           <i className="fa-solid fa-right-from-bracket"></i>
-
-          <span>
-            Logout
-          </span>
-
+          <span>Logout</span>
         </button>
-
       </div>
 
     </aside>

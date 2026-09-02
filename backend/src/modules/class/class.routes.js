@@ -1,4 +1,3 @@
-
 const express = require("express");
 
 const router = express.Router();
@@ -107,7 +106,7 @@ router.delete(
 
 /**
  * ============================================================
- * ADD SECTION
+ * ADD SECTION TO CLASS
  * POST /classes/:classId/sections
  * ============================================================
  */
@@ -129,6 +128,25 @@ router.post(
 
 /**
  * ============================================================
+ * GET SECTIONS FOR A CLASS
+ * GET /classes/:classId/sections
+ *
+ * IMPORTANT:
+ * This route was missing before.
+ * Attendance uses this endpoint when a class is selected.
+ * ============================================================
+ */
+router.get(
+  "/:classId/sections",
+  auth,
+  validateRequest({
+    params: classIdParam,
+  }),
+  controller.getSectionsByClass
+);
+
+/**
+ * ============================================================
  * GET STUDENTS BY SECTION
  * GET /classes/:classId/sections/:sectionId/students
  * ============================================================
@@ -143,20 +161,5 @@ router.get(
  * ============================================================
  * EXPORT ROUTER
  * ============================================================
- *
- * VERY IMPORTANT:
- * The routes/index.js file expects this file to export
- * an Express router.
- *
- * Without this line:
- *
- * module.exports = router;
- *
- * Express receives an object instead of a router and gives:
- *
- * Router.use() requires a middleware function but got an Object
- *
- * ============================================================
  */
 module.exports = router;
-

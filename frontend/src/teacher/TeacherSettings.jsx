@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import axiosClient from "../api/axios";
 import {
   changeSettingsPassword,
   getSettingsProfile,
@@ -173,6 +175,7 @@ function SettingsSection({
 
 export default function TeacherSettings() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const headerName =
     user?.staff?.name ||
@@ -219,14 +222,121 @@ export default function TeacherSettings() {
   });
 
   /*
-   * Loads the teacher settings from the backend.
+   * ============================================================
+   * REAL NOTIFICATION UNREAD COUNT
+   * ============================================================
    *
-   * This function is also used by the "Try again" button,
-   * so it is kept separate from the initial useEffect.
+   * This comes from:
+   *
+   * GET /api/v1/notifications/unread-count
+   *
+   * The axios client already handles the API base URL/auth.
    */
+
+  const [unreadNotificationCount, setUnreadNotificationCount] =
+    useState(0);
+
+  const loadUnreadNotificationCount = useCallback(async () => {
+    try {
+      const response = await axiosClient.get(
+        "/notifications/unread-count"
+      );
+
+      const count = Number(
+        response?.data?.data?.count ?? 0
+      );
+
+      setUnreadNotificationCount(
+        Number.isFinite(count) && count > 0 ? count : 0
+      );
+    } catch (error) {
+      console.error(
+        "Failed to load notification unread count:",
+        error
+      );
+
+      /*
+       * Do not show fake data if the API fails.
+       */
+      setUnreadNotificationCount(0);
+    }
+  }, []);
+
+  /*
+   * Load unread count when Settings opens.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const response = await axiosClient.get(
+          "/notifications/unread-count"
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        const count = Number(
+          response?.data?.data?.count ?? 0
+        );
+
+        setUnreadNotificationCount(
+          Number.isFinite(count) && count > 0 ? count : 0
+        );
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Failed to load notification unread count:",
+          error
+        );
+
+        setUnreadNotificationCount(0);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /*
+   * Refresh unread count periodically and when the
+   * user returns to the browser tab.
+   */
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadUnreadNotificationCount();
+    }, 15000);
+
+    const handleFocus = () => {
+      loadUnreadNotificationCount();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [loadUnreadNotificationCount]);
+
+  /*
+   * ============================================================
+   * LOAD SETTINGS
+   * ============================================================
+   */
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setLoadError("");
+
     setAccountMessage({
       type: "",
       text: "",
@@ -250,7 +360,10 @@ export default function TeacherSettings() {
         avatarUrl: profile.avatarUrl || "",
       });
     } catch (err) {
-      console.error("Failed to load teacher settings:", err);
+      console.error(
+        "Failed to load teacher settings:",
+        err
+      );
 
       setLoadError(
         getSettingsErrorMessage(
@@ -264,12 +377,11 @@ export default function TeacherSettings() {
   }, []);
 
   /*
-   * Initial page load.
-   *
-   * The API request is started directly inside the effect
-   * instead of calling loadSettings(), which prevents the
-   * react-hooks/set-state-in-effect ESLint warning.
+   * ============================================================
+   * INITIAL SETTINGS LOAD
+   * ============================================================
    */
+
   useEffect(() => {
     let cancelled = false;
 
@@ -327,6 +439,12 @@ export default function TeacherSettings() {
     };
   }, []);
 
+  /*
+   * ============================================================
+   * ACCOUNT FORM
+   * ============================================================
+   */
+
   const handleAccountChange = (field) => (event) => {
     const value = event.target.value;
 
@@ -341,6 +459,12 @@ export default function TeacherSettings() {
     });
   };
 
+  /*
+   * ============================================================
+   * PASSWORD FORM
+   * ============================================================
+   */
+
   const handlePasswordChange = (field) => (event) => {
     const value = event.target.value;
 
@@ -354,6 +478,12 @@ export default function TeacherSettings() {
       text: "",
     });
   };
+
+  /*
+   * ============================================================
+   * SAVE ACCOUNT
+   * ============================================================
+   */
 
   const handleSaveAccount = async (event) => {
     event.preventDefault();
@@ -419,6 +549,12 @@ export default function TeacherSettings() {
     }
   };
 
+  /*
+   * ============================================================
+   * CHANGE PASSWORD
+   * ============================================================
+   */
+
   const handleChangePassword = async (event) => {
     event.preventDefault();
 
@@ -478,6 +614,10 @@ export default function TeacherSettings() {
 
   return (
     <div className="teacher-panel teacher-settings-page">
+      {/* ======================================================
+          TOP BAR
+      ====================================================== */}
+
       <header className="teacher-topbar">
         <div className="teacher-search">
           <i className="fa-solid fa-magnifying-glass"></i>
@@ -489,25 +629,51 @@ export default function TeacherSettings() {
         </div>
 
         <div className="teacher-topbar-actions">
+
+          {/* ==================================================
+              NOTIFICATION BUTTON
+          ================================================== */}
+
           <button
             type="button"
             className="teacher-topbar-icon"
+            onClick={() => navigate("/teacher/notifications")}
+            aria-label="Notifications"
+            title="Notifications"
           >
             <i className="fa-regular fa-bell"></i>
 
-            <span className="teacher-notification-dot">
-              1
-            </span>
+            {unreadNotificationCount > 0 && (
+              <span
+                className="teacher-notification-dot"
+                aria-label={`${unreadNotificationCount} unread notifications`}
+              >
+                {unreadNotificationCount > 99
+                  ? "99+"
+                  : unreadNotificationCount}
+              </span>
+            )}
           </button>
+
+          {/* ==================================================
+              SETTINGS BUTTON
+          ================================================== */}
 
           <button
             type="button"
             className="teacher-topbar-icon"
+            onClick={() => navigate("/teacher/settings")}
+            aria-label="Settings"
+            title="Settings"
           >
             <i className="fa-solid fa-gear"></i>
           </button>
 
           <div className="teacher-topbar-divider"></div>
+
+          {/* ==================================================
+              MINI PROFILE
+          ================================================== */}
 
           <div className="teacher-mini-profile">
             <div className="teacher-mini-avatar">
@@ -522,7 +688,16 @@ export default function TeacherSettings() {
         </div>
       </header>
 
+      {/* ======================================================
+          MAIN CONTENT
+      ====================================================== */}
+
       <main className="teacher-main-content">
+
+        {/* ====================================================
+            PAGE HEADING
+        ==================================================== */}
+
         <div className="teacher-page-heading">
           <div>
             <h1>Settings</h1>
@@ -539,6 +714,10 @@ export default function TeacherSettings() {
           </div>
         </div>
 
+        {/* ====================================================
+            LOADING
+        ==================================================== */}
+
         {loading && (
           <div
             className="teacher-profile-loading"
@@ -553,9 +732,14 @@ export default function TeacherSettings() {
           </div>
         )}
 
+        {/* ====================================================
+            ERROR
+        ==================================================== */}
+
         {!loading && loadError && (
           <section className="teacher-dashboard-card teacher-profile-error">
             <div className="teacher-empty-content">
+
               <div className="teacher-empty-icon blue">
                 <i className="fa-solid fa-circle-exclamation"></i>
               </div>
@@ -573,12 +757,22 @@ export default function TeacherSettings() {
 
                 Try again
               </button>
+
             </div>
           </section>
         )}
 
+        {/* ====================================================
+            SETTINGS CONTENT
+        ==================================================== */}
+
         {!loading && !loadError && (
           <div className="teacher-settings-grid">
+
+            {/* ==================================================
+                ACCOUNT SETTINGS
+            ================================================== */}
+
             <SettingsSection
               icon="fa-regular fa-user"
               title="Account Settings"
@@ -589,6 +783,7 @@ export default function TeacherSettings() {
                 onSubmit={handleSaveAccount}
                 noValidate
               >
+
                 {accountMessage.text && (
                   <div
                     className={`teacher-settings-banner ${accountMessage.type}`}
@@ -618,6 +813,8 @@ export default function TeacherSettings() {
                   </div>
                 </div>
 
+                {/* NAME */}
+
                 <label className="teacher-settings-field">
                   <span>Name</span>
 
@@ -631,6 +828,8 @@ export default function TeacherSettings() {
                     disabled={savingAccount}
                   />
                 </label>
+
+                {/* EMAIL */}
 
                 <label className="teacher-settings-field">
                   <span>Email</span>
@@ -646,6 +845,8 @@ export default function TeacherSettings() {
                   />
                 </label>
 
+                {/* PHONE */}
+
                 <label className="teacher-settings-field">
                   <span>Phone</span>
 
@@ -659,6 +860,8 @@ export default function TeacherSettings() {
                     disabled={savingAccount}
                   />
                 </label>
+
+                {/* AVATAR URL */}
 
                 <label className="teacher-settings-field">
                   <span>Avatar URL</span>
@@ -674,6 +877,8 @@ export default function TeacherSettings() {
                     disabled={savingAccount}
                   />
                 </label>
+
+                {/* SAVE */}
 
                 <button
                   type="submit"
@@ -692,8 +897,13 @@ export default function TeacherSettings() {
                     </>
                   )}
                 </button>
+
               </form>
             </SettingsSection>
+
+            {/* ==================================================
+                PASSWORD & SECURITY
+            ================================================== */}
 
             <SettingsSection
               icon="fa-solid fa-lock"
@@ -705,6 +915,7 @@ export default function TeacherSettings() {
                 onSubmit={handleChangePassword}
                 noValidate
               >
+
                 {passwordMessage.text && (
                   <div
                     className={`teacher-settings-banner ${passwordMessage.type}`}
@@ -724,6 +935,8 @@ export default function TeacherSettings() {
                   </div>
                 )}
 
+                {/* CURRENT PASSWORD */}
+
                 <label className="teacher-settings-field">
                   <span>Current password</span>
 
@@ -740,6 +953,8 @@ export default function TeacherSettings() {
                   />
                 </label>
 
+                {/* NEW PASSWORD */}
+
                 <label className="teacher-settings-field">
                   <span>New password</span>
 
@@ -755,6 +970,8 @@ export default function TeacherSettings() {
                     disabled={savingPassword}
                   />
                 </label>
+
+                {/* CONFIRM PASSWORD */}
 
                 <label className="teacher-settings-field">
                   <span>Confirm new password</span>
@@ -778,6 +995,8 @@ export default function TeacherSettings() {
                   and is not sent to the server.
                 </p>
 
+                {/* CHANGE PASSWORD */}
+
                 <button
                   type="submit"
                   className="teacher-settings-submit"
@@ -795,8 +1014,10 @@ export default function TeacherSettings() {
                     </>
                   )}
                 </button>
+
               </form>
             </SettingsSection>
+
           </div>
         )}
       </main>

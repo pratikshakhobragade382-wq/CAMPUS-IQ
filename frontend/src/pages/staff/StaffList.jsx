@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import axiosClient from "../../api/axios";
-
 import "./staff.css";
 
 const ROLES = [
@@ -22,20 +26,50 @@ const ROLES = [
   "other",
 ];
 
+function getErrorMessage(error, fallback) {
+  return (
+    error?.response?.data?.error ||
+    error?.response?.data?.message ||
+    fallback
+  );
+}
+
+function getStaffSubjects(staffMember) {
+  if (!staffMember) return [];
+
+  if (!Array.isArray(staffMember.subjects)) {
+    return [];
+  }
+
+  return staffMember.subjects
+    .map((item) => item?.subject || item)
+    .filter(
+      (subject) =>
+        subject &&
+        (subject.id ||
+          subject.name ||
+          subject.code)
+    );
+}
+
 export default function StaffList() {
   const [staff, setStaff] = useState([]);
   const [pagination, setPagination] = useState({});
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
   const [page, setPage] = useState(1);
 
-  /* =====================================================
-     FETCH STAFF
-     ===================================================== */
+  /* =========================================================
+     LOAD STAFF
+  ========================================================= */
 
-  const loadStaff = async (requestedPage = page) => {
+  const loadStaff = async (
+    requestedPage = page
+  ) => {
     setLoading(true);
     setError("");
 
@@ -53,18 +87,28 @@ export default function StaffList() {
         params.role = role;
       }
 
-      const res = await axiosClient.get("/staff", { params });
+      const response = await axiosClient.get(
+        "/staff",
+        { params }
+      );
 
-      const data = res.data?.data || {};
+      const data =
+        response?.data?.data || {};
 
       setStaff(data.staff || []);
       setPagination(data.pagination || {});
+
     } catch (err) {
-      console.error("Failed to load staff:", err);
+      console.error(
+        "Failed to load staff:",
+        err
+      );
 
       setError(
-        err.response?.data?.error ||
+        getErrorMessage(
+          err,
           "Failed to load staff."
+        )
       );
     } finally {
       setLoading(false);
@@ -75,22 +119,25 @@ export default function StaffList() {
     loadStaff(page);
   }, [page, role]);
 
-  /* =====================================================
+  /* =========================================================
      SEARCH
-     ===================================================== */
+  ========================================================= */
 
-  const submitSearch = (e) => {
-    e.preventDefault();
+  const submitSearch = (event) => {
+    event.preventDefault();
 
     setPage(1);
     loadStaff(1);
   };
 
-  /* =====================================================
+  /* =========================================================
      DELETE
-     ===================================================== */
+  ========================================================= */
 
-  const removeStaff = async (id, name) => {
+  const removeStaff = async (
+    id,
+    name
+  ) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete ${name}?`
     );
@@ -100,22 +147,30 @@ export default function StaffList() {
     try {
       setError("");
 
-      await axiosClient.delete(`/staff/${id}`);
+      await axiosClient.delete(
+        `/staff/${id}`
+      );
 
       await loadStaff(page);
+
     } catch (err) {
-      console.error("Failed to delete staff:", err);
+      console.error(
+        "Failed to delete staff:",
+        err
+      );
 
       setError(
-        err.response?.data?.error ||
+        getErrorMessage(
+          err,
           "Failed to delete staff."
+        )
       );
     }
   };
 
-  /* =====================================================
+  /* =========================================================
      STATISTICS
-     ===================================================== */
+  ========================================================= */
 
   const totals = useMemo(() => {
     const total =
@@ -124,11 +179,13 @@ export default function StaffList() {
       staff.length;
 
     const teachers = staff.filter(
-      (item) => item.role === "teacher"
+      (item) =>
+        item.role === "teacher"
     ).length;
 
     const other = staff.filter(
-      (item) => item.role !== "teacher"
+      (item) =>
+        item.role !== "teacher"
     ).length;
 
     return {
@@ -138,21 +195,32 @@ export default function StaffList() {
     };
   }, [staff, pagination]);
 
-  /* =====================================================
-     ROLE LABEL
-     ===================================================== */
+  /* =========================================================
+     ROLE
+  ========================================================= */
 
-  const formatRole = (role) => {
-    if (!role) return "—";
+  const formatRole = (value) => {
+    if (!value) return "—";
 
-    return role
+    return String(value)
       .replaceAll("_", " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+      .replace(
+        /\b\w/g,
+        (char) =>
+          char.toUpperCase()
+      );
   };
 
-  /* =====================================================
+  /* =========================================================
+     PAGINATION
+  ========================================================= */
+
+  const totalPages =
+    pagination.totalPages || 1;
+
+  /* =========================================================
      UI
-     ===================================================== */
+  ========================================================= */
 
   return (
     <div className="staff-page">
@@ -164,7 +232,7 @@ export default function StaffList() {
           <h1>Staff Management</h1>
 
           <p>
-            Manage teachers and school staff.
+            Manage teachers, school staff and their subjects.
           </p>
         </div>
 
@@ -175,13 +243,18 @@ export default function StaffList() {
             className="staff-search"
             onSubmit={submitSearch}
           >
-            <Search className="staff-search-icon" />
+            <Search
+              className="staff-search-icon"
+              size={18}
+            />
 
             <input
               type="text"
               placeholder="Search staff..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
             />
           </form>
 
@@ -189,15 +262,20 @@ export default function StaffList() {
           <select
             className="staff-role-filter"
             value={role}
-            onChange={(e) => {
-              setRole(e.target.value);
+            onChange={(event) => {
+              setRole(event.target.value);
               setPage(1);
             }}
           >
-            <option value="">All roles</option>
+            <option value="">
+              All roles
+            </option>
 
             {ROLES.map((item) => (
-              <option key={item} value={item}>
+              <option
+                key={item}
+                value={item}
+              >
                 {formatRole(item)}
               </option>
             ))}
@@ -215,7 +293,7 @@ export default function StaffList() {
             Search
           </button>
 
-          {/* ADD STAFF */}
+          {/* ADD */}
           <Link
             to="/staff/new"
             className="staff-add-btn"
@@ -225,7 +303,6 @@ export default function StaffList() {
           </Link>
 
         </div>
-
       </div>
 
       {/* ERROR */}
@@ -235,7 +312,7 @@ export default function StaffList() {
         </div>
       )}
 
-      {/* STATISTICS */}
+      {/* STATS */}
       <div className="staff-stats">
 
         <div className="staff-stat-card">
@@ -244,7 +321,9 @@ export default function StaffList() {
           </p>
 
           <p className="staff-stat-value">
-            {loading ? "..." : totals.total}
+            {loading
+              ? "..."
+              : totals.total}
           </p>
         </div>
 
@@ -254,7 +333,9 @@ export default function StaffList() {
           </p>
 
           <p className="staff-stat-value">
-            {loading ? "..." : totals.teachers}
+            {loading
+              ? "..."
+              : totals.teachers}
           </p>
         </div>
 
@@ -264,13 +345,15 @@ export default function StaffList() {
           </p>
 
           <p className="staff-stat-value">
-            {loading ? "..." : totals.other}
+            {loading
+              ? "..."
+              : totals.other}
           </p>
         </div>
 
       </div>
 
-      {/* TABLE CARD */}
+      {/* TABLE */}
       <div className="staff-table-card">
 
         <div className="staff-table-header">
@@ -299,6 +382,7 @@ export default function StaffList() {
                     <th>Email</th>
                     <th>Role</th>
                     <th>Department</th>
+                    <th>Subjects</th>
                     <th>Phone</th>
                     <th>Login</th>
                     <th>Actions</th>
@@ -306,81 +390,127 @@ export default function StaffList() {
                 </thead>
 
                 <tbody>
-                  {staff.map((item) => (
-                    <tr key={item.id}>
 
-                      <td>
-                        <span className="staff-name">
-                          {item.employeeId}
-                        </span>
-                      </td>
+                  {staff.map((item) => {
 
-                      <td>
-                        <span className="staff-person-name">
-                          {item.name}
-                        </span>
-                      </td>
+                    const itemSubjects =
+                      getStaffSubjects(item);
 
-                      <td>
-                        {item.email || "—"}
-                      </td>
+                    return (
+                      <tr key={item.id}>
 
-                      <td>
-                        <span className="staff-role-badge">
-                          {formatRole(item.role)}
-                        </span>
-                      </td>
+                        <td>
+                          <span className="staff-name">
+                            {item.employeeId}
+                          </span>
+                        </td>
 
-                      <td>
-                        {item.department?.name || "—"}
-                      </td>
+                        <td>
+                          <span className="staff-person-name">
+                            {item.name}
+                          </span>
+                        </td>
 
-                      <td>
-                        {item.phone || "—"}
-                      </td>
+                        <td>
+                          {item.email || "—"}
+                        </td>
 
-                      <td>
-                        <span
-                          className={`staff-login-status ${
-                            item.user ? "yes" : "no"
-                          }`}
-                        >
-                          {item.user ? "Yes" : "No"}
-                        </span>
-                      </td>
+                        <td>
+                          <span className="staff-role-badge">
+                            {formatRole(item.role)}
+                          </span>
+                        </td>
 
-                      <td>
-                        <div className="staff-row-actions">
+                        <td>
+                          {item.department?.name ||
+                            "—"}
+                        </td>
 
-                          <Link
-                            to={`/staff/${item.id}/edit`}
-                            className="staff-action-btn edit"
-                            title="Edit"
+                        {/* SUBJECTS */}
+                        <td>
+                          {itemSubjects.length === 0 ? (
+                            <span className="staff-subject-empty">
+                              —
+                            </span>
+                          ) : (
+                            <div className="staff-subject-list">
+
+                              {itemSubjects.map(
+                                (subject) => (
+                                  <span
+                                    className="staff-subject-badge"
+                                    key={
+                                      subject.id ||
+                                      `${subject.name}-${subject.code}`
+                                    }
+                                  >
+                                    <span className="staff-subject-badge-name">
+                                      {subject.name}
+                                    </span>
+
+                                    {subject.code && (
+                                      <span className="staff-subject-badge-code">
+                                        {subject.code}
+                                      </span>
+                                    )}
+                                  </span>
+                                )
+                              )}
+
+                            </div>
+                          )}
+                        </td>
+
+                        <td>
+                          {item.phone || "—"}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`staff-login-status ${
+                              item.user
+                                ? "yes"
+                                : "no"
+                            }`}
                           >
-                            <Pencil size={15} />
-                            Edit
-                          </Link>
+                            {item.user
+                              ? "Yes"
+                              : "No"}
+                          </span>
+                        </td>
 
-                          <button
-                            type="button"
-                            className="staff-action-btn delete"
-                            onClick={() =>
-                              removeStaff(
-                                item.id,
-                                item.name
-                              )
-                            }
-                            title="Delete"
-                          >
-                            <Trash2 size={15} />
-                            Delete
-                          </button>
+                        <td>
+                          <div className="staff-row-actions">
 
-                        </div>
-                      </td>
+                            <Link
+                              to={`/staff/${item.id}/edit`}
+                              className="staff-action-btn edit"
+                            >
+                              <Pencil size={15} />
+                              Edit
+                            </Link>
 
-                    </tr>
-                  ))}
+                            <button
+                              type="button"
+                              className="staff-action-btn delete"
+                              onClick={() =>
+                                removeStaff(
+                                  item.id,
+                                  item.name
+                                )
+                              }
+                            >
+                              <Trash2 size={15} />
+                              Delete
+                            </button>
+
+                          </div>
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+
                 </tbody>
 
               </table>
@@ -389,41 +519,52 @@ export default function StaffList() {
           )}
 
         </div>
-
       </div>
 
       {/* PAGINATION */}
-      {pagination.totalPages > 1 && (
-        <div className="staff-pagination">
+      {!loading &&
+        staff.length > 0 &&
+        totalPages > 1 && (
+          <div className="staff-pagination">
 
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() =>
-              setPage((current) => current - 1)
-            }
-          >
-            Previous
-          </button>
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() =>
+                setPage((previous) =>
+                  Math.max(
+                    1,
+                    previous - 1
+                  )
+                )
+              }
+            >
+              Previous
+            </button>
 
-          <span>
-            Page {page} of {pagination.totalPages}
-          </span>
+            <span>
+              Page {page} of {totalPages}
+            </span>
 
-          <button
-            type="button"
-            disabled={
-              page >= pagination.totalPages
-            }
-            onClick={() =>
-              setPage((current) => current + 1)
-            }
-          >
-            Next
-          </button>
+            <button
+              type="button"
+              disabled={
+                page >= totalPages
+              }
+              onClick={() =>
+                setPage((previous) =>
+                  Math.min(
+                    totalPages,
+                    previous + 1
+                  )
+                )
+              }
+            >
+              Next
+            </button>
 
-        </div>
-      )}
+          </div>
+        )}
 
     </div>
   );

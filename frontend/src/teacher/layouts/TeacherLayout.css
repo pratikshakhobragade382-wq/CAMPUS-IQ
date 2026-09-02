@@ -1,54 +1,169 @@
 /* =========================================================
    TEACHER LAYOUT
-   ========================================================= */
+========================================================= */
 
 .teacher-layout {
-  width: 100%;
   min-height: 100vh;
-  margin: 0;
-  padding: 0;
-
-  background: #f5fafb;
+  width: 100%;
+  position: relative;
 }
+
 
 /* =========================================================
    MAIN CONTENT AREA
-   Sidebar is fixed at 230px, so the main area must
-   reserve exactly the same space.
-   ========================================================= */
+========================================================= */
 
- .teacher-layout-content {
-  width: calc(100% - 230px);
-  max-width: calc(100% - 230px);
-
-  min-width: 0;
+.teacher-layout-content {
   min-height: 100vh;
-
+  width: calc(100% - 230px);
   margin-left: 230px;
-  padding: 0;
-
-  box-sizing: border-box;
-
-  overflow-x: hidden;
-}
-
-/* =========================================================
-   MAIN
-   ========================================================= */
-
-.teacher-layout-content main {
-  width: 100%;
-  min-width: 0;
-
-  margin: 0;
-  padding: 0;
-
   box-sizing: border-box;
 }
 
+
 /* =========================================================
-   TABLET
-   ========================================================= */
+   TOPBAR BUTTONS
+========================================================= */
+
+/*
+ * These rules make sure the existing notification and
+ * settings buttons behave like real clickable buttons.
+ */
+
+.teacher-topbar-icon {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  padding: 0;
+
+  background: transparent;
+  border: none;
+
+  border-radius: 10px;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  pointer-events: auto;
+
+  user-select: none;
+
+  z-index: 20;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+/* =========================================================
+   HOVER
+========================================================= */
+
+.teacher-topbar-icon:hover {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+
+/* =========================================================
+   ACTIVE / CLICK
+========================================================= */
+
+.teacher-topbar-icon:active {
+  transform: scale(0.94);
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.teacher-topbar-icon:focus-visible {
+  outline: 2px solid #0284c7;
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.teacher-topbar-icon i {
+  display: block;
+
+  font-size: 17px;
+
+  pointer-events: none;
+
+  color: inherit;
+}
+
+
+/* =========================================================
+   NOTIFICATION BADGE
+========================================================= */
+
+.teacher-notification-dot {
+  position: absolute;
+
+  top: 5px;
+  right: 5px;
+
+  min-width: 16px;
+  height: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 4px;
+
+  background: #ef4444;
+
+  border: 2px solid #ffffff;
+
+  border-radius: 999px;
+
+  color: #ffffff;
+
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+
+  pointer-events: none;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   TOPBAR ACTIONS
+========================================================= */
+
+.teacher-topbar-actions {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  z-index: 20;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
 @media (max-width: 900px) {
   .teacher-layout-content {
@@ -57,9 +172,6 @@
   }
 }
 
-/* =========================================================
-   MOBILE
-   ========================================================= */
 
 @media (max-width: 700px) {
   .teacher-layout-content {

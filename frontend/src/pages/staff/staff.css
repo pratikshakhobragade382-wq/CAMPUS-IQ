@@ -1,57 +1,47 @@
-/* =========================================================
-   Staff Page
-   Styled to match Academic Year
-   ========================================================= */
+/* ============================================================
+   STAFF PAGE
+============================================================ */
 
 .staff-page {
   width: 100%;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  padding: 28px;
   box-sizing: border-box;
+  background: #f7f8fc;
+  min-height: 100%;
 }
-
-/* =========================================================
-   PAGE HEADER
-   ========================================================= */
 
 .staff-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
 .staff-title-section h1 {
   margin: 0;
   font-size: 28px;
-  line-height: 1.3;
+  line-height: 1.2;
   font-weight: 700;
-  color: #111827;
+  color: #172033;
 }
 
 .staff-title-section p {
-  margin: 6px 0 0;
+  margin: 7px 0 0;
+  color: #687386;
   font-size: 14px;
-  color: #6b7280;
 }
-
-/* =========================================================
-   HEADER ACTIONS
-   ========================================================= */
 
 .staff-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-/* =========================================================
+/* ============================================================
    SEARCH
-   ========================================================= */
+============================================================ */
 
 .staff-search {
   position: relative;
@@ -63,9 +53,7 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 17px;
-  height: 17px;
-  color: #9ca3af;
+  color: #8a94a6;
   pointer-events: none;
 }
 
@@ -73,192 +61,145 @@
   width: 100%;
   height: 40px;
   box-sizing: border-box;
-  padding: 0 12px 0 38px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #dce1e9;
   border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
-  font-size: 14px;
+  padding: 0 12px 0 38px;
   outline: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.staff-search input::placeholder {
-  color: #9ca3af;
+  background: #fff;
+  color: #172033;
+  font-size: 14px;
 }
 
 .staff-search input:focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
-
-/* =========================================================
-   ROLE FILTER
-   ========================================================= */
 
 .staff-role-filter {
   height: 40px;
-  min-width: 140px;
+  min-width: 145px;
   padding: 0 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #dce1e9;
   border-radius: 8px;
-  background: #ffffff;
-  color: #374151;
+  background: #fff;
+  color: #172033;
   font-size: 14px;
   outline: none;
-  cursor: pointer;
 }
 
 .staff-role-filter:focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+  border-color: #6366f1;
 }
 
-/* =========================================================
-   SEARCH BUTTON
-   ========================================================= */
-
-.staff-search-btn {
+.staff-search-btn,
+.staff-add-btn {
   height: 40px;
+  border-radius: 8px;
+  padding: 0 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 16px;
-  border: none;
-  border-radius: 8px;
-  background: #0ea5e9;
-  color: #ffffff;
+  gap: 7px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background 0.2s ease,
-    transform 0.05s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.staff-search-btn {
+  border: 1px solid #d8dce5;
+  background: #fff;
+  color: #374151;
 }
 
 .staff-search-btn:hover {
-  background: #0284c7;
+  background: #f3f4f6;
 }
-
-.staff-search-btn:active {
-  transform: translateY(1px);
-}
-
-/* =========================================================
-   ADD BUTTON
-   ========================================================= */
 
 .staff-add-btn {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border-radius: 8px;
-  background: #0ea5e9;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    background 0.2s ease,
-    transform 0.05s ease;
+  background: #4f46e5;
+  color: #fff;
+  border: 1px solid #4f46e5;
 }
 
 .staff-add-btn:hover {
-  background: #0284c7;
+  background: #4338ca;
 }
 
-.staff-add-btn:active {
-  transform: translateY(1px);
-}
-
-/* =========================================================
-   ALERT / ERROR
-   ========================================================= */
+/* ============================================================
+   ALERT
+============================================================ */
 
 .staff-alert {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 13px 16px;
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  border-radius: 8px;
   border: 1px solid #fecaca;
-  border-radius: 10px;
   background: #fef2f2;
   color: #b91c1c;
   font-size: 14px;
-  line-height: 1.5;
 }
 
-/* =========================================================
-   STATISTICS
-   ========================================================= */
+/* ============================================================
+   STATS
+============================================================ */
 
 .staff-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  margin-bottom: 22px;
 }
 
 .staff-stat-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
 }
 
 .staff-stat-label {
-  margin: 0;
-  font-size: 14px;
+  margin: 0 0 8px;
+  color: #737d8f;
+  font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
 }
 
 .staff-stat-value {
-  margin: 8px 0 0;
-  font-size: 30px;
-  line-height: 1;
+  margin: 0;
+  color: #172033;
+  font-size: 26px;
   font-weight: 700;
-  color: #111827;
 }
 
-/* =========================================================
-   TABLE CARD
-   ========================================================= */
+/* ============================================================
+   TABLE
+============================================================ */
 
 .staff-table-card {
-  width: 100%;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .staff-table-header {
   padding: 18px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e8ebf0;
 }
 
 .staff-table-header h2 {
   margin: 0;
+  color: #172033;
   font-size: 17px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 650;
 }
 
 .staff-table-body {
-  padding: 0;
+  width: 100%;
 }
-
-/* =========================================================
-   TABLE
-   ========================================================= */
 
 .staff-table-wrapper {
   width: 100%;
@@ -267,27 +208,26 @@
 
 .staff-table {
   width: 100%;
-  min-width: 1050px;
+  min-width: 1100px;
   border-collapse: collapse;
 }
 
 .staff-table th {
   padding: 13px 16px;
   text-align: left;
-  background: #f8fafc;
+  background: #f8f9fb;
   border-bottom: 1px solid #e5e7eb;
+  color: #697386;
   font-size: 12px;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 650;
   white-space: nowrap;
 }
 
 .staff-table td {
   padding: 15px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 14px;
-  color: #374151;
-  white-space: nowrap;
+  border-bottom: 1px solid #edf0f3;
+  color: #3d4656;
+  font-size: 13px;
   vertical-align: middle;
 }
 
@@ -296,95 +236,136 @@
 }
 
 .staff-table tbody tr:hover {
-  background: #f8fafc;
+  background: #fafbfc;
 }
 
-/* =========================================================
-   STAFF NAME
-   ========================================================= */
-
 .staff-name {
-  font-weight: 600;
-  color: #111827;
+  color: #4f46e5;
+  font-weight: 650;
 }
 
 .staff-person-name {
+  color: #172033;
   font-weight: 600;
-  color: #111827;
 }
 
-/* =========================================================
-   ROLE BADGE
-   ========================================================= */
+/* ============================================================
+   ROLE
+============================================================ */
 
 .staff-role-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 5px 10px;
+  padding: 5px 9px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: capitalize;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
-/* =========================================================
-   LOGIN STATUS
-   ========================================================= */
+/* ============================================================
+   SUBJECT LIST
+============================================================ */
+
+.staff-subject-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 240px;
+}
+
+.staff-subject-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #dfe4ee;
+  background: #f7f8fc;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.staff-subject-badge-name {
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.staff-subject-badge-code {
+  color: #7c8494;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.staff-subject-empty {
+  color: #9aa2b1;
+  font-size: 12px;
+}
+
+/* ============================================================
+   LOGIN
+============================================================ */
 
 .staff-login-status {
   display: inline-flex;
   align-items: center;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .staff-login-status.yes {
+  background: #ecfdf3;
   color: #15803d;
 }
 
 .staff-login-status.no {
-  color: #6b7280;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
-/* =========================================================
-   ROW ACTIONS
-   ========================================================= */
+/* ============================================================
+   ACTIONS
+============================================================ */
 
 .staff-row-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .staff-action-btn {
+  height: 32px;
+  padding: 0 9px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  border: none;
-  background: transparent;
-  padding: 6px 8px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .staff-action-btn.edit {
-  color: #2563eb;
+  border: 1px solid #d8ddff;
+  background: #f5f6ff;
+  color: #4f46e5;
 }
 
 .staff-action-btn.edit:hover {
-  background: #eff6ff;
+  background: #eef0ff;
 }
 
 .staff-action-btn.delete {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
   color: #dc2626;
 }
 
@@ -392,110 +373,110 @@
   background: #fef2f2;
 }
 
-/* =========================================================
-   EMPTY / LOADING
-   ========================================================= */
+/* ============================================================
+   LOADING / EMPTY
+============================================================ */
 
+.staff-loading,
 .staff-empty {
-  padding: 40px 20px;
+  padding: 55px 20px;
   text-align: center;
-  color: #6b7280;
+  color: #7b8494;
   font-size: 14px;
 }
 
-.staff-loading {
-  padding: 40px 20px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-/* =========================================================
+/* ============================================================
    PAGINATION
-   ========================================================= */
+============================================================ */
 
 .staff-pagination {
+  margin-top: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  font-size: 14px;
-  color: #6b7280;
+  gap: 14px;
 }
 
 .staff-pagination button {
-  padding: 7px 14px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  border-radius: 8px;
+  height: 36px;
+  padding: 0 13px;
+  border: 1px solid #dce1e9;
+  border-radius: 7px;
+  background: #fff;
   color: #374151;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.15s ease;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .staff-pagination button:hover:not(:disabled) {
-  background: #f8fafc;
+  background: #f5f6f8;
 }
 
 .staff-pagination button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* =========================================================
-   ADD / EDIT STAFF FORM
-   Academic Year-style form
-   ========================================================= */
+.staff-pagination span {
+  color: #697386;
+  font-size: 13px;
+}
+
+/* ============================================================
+   STAFF FORM PAGE
+============================================================ */
 
 .staff-form-page {
   width: 100%;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  min-height: 100%;
+  padding: 28px;
   box-sizing: border-box;
+  background: #f7f8fc;
 }
 
 .staff-form-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  margin-bottom: 22px;
 }
 
 .staff-form-title-section h1 {
   margin: 0;
+  color: #172033;
   font-size: 28px;
-  line-height: 1.3;
+  line-height: 1.2;
   font-weight: 700;
-  color: #111827;
 }
 
 .staff-form-title-section p {
-  margin: 6px 0 0;
+  margin: 7px 0 0;
+  color: #687386;
   font-size: 14px;
-  color: #6b7280;
 }
 
 .staff-form-card {
   width: 100%;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .staff-form-card-header {
-  padding: 18px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 22px;
+  border-bottom: 1px solid #e8ebf0;
 }
 
 .staff-form-card-header h2 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  color: #111827;
+  color: #172033;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.staff-form-card-header p {
+  margin: 5px 0 0;
+  color: #7a8495;
+  font-size: 13px;
 }
 
 .staff-form-card-body {
@@ -505,57 +486,279 @@
 .staff-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 20px;
 }
 
 .staff-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.staff-form-group.full-width {
-  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .staff-form-label {
-  font-size: 14px;
-  font-weight: 600;
+  display: block;
+  margin-bottom: 7px;
   color: #374151;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.staff-form-label .required {
+.required {
   color: #dc2626;
-  margin-left: 3px;
+  margin-left: 2px;
 }
 
 .staff-form-input,
 .staff-form-select {
   width: 100%;
-  box-sizing: border-box;
   height: 42px;
-  padding: 0 12px;
-  border: 1px solid #d1d5db;
+  box-sizing: border-box;
+  border: 1px solid #d9dee7;
   border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
+  padding: 0 12px;
+  background: #fff;
+  color: #172033;
+  font-family: inherit;
   font-size: 14px;
   outline: none;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.staff-form-input::placeholder {
+  color: #a2a9b5;
 }
 
 .staff-form-input:focus,
 .staff-form-select:focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.staff-form-help {
-  font-size: 12px;
-  color: #6b7280;
+.staff-form-input:disabled,
+.staff-form-select:disabled {
+  background: #f4f5f7;
+  cursor: not-allowed;
 }
+
+/* ============================================================
+   SUBJECT BOX
+============================================================ */
+
+.staff-subject-box {
+  grid-column: 1 / -1;
+  margin-top: 3px;
+  padding: 20px;
+  border: 1px solid #dfe4ec;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.staff-subject-box-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+.staff-subject-box-title {
+  margin: 0;
+  color: #172033;
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 650;
+}
+
+.staff-subject-box-help {
+  margin: 5px 0 0;
+  color: #7b8494;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SUBJECT DROPDOWN
+============================================================ */
+
+.staff-subject-select-row {
+  width: 100%;
+}
+
+.staff-subject-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #263143;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+.staff-subject-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ============================================================
+   CREATE SUBJECT PANEL
+============================================================ */
+
+.staff-subject-create-panel {
+  margin-top: 14px;
+  padding: 17px;
+  border: 1px solid #dfe4ec;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.staff-subject-create-title {
+  margin-bottom: 15px;
+  color: #263143;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.staff-subject-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.staff-subject-create-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.staff-subject-create-btn,
+.staff-subject-cancel-btn {
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-subject-create-btn {
+  border: 1px solid #4f46e5;
+  background: #4f46e5;
+  color: #fff;
+}
+
+.staff-subject-create-btn:hover {
+  background: #4338ca;
+}
+
+.staff-subject-create-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.staff-subject-cancel-btn {
+  border: 1px solid #d8dee8;
+  background: #fff;
+  color: #4b5563;
+}
+
+.staff-subject-cancel-btn:hover {
+  background: #f7f8fa;
+}
+
+/* ============================================================
+   SELECTED SUBJECTS
+============================================================ */
+
+.staff-selected-subject-section {
+  margin-top: 18px;
+}
+
+.staff-selected-subject-heading {
+  margin-bottom: 9px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.staff-selected-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.staff-selected-subject-chip {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 11px;
+  border: 1px solid #d9def0;
+  border-radius: 7px;
+  background: #f5f6ff;
+  box-sizing: border-box;
+}
+
+.staff-selected-subject-name {
+  color: #374151;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.staff-selected-subject-code {
+  color: #737b8c;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.staff-selected-subject-remove {
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #7b8494;
+  font-family: Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.staff-selected-subject-remove:hover {
+  background: #e9ebf7;
+  color: #dc2626;
+}
+
+/* ============================================================
+   SUBJECT EMPTY
+============================================================ */
+
+.staff-subject-box .staff-subject-empty {
+  padding: 12px 13px;
+  border: 1px dashed #d8dee8;
+  border-radius: 7px;
+  background: #fff;
+  color: #8b94a3;
+  font-size: 12px;
+}
+
+/* ============================================================
+   FORM ACTIONS
+============================================================ */
 
 .staff-form-actions {
   grid-column: 1 / -1;
@@ -563,114 +766,101 @@
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  margin-top: 8px;
-  padding-top: 18px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: 5px;
+  padding-top: 20px;
+  border-top: 1px solid #edf0f3;
 }
 
-.staff-form-cancel,
-.staff-form-submit {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
+.staff-cancel-btn,
+.staff-submit-btn {
+  height: 42px;
+  padding: 0 18px;
   border-radius: 8px;
-  font-size: 14px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.staff-form-cancel {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #374151;
+.staff-cancel-btn {
+  border: 1px solid #d8dee8;
+  background: #fff;
+  color: #4b5563;
 }
 
-.staff-form-cancel:hover {
-  background: #f8fafc;
+.staff-cancel-btn:hover {
+  background: #f7f8fa;
 }
 
-.staff-form-submit {
-  border: none;
-  background: #0ea5e9;
-  color: #ffffff;
+.staff-submit-btn {
+  border: 1px solid #4f46e5;
+  background: #4f46e5;
+  color: #fff;
 }
 
-.staff-form-submit:hover:not(:disabled) {
-  background: #0284c7;
+.staff-submit-btn:hover {
+  background: #4338ca;
 }
 
-.staff-form-submit:disabled {
+.staff-submit-btn:disabled,
+.staff-cancel-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* =========================================================
+/* ============================================================
    RESPONSIVE
-   ========================================================= */
+============================================================ */
 
 @media (max-width: 1100px) {
+  .staff-header {
+    flex-direction: column;
+  }
+
   .staff-actions {
     width: 100%;
   }
 
   .staff-search {
     flex: 1;
-    width: auto;
+    min-width: 220px;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 800px) {
   .staff-page,
   .staff-form-page {
-    padding: 20px;
+    padding: 18px;
   }
 
   .staff-stats {
     grid-template-columns: 1fr;
   }
 
-  .staff-header,
-  .staff-form-header {
-    align-items: flex-start;
-  }
-
   .staff-form {
     grid-template-columns: 1fr;
   }
 
-  .staff-form-group.full-width {
-    grid-column: auto;
+  .staff-subject-create-grid {
+    grid-template-columns: 1fr;
   }
 
   .staff-form-actions {
     grid-column: auto;
   }
+
+  .staff-subject-box {
+    grid-column: auto;
+  }
 }
 
-@media (max-width: 640px) {
-  .staff-page,
-  .staff-form-page {
-    padding: 16px;
-    gap: 18px;
-  }
-
-  .staff-title-section h1,
-  .staff-form-title-section h1 {
-    font-size: 24px;
-  }
-
+@media (max-width: 600px) {
   .staff-actions {
-    width: 100%;
     flex-direction: column;
     align-items: stretch;
   }
 
-  .staff-search {
-    width: 100%;
-  }
-
+  .staff-search,
   .staff-role-filter,
   .staff-search-btn,
   .staff-add-btn {
@@ -678,7 +868,11 @@
   }
 
   .staff-form-card-body {
-    padding: 20px;
+    padding: 17px;
+  }
+
+  .staff-subject-box {
+    padding: 15px;
   }
 
   .staff-form-actions {
@@ -686,8 +880,8 @@
     align-items: stretch;
   }
 
-  .staff-form-cancel,
-  .staff-form-submit {
+  .staff-cancel-btn,
+  .staff-submit-btn {
     width: 100%;
   }
 }
