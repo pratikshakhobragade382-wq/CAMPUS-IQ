@@ -21,6 +21,8 @@ model Tenant {
   logoUrl             String?
   phone               String?
   website             String?
+  aiConversations     AIConversation[]
+  aiMessages          AIMessage[]
   academicYears       AcademicYear[]
   classes             Class[]
   customFields        CustomField[]
@@ -44,8 +46,6 @@ model Tenant {
   subjects            Subject[]
   timetables          Timetable[]
   users               User[]
-  aiConversations     AIConversation[]
-  aiMessages          AIMessage[]
 }
 
 model User {
@@ -62,11 +62,11 @@ model User {
   avatarUrl       String?
   parentId        Int?             @unique
   phone           String?
+  aiConversations AIConversation[]
+  aiMessages      AIMessage[]
   parent          StudentParent?   @relation(fields: [parentId], references: [id])
   staff           Staff?           @relation(fields: [staffId], references: [id])
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  aiConversations AIConversation[]
-  aiMessages      AIMessage[]
 
   @@unique([email, tenantId])
   @@index([tenantId])
@@ -93,8 +93,6 @@ model AcademicYear {
   timetables         Timetable[]
 
   @@unique([name, tenantId])
-  @@unique([startDate, endDate, tenantId])
-  @@index([name, tenantId])
   @@index([tenantId])
 }
 
@@ -747,7 +745,7 @@ model Assignment {
   maxMarks             Int?                   @default(100)
   isActive             Boolean                @default(true)
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @default(now()) @updatedAt
+  updatedAt            DateTime               @updatedAt
   AssignmentSubmission AssignmentSubmission[]
 
   @@index([tenantId, classId, sectionId, subjectId])
@@ -768,7 +766,7 @@ model AssignmentSubmission {
   gradedById    Int?
   gradedAt      DateTime?
   createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @default(now()) @updatedAt
+  updatedAt     DateTime                 @updatedAt
   Assignment    Assignment               @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, assignmentId, studentId])
@@ -834,39 +832,33 @@ model ResultPublication {
   @@index([tenantId, academicYearId])
 }
 
-// =========================================================
-// AI TEACHER CO-PILOT CHAT HISTORY
-// =========================================================
-
 model AIConversation {
-  id        Int      @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   tenantId  Int
   userId    Int
-  title     String   @default("New Chat")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages AIMessage[]
+  title     String      @default("New Chat")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
 
   @@index([tenantId, userId])
   @@index([tenantId, updatedAt])
 }
 
 model AIMessage {
-  id             Int      @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   tenantId       Int
   userId         Int
   conversationId Int
   role           String
   content        String
   imageUrl       String?
-  createdAt      DateTime @default(now())
-
-  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, userId])
   @@index([conversationId, createdAt])

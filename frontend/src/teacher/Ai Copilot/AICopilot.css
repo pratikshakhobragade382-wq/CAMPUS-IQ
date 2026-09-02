@@ -592,7 +592,7 @@
   justify-content: flex-start;
 }
 
-.ai-message.user {
+ .ai-message.ai-role-user {
   justify-content: flex-end;
 }
 
@@ -633,7 +633,7 @@
   flex-direction: column;
 }
 
-.ai-message.user .ai-message-body {
+.ai-message.ai-role-user .ai-message-body {
   align-items: flex-end;
 }
 
@@ -648,7 +648,7 @@
   font-weight: 650;
 }
 
-.ai-message.user .ai-message-name {
+.ai-message.ai-role-user .ai-message-name {
   text-align: right;
 }
 
@@ -668,7 +668,7 @@
    USER BUBBLE
    ========================================================= */
 
-.ai-message.user .ai-message-content {
+.ai-message.ai-role-user .ai-message-content {
   padding: 10px 13px;
   border-radius:
     13px

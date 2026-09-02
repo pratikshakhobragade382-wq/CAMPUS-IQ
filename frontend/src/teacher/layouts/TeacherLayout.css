@@ -14,12 +14,25 @@
 ========================================================= */
 
 .teacher-layout-content {
-  min-height: 100vh;
+  height: 100vh;
   width: calc(100% - 230px);
   margin-left: 230px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
+.teacher-main {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.teacher-main--scrollable {
+  overflow-y: auto;
+}
+
+.teacher-main--fixed {
+  overflow: hidden;
+}
 
 /* =========================================================
    TOPBAR BUTTONS
