@@ -25,9 +25,14 @@ export default function Login() {
     e.preventDefault();
 
     const ok = await login(form);
-
     if (ok) {
-      navigate("/dashboard");
+      const isTeacher =
+        ok.identity === "staff" &&
+        (ok.role === "teacher" ||
+          ok.staff?.role === "teacher" ||
+          ok.staffRole === "teacher");
+
+      navigate(isTeacher ? "/teacher/dashboard" : "/dashboard");
     }
   };
 
