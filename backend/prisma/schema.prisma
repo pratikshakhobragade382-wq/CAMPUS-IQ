@@ -832,6 +832,18 @@ model ResultPublication {
   @@index([tenantId, academicYearId])
 }
 
+// =========================================================
+// AI TEACHER CO-PILOT CHAT HISTORY
+// =========================================================
+
+model ChatbotQA {
+  id        Int      @id @default(autoincrement())
+  keywords  String
+  answer    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model AIConversation {
   id        Int         @id @default(autoincrement())
   tenantId  Int

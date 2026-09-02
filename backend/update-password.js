@@ -7,7 +7,7 @@ async function updatePassword() {
   const user = await prisma.user.update({
     where: {
       email_tenantId: {
-        email: "test@gmail.com",
+        email: "john@school.com",
         tenantId: 1,
       },
     },
