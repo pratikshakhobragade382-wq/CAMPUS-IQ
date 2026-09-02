@@ -8,7 +8,7 @@
 const prisma = require("../../prisma/prismaClient");
 
 const OLLAMA_URL = "http://127.0.0.1:11434/api/chat";
-const MODEL_NAME = "qwen2.5:3b";
+const MODEL_NAME = "qwen2.5vl:3b";
 
 // =====================================================
 // OLLAMA TIMEOUT
@@ -146,9 +146,9 @@ async function chatWithAI(
         stream: false,
         keep_alive: "30m",
         options: {
-          num_predict: 80,
+          num_predict: 512,
           temperature: 0.2,
-          num_ctx: 1024,
+          num_ctx: 2048,
           num_gpu: 0,
         },
       }),

@@ -51,7 +51,7 @@ app.use(
     },
     credentials: false, // If you move auth to cookies, reassess this + add CSRF protection.
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-registration-key'],
     maxAge: 600,
   })
 );

@@ -65,7 +65,7 @@ export default function AICopilot() {
 
       const result = await getAIConversations();
 
-      const history = result?.data || [];
+      const history = result || [];
 
       setConversations(history);
     } catch (error) {
@@ -263,8 +263,8 @@ export default function AICopilot() {
 
       const result = await getAIConversation(id);
 
-      const conversation = result?.data;
-
+      const conversation = await getAIConversation(id);
+      
       if (!conversation) {
         return;
       }
@@ -583,7 +583,7 @@ export default function AICopilot() {
                   className={
                     isAI
                       ? "ai-message assistant"
-                      : "ai-message user"
+                      : "ai-message ai-role-user"
                   }
                 >
 

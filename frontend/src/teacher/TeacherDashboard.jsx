@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import TeacherTopbar from "./components/TeacherTopbar";
+import { getTeacherDashboardSummary } from "../api/dashboard.api";
 import "./TeacherDashboard.css";
 
 export default function TeacherDashboard() {
@@ -19,6 +21,47 @@ export default function TeacherDashboard() {
     user?.email ||
     "teacher@example.com";
 
+  // =========================================================
+  // DASHBOARD DATA
+  // =========================================================
+
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTeacherDashboardSummary()
+      .then((res) => {
+        setSummary(res.data);
+      })
+      .catch((err) => {
+        console.error(
+          "Failed to load teacher dashboard:",
+          err
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const stats = summary?.stats || {};
+
+  const todaySchedule =
+    summary?.todaySchedule || [];
+
+  const upcomingClasses =
+    summary?.upcomingClasses || [];
+
+  const recentActivity =
+    summary?.recentActivity || [];
+
+  const attendanceOverview =
+    summary?.attendanceOverview || [];
+
+  // =========================================================
+  // DATE
+  // =========================================================
+
   const today = new Date();
 
   const formattedDate = today.toLocaleDateString("en-IN", {
@@ -32,7 +75,6 @@ export default function TeacherDashboard() {
     <div className="teacher-panel">
 
       <TeacherTopbar />
-
 
       {/* =====================================================
           MAIN CONTENT
@@ -59,7 +101,6 @@ export default function TeacherDashboard() {
 
           </div>
 
-
           <div className="teacher-current-date">
 
             <i className="fa-regular fa-calendar"></i>
@@ -74,7 +115,7 @@ export default function TeacherDashboard() {
 
 
         {/* ===================================================
-            TEACHER PROFILE / WELCOME
+            TEACHER PROFILE
         ==================================================== */}
 
         <section className="teacher-welcome-card">
@@ -108,7 +149,6 @@ export default function TeacherDashboard() {
 
           </div>
 
-
           <div className="teacher-welcome-decoration">
             <i className="fa-solid fa-school"></i>
           </div>
@@ -133,7 +173,9 @@ export default function TeacherDashboard() {
               </span>
 
               <strong>
-                0
+                {loading
+                  ? "…"
+                  : stats.classesAssigned ?? 0}
               </strong>
 
               <small>
@@ -149,7 +191,7 @@ export default function TeacherDashboard() {
           </div>
 
 
-          {/* Students */}
+          {/* My Students */}
 
           <div className="teacher-stat-card">
 
@@ -160,7 +202,9 @@ export default function TeacherDashboard() {
               </span>
 
               <strong>
-                0
+                {loading
+                  ? "…"
+                  : stats.studentsAssigned ?? 0}
               </strong>
 
               <small>
@@ -176,7 +220,7 @@ export default function TeacherDashboard() {
           </div>
 
 
-          {/* Attendance */}
+          {/* Today's Attendance */}
 
           <div className="teacher-stat-card">
 
@@ -187,7 +231,9 @@ export default function TeacherDashboard() {
               </span>
 
               <strong>
-                0%
+                {loading
+                  ? "…"
+                  : `${stats.todayAttendancePercentage ?? 0}%`}
               </strong>
 
               <small>
@@ -214,7 +260,9 @@ export default function TeacherDashboard() {
               </span>
 
               <strong>
-                0
+                {loading
+                  ? "…"
+                  : stats.pendingAssignments ?? 0}
               </strong>
 
               <small>
@@ -265,8 +313,6 @@ export default function TeacherDashboard() {
             </div>
 
 
-            {/* Chart Placeholder */}
-
             <div className="teacher-chart-placeholder">
 
               <div className="teacher-chart-y-axis">
@@ -289,33 +335,138 @@ export default function TeacherDashboard() {
                 <div className="teacher-chart-grid-line"></div>
 
 
-                <div className="teacher-chart-empty">
-                  <i className="fa-solid fa-chart-line"></i>
+                {attendanceOverview.length > 0 ? (
 
-                  <span>
-                    Attendance data will appear here
-                  </span>
-                </div>
+                  <div className="teacher-attendance-bars">
+
+                    {attendanceOverview.map((day) => {
+
+                      const present =
+                        Number(day.present) || 0;
+
+                      const absent =
+                        Number(day.absent) || 0;
+
+                      const late =
+                        Number(day.late) || 0;
+
+                      const total =
+                        present +
+                        absent +
+                        late;
+
+                      const presentPercentage =
+                        total > 0
+                          ? Math.round(
+                              (present / total) * 100
+                            )
+                          : 0;
+
+                      const absentPercentage =
+                        total > 0
+                          ? Math.round(
+                              (absent / total) * 100
+                            )
+                          : 0;
+
+                      const latePercentage =
+                        total > 0
+                          ? Math.round(
+                              (late / total) * 100
+                            )
+                          : 0;
+
+                      return (
+
+                        <div
+                          className="teacher-attendance-day"
+                          key={day.date}
+                        >
+
+                          {/* =================================
+                              STACKED ATTENDANCE BAR
+                          ================================== */}
+
+                          <div className="teacher-attendance-bar-wrapper">
+
+                            {/* Present */}
+
+                            <div
+                              className="teacher-attendance-bar present"
+                              style={{
+                                height: `${presentPercentage}%`,
+                              }}
+                              title={`${day.name}: ${present} Present (${presentPercentage}%)`}
+                            ></div>
 
 
-                <div className="teacher-chart-days">
+                            {/* Absent */}
 
-                  <span>Thu</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                  <span>Sun</span>
-                  <span>Mon</span>
-                  <span>Tue</span>
-                  <span>Wed</span>
+                            <div
+                              className="teacher-attendance-bar absent"
+                              style={{
+                                height: `${absentPercentage}%`,
+                              }}
+                              title={`${day.name}: ${absent} Absent (${absentPercentage}%)`}
+                            ></div>
 
-                </div>
+
+                            {/* Late */}
+
+                            <div
+                              className="teacher-attendance-bar late"
+                              style={{
+                                height: `${latePercentage}%`,
+                              }}
+                              title={`${day.name}: ${late} Late (${latePercentage}%)`}
+                            ></div>
+
+                          </div>
+
+
+                          {/* Present percentage */}
+
+                          <span className="teacher-attendance-percentage">
+                            {presentPercentage}% Present
+                          </span>
+
+
+                          {/* Day name */}
+
+                          <span className="teacher-attendance-day-name">
+                            {day.name}
+                          </span>
+
+                        </div>
+
+                      );
+
+                    })}
+
+                  </div>
+
+                ) : (
+
+                  <div className="teacher-chart-empty">
+
+                    <i className="fa-solid fa-chart-line"></i>
+
+                    <span>
+                      Attendance data will appear here
+                    </span>
+
+                  </div>
+
+                )}
 
               </div>
 
             </div>
 
 
-            {/* Legend */}
+            {/* =================================================
+                ATTENDANCE LEGEND
+            ================================================== */}
 
             <div className="teacher-chart-legend">
 
@@ -366,21 +517,61 @@ export default function TeacherDashboard() {
             </div>
 
 
-            <div className="teacher-empty-content">
+            {!loading && todaySchedule.length > 0 ? (
 
-              <div className="teacher-empty-icon blue">
-                <i className="fa-solid fa-calendar-day"></i>
+              <div className="teacher-schedule-list">
+
+                {todaySchedule.map((item) => (
+
+                  <div
+                    className="teacher-schedule-item"
+                    key={item.id}
+                  >
+
+                    <div className="teacher-schedule-time">
+                      {item.startTime} - {item.endTime}
+                    </div>
+
+                    <div className="teacher-schedule-info">
+
+                      <strong>
+                        {item.subject}
+                      </strong>
+
+                      <span>
+                        {item.class}
+                        {item.section
+                          ? ` - ${item.section}`
+                          : ""}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                ))}
+
               </div>
 
-              <h3>
-                No classes scheduled
-              </h3>
+            ) : (
 
-              <p>
-                Your classes for today will appear here.
-              </p>
+              <div className="teacher-empty-content">
 
-            </div>
+                <div className="teacher-empty-icon blue">
+                  <i className="fa-solid fa-calendar-day"></i>
+                </div>
+
+                <h3>
+                  No classes scheduled
+                </h3>
+
+                <p>
+                  Your classes for today will appear here.
+                </p>
+
+              </div>
+
+            )}
 
           </div>
 
@@ -393,7 +584,9 @@ export default function TeacherDashboard() {
 
         <section className="teacher-bottom-grid">
 
-          {/* Upcoming Classes */}
+          {/* =================================================
+              UPCOMING CLASSES
+          ================================================== */}
 
           <div className="teacher-dashboard-card">
 
@@ -418,26 +611,70 @@ export default function TeacherDashboard() {
             </div>
 
 
-            <div className="teacher-empty-content small">
+            {!loading && upcomingClasses.length > 0 ? (
 
-              <div className="teacher-empty-icon green">
-                <i className="fa-solid fa-clock"></i>
+              <div className="teacher-schedule-list">
+
+                {upcomingClasses.map((item) => (
+
+                  <div
+                    className="teacher-schedule-item"
+                    key={item.id}
+                  >
+
+                    <div className="teacher-schedule-time">
+
+                      {item.startTime} - {item.endTime}
+
+                    </div>
+
+                    <div className="teacher-schedule-info">
+
+                      <strong>
+                        {item.subject}
+                      </strong>
+
+                      <span>
+                        {item.class}
+                        {item.section
+                          ? ` - ${item.section}`
+                          : ""}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                ))}
+
               </div>
 
-              <h3>
-                No upcoming classes
-              </h3>
+            ) : (
 
-              <p>
-                Your upcoming schedule will appear here.
-              </p>
+              <div className="teacher-empty-content small">
 
-            </div>
+                <div className="teacher-empty-icon green">
+                  <i className="fa-solid fa-clock"></i>
+                </div>
+
+                <h3>
+                  No upcoming classes
+                </h3>
+
+                <p>
+                  Your upcoming schedule will appear here.
+                </p>
+
+              </div>
+
+            )}
 
           </div>
 
 
-          {/* Recent Activity */}
+          {/* =================================================
+              RECENT ACTIVITY
+          ================================================== */}
 
           <div className="teacher-dashboard-card">
 
@@ -462,21 +699,65 @@ export default function TeacherDashboard() {
             </div>
 
 
-            <div className="teacher-empty-content small">
+            {!loading && recentActivity.length > 0 ? (
 
-              <div className="teacher-empty-icon sky">
-                <i className="fa-solid fa-list-check"></i>
+              <div className="teacher-schedule-list">
+
+                {recentActivity.map((activity) => (
+
+                  <div
+                    className="teacher-schedule-item"
+                    key={activity.id}
+                  >
+
+                    <div className="teacher-schedule-time">
+
+                      {new Date(
+                        activity.date
+                      ).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+
+                    </div>
+
+                    <div className="teacher-schedule-info">
+
+                      <strong>
+                        {activity.title}
+                      </strong>
+
+                      <span>
+                        {activity.description}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                ))}
+
               </div>
 
-              <h3>
-                No recent activity
-              </h3>
+            ) : (
 
-              <p>
-                Your recent activities will appear here.
-              </p>
+              <div className="teacher-empty-content small">
 
-            </div>
+                <div className="teacher-empty-icon sky">
+                  <i className="fa-solid fa-list-check"></i>
+                </div>
+
+                <h3>
+                  No recent activity
+                </h3>
+
+                <p>
+                  Your recent activities will appear here.
+                </p>
+
+              </div>
+
+            )}
 
           </div>
 

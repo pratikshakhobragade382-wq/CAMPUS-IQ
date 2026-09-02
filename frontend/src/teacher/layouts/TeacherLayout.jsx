@@ -132,7 +132,13 @@ export default function TeacherLayout() {
       ====================================================== */}
 
       <div className="teacher-layout-content">
-        <main>
+           <main
+          className={`teacher-main ${
+            location.pathname === "/teacher/ai-copilot"
+              ? "teacher-main--fixed"
+              : "teacher-main--scrollable"
+          }`}
+        >
           <Outlet />
         </main>
       </div>
