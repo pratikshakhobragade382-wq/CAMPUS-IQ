@@ -201,6 +201,30 @@ export default function TeacherExams() {
   const handleSaveMarks = async () => {
     if (!selectedExamId || !selectedSubjectId || marksRecords.length === 0) return;
 
+    // Check for students missing marks who are not marked absent
+    const missingStudent = marksRecords.find(
+      (r) => !r.isAbsent && (r.marksObtained === '' || r.marksObtained === null || isNaN(Number(r.marksObtained)))
+    );
+    if (missingStudent) {
+      setAlertMsg({
+        type: 'error',
+        text: `Please enter marks (0 - ${maxMarks}) or tick 'Absent' for ${missingStudent.name}.`,
+      });
+      return;
+    }
+
+    // Check for marks exceeding maxMarks or negative
+    const invalidMarkStudent = marksRecords.find(
+      (r) => !r.isAbsent && (Number(r.marksObtained) < 0 || Number(r.marksObtained) > Number(maxMarks))
+    );
+    if (invalidMarkStudent) {
+      setAlertMsg({
+        type: 'error',
+        text: `Marks for ${invalidMarkStudent.name} must be between 0 and ${maxMarks}.`,
+      });
+      return;
+    }
+
     setSavingMarks(true);
     setAlertMsg(null);
     try {
@@ -711,7 +735,7 @@ export default function TeacherExams() {
                           </tr>
                         </thead>
                         <tbody>
-                          {ex.marks?.map((m, mi) => (
+                          {(ex.subjects || ex.marks)?.map((m, mi) => (
                             <tr key={mi}>
                               <td>{m.subjectName}</td>
                               <td>{m.maxMarks}</td>
