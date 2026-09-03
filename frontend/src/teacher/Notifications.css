@@ -247,7 +247,6 @@
   min-width: 180px;
   height: 40px;
   border: 1px solid #dbe2ea;
->>>>>>> 2c93cb1 (fix(teacher): refine module header spacing, unify sky blue buttons, and add dynamic Ollama model detection)
   border-radius: 9px;
   font-size: 17px;
 }
