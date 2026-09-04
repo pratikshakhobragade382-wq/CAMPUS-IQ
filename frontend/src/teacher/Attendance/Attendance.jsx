@@ -471,9 +471,9 @@ export default function Attendance() {
 
         <div className="attendance-header-left">
 
-          <div className="attendance-header-icon">
+          {/* <div className="attendance-header-icon">
             <ClipboardCheck />
-          </div>
+          </div> */}
 
           <div>
             <h1 className="attendance-title">
