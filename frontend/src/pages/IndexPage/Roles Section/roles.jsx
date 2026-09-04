@@ -1,6 +1,9 @@
 import "./roles.css";
+import { useNavigate } from "react-router-dom";
 
 function Roles() {
+  const navigate = useNavigate();
+
   return (
     <section className="roles">
 
@@ -27,12 +30,14 @@ function Roles() {
         </p>
 
         {/* Cards */}
-
         <div className="roles-grid">
 
-          {/* Admin */}
+          {/* ================= ADMIN ================= */}
 
-          <div className="role-card">
+          <div
+            className="role-card"
+            onClick={() => navigate("/login")}
+          >
 
             <div className="role-icon">
               <i className="fas fa-user-shield"></i>
@@ -48,7 +53,8 @@ function Roles() {
 
           </div>
 
-          {/* Student */}
+
+          {/* ================= STUDENT ================= */}
 
           <div className="role-card">
 
@@ -66,9 +72,13 @@ function Roles() {
 
           </div>
 
-          {/* Teacher */}
 
-          <div className="role-card">
+          {/* ================= TEACHER ================= */}
+
+          <div
+            className="role-card"
+            onClick={() => navigate("/teacher-login")}
+          >
 
             <div className="role-icon">
               <i className="fas fa-chalkboard-teacher"></i>
@@ -84,7 +94,8 @@ function Roles() {
 
           </div>
 
-          {/* Parent */}
+
+          {/* ================= PARENT ================= */}
 
           <div className="role-card">
 
