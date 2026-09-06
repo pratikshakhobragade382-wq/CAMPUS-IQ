@@ -19,3 +19,12 @@ export const getStaffById = async (id) => {
   const response = await axiosClient.get(`/staff/${id}`);
   return response.data;
 };
+
+/**
+ * GET /staff
+ * Backend response: { success, message, data: staff[], pagination }
+ */
+export const getAllStaff = async (params = {}) => {
+  const response = await axiosClient.get('/staff', { params });
+  return response.data;
+};

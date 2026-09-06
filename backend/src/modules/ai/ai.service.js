@@ -5,10 +5,75 @@
 // No paid OpenAI API is used.
 // =====================================================
 
+const { HttpError } = require("../../utils/httpError");
 const prisma = require("../../prisma/prismaClient");
 
-const OLLAMA_URL = "http://127.0.0.1:11434/api/chat";
-const MODEL_NAME = "qwen2.5vl:3b";
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+const OLLAMA_URL = `${OLLAMA_BASE_URL}/api/chat`;
+const OLLAMA_TAGS_URL = `${OLLAMA_BASE_URL}/api/tags`;
+
+// Priority list of models to use if present in Ollama
+const PREFERRED_MODELS = [
+  process.env.OLLAMA_MODEL,
+  "qwen2.5vl:7b",
+  "qwen2.5vl:3b",
+  "qwen2.5-coder",
+  "qwen2.5",
+  "llama3.2-vision",
+  "llama3.2",
+].filter(Boolean);
+
+let cachedModel = null;
+let lastModelCheck = 0;
+
+/**
+ * Automatically detects which model is installed in the local Ollama instance.
+ */
+async function resolveOllamaModel() {
+  const now = Date.now();
+  if (cachedModel && now - lastModelCheck < 60000) {
+    return cachedModel;
+  }
+
+  try {
+    const res = await fetch(OLLAMA_TAGS_URL, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const data = await res.json();
+      const installedModels = (data.models || []).map((m) => m.name || m.model || "");
+
+      // 1. If explicit env variable is set and present
+      if (process.env.OLLAMA_MODEL && installedModels.some((n) => n.includes(process.env.OLLAMA_MODEL))) {
+        cachedModel = process.env.OLLAMA_MODEL;
+        lastModelCheck = now;
+        return cachedModel;
+      }
+
+      // 2. Check preferred model list against installed models
+      for (const pref of PREFERRED_MODELS) {
+        const found = installedModels.find((n) => n === pref || n.startsWith(`${pref}:`) || n.includes(pref));
+        if (found) {
+          cachedModel = found;
+          lastModelCheck = now;
+          return cachedModel;
+        }
+      }
+
+      // 3. Fallback to any installed model
+      if (installedModels.length > 0) {
+        cachedModel = installedModels[0];
+        lastModelCheck = now;
+        return cachedModel;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not query Ollama tags:", err.message);
+  }
+
+  // Default fallback
+  cachedModel = process.env.OLLAMA_MODEL || "qwen2.5vl:7b";
+  lastModelCheck = now;
+  return cachedModel;
+}
 
 // =====================================================
 // OLLAMA TIMEOUT
@@ -132,7 +197,8 @@ async function chatWithAI(
   }, OLLAMA_TIMEOUT);
 
   try {
-    console.log(`AI: Sending request to Ollama (${MODEL_NAME})...`);
+    const activeModel = await resolveOllamaModel();
+    console.log(`AI: Sending request to Ollama (${activeModel})...`);
 
     const response = await fetch(OLLAMA_URL, {
       method: "POST",
@@ -141,7 +207,7 @@ async function chatWithAI(
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: MODEL_NAME,
+        model: activeModel,
         messages,
         stream: false,
         keep_alive: "30m",
@@ -149,15 +215,17 @@ async function chatWithAI(
           num_predict: 512,
           temperature: 0.2,
           num_ctx: 2048,
-          num_gpu: 0,
         },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Ollama request failed: ${response.status} ${errorText}`
+      console.error(`AI: Ollama request error (${response.status}):`, errorText);
+      throw new HttpError(
+        502,
+        `Local AI error: ${errorText || response.statusText}. Please ensure model "${activeModel}" is downloaded.`,
+        { code: "OLLAMA_ERROR", expose: true }
       );
     }
 
@@ -166,13 +234,15 @@ async function chatWithAI(
     const aiResponse =
       data?.message?.content?.trim() || "No response generated.";
 
-    console.log("AI: Ollama response received.");
+    console.log("AI: Ollama response received successfully.");
 
     return aiResponse;
   } catch (error) {
     if (error?.name === "AbortError") {
-      throw new Error(
-        "The local AI model took too long to respond. Please try again."
+      throw new HttpError(
+        504,
+        "The local AI model took too long to respond. Please try again.",
+        { code: "AI_TIMEOUT", expose: true }
       );
     }
 
@@ -180,12 +250,22 @@ async function chatWithAI(
       error?.code === "ECONNREFUSED" ||
       error?.cause?.code === "ECONNREFUSED"
     ) {
-      throw new Error(
-        "Ollama is not running. Please start Ollama and try again."
+      throw new HttpError(
+        503,
+        "Ollama is not running. Please start Ollama on your computer and try again.",
+        { code: "OLLAMA_NOT_RUNNING", expose: true }
       );
     }
 
-    throw error;
+    if (error instanceof HttpError) {
+      throw error;
+    }
+
+    throw new HttpError(
+      500,
+      error?.message || "Failed to generate AI response. Please ensure Ollama is running.",
+      { code: "AI_GENERATION_FAILED", expose: true }
+    );
   } finally {
     clearTimeout(timeout);
   }
