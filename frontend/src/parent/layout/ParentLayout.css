@@ -1,0 +1,194 @@
+/* =========================================================
+   PARENT LAYOUT
+========================================================= */
+
+.parent-layout {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background: #faf9ff;
+}
+
+
+/* =========================================================
+   MAIN CONTENT AREA
+========================================================= */
+
+.parent-layout-content {
+  min-height: 100vh;
+  width: calc(100% - 230px);
+  margin-left: 230px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
+
+.parent-main {
+  flex: 1;
+  min-height: 0;
+
+  box-sizing: border-box;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  background: #faf9ff;
+}
+
+
+/* =========================================================
+   TOPBAR BUTTONS
+========================================================= */
+
+.parent-topbar-icon {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  padding: 0;
+
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+
+  color: #64748b;
+
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+
+  z-index: 20;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+/* =========================================================
+   HOVER
+========================================================= */
+
+.parent-topbar-icon:hover {
+  background: #f5f3ff;
+  color: #8b5cf6;
+}
+
+
+/* =========================================================
+   ACTIVE / CLICK
+========================================================= */
+
+.parent-topbar-icon:active {
+  transform: scale(0.94);
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.parent-topbar-icon:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.parent-topbar-icon i {
+  display: block;
+
+  font-size: 17px;
+
+  pointer-events: none;
+  color: inherit;
+}
+
+
+/* =========================================================
+   NOTIFICATION BADGE
+========================================================= */
+
+.parent-notification-dot {
+  position: absolute;
+
+  top: 5px;
+  right: 5px;
+
+  min-width: 16px;
+  height: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 4px;
+
+  background: #ef4444;
+
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+
+  color: #ffffff;
+
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+
+  pointer-events: none;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   TOPBAR ACTIONS
+========================================================= */
+
+.parent-topbar-actions {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  z-index: 20;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+  .parent-layout-content {
+    width: calc(100% - 210px);
+    margin-left: 210px;
+  }
+}
+
+
+@media (max-width: 700px) {
+  .parent-layout-content {
+    width: calc(100% - 72px);
+    margin-left: 72px;
+  }
+}

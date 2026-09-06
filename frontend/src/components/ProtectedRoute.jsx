@@ -13,7 +13,10 @@ export default function ProtectedRoute({
 
   const location = useLocation();
 
-  // Wait until authentication is loaded
+  // =====================================================
+  // WAIT FOR AUTHENTICATION
+  // =====================================================
+
   if (isLoading) {
     return (
       <div
@@ -29,11 +32,14 @@ export default function ProtectedRoute({
     );
   }
 
-  // Not logged in
+  // =====================================================
+  // NOT LOGGED IN
+  // =====================================================
+
   if (!isAuthenticated || !user) {
     return (
       <Navigate
-        to="/login"
+        to="/portal-login"
         state={{ from: location }}
         replace
       />
@@ -41,14 +47,19 @@ export default function ProtectedRoute({
   }
 
   // =====================================================
-  // DETERMINE ROLE
+  // DETERMINE USER ROLE
   // =====================================================
 
-  let userRole = user?.identity;
+  let userRole = String(user?.identity || "").toLowerCase();
 
-  // Teacher
+  // -----------------------------------------------------
+  // TEACHER
+  // Backend identity = "staff"
+  // Actual staff role = "teacher"
+  // -----------------------------------------------------
+
   if (
-    user?.identity === "staff" &&
+    userRole === "staff" &&
     (
       user?.role === "teacher" ||
       user?.staff?.role === "teacher" ||
@@ -57,6 +68,10 @@ export default function ProtectedRoute({
   ) {
     userRole = "teacher";
   }
+
+  // =====================================================
+  // DEBUG
+  // =====================================================
 
   console.log("ProtectedRoute user:", user);
   console.log("ProtectedRoute resolved role:", userRole);
@@ -70,6 +85,10 @@ export default function ProtectedRoute({
     allowedRoles.length > 0 &&
     !allowedRoles.includes(userRole)
   ) {
+    // ---------------------------------------------------
+    // TEACHER
+    // ---------------------------------------------------
+
     if (userRole === "teacher") {
       return (
         <Navigate
@@ -79,13 +98,69 @@ export default function ProtectedRoute({
       );
     }
 
+    // ---------------------------------------------------
+    // PARENT
+    // ---------------------------------------------------
+
+    if (userRole === "parent") {
+      return (
+        <Navigate
+          to="/parent/dashboard"
+          replace
+        />
+      );
+    }
+
+    // ---------------------------------------------------
+    // ADMIN
+    // ---------------------------------------------------
+
+    if (userRole === "admin") {
+      return (
+        <Navigate
+          to="/dashboard"
+          replace
+        />
+      );
+    }
+
+    // ---------------------------------------------------
+    // OTHER VALID ROLES
+    // ---------------------------------------------------
+
+    if (userRole === "principal") {
+      return (
+        <Navigate
+          to="/dashboard"
+          replace
+        />
+      );
+    }
+
+    if (userRole === "management") {
+      return (
+        <Navigate
+          to="/dashboard"
+          replace
+        />
+      );
+    }
+
+    // ---------------------------------------------------
+    // UNKNOWN ROLE
+    // ---------------------------------------------------
+
     return (
       <Navigate
-        to="/dashboard"
+        to="/portal-login"
         replace
       />
     );
   }
+
+  // =====================================================
+  // ACCESS GRANTED
+  // =====================================================
 
   return children;
 }

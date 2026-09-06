@@ -124,12 +124,31 @@ async function maybeCreateStudentUser(tx, student, tenantId) {
 async function getStudentIdsForParent(userId, tenantId) {
   if (!userId) return [];
 
-  const links = await prisma.studentParent.findMany({
-    where: { userId, tenantId },
-    select: { studentId: true },
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId,
+      identity: "parent",
+      isDeleted: false,
+    },
+    select: {
+      parentId: true,
+    },
   });
 
-  return [...new Set(links.map((l) => l.studentId))];
+  if (!user?.parentId) return [];
+
+  const parent = await prisma.studentParent.findFirst({
+    where: {
+      id: user.parentId,
+      tenantId,
+    },
+    select: {
+      studentId: true,
+    },
+  });
+
+  return parent?.studentId ? [parent.studentId] : [];
 }
 
 // =====================================================

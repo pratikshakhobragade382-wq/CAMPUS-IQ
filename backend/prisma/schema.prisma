@@ -59,14 +59,15 @@ model User {
   isDeleted       Boolean          @default(false)
   identity        Identity         @default(admin)
   staffId         Int?             @unique
-  studentId       Int?             @unique
   avatarUrl       String?
+  parentId        Int?             @unique
+  studentId       Int?             @unique
   phone           String?
   aiConversations AIConversation[]
   aiMessages      AIMessage[]
-  parentLinks     StudentParent[]  @relation("ParentUserLinks")
-  staff           Staff?           @relation(fields: [staffId], references: [id])
+  StudentParent   StudentParent?   @relation(fields: [parentId], references: [id])
   student         Student?         @relation(fields: [studentId], references: [id])
+  staff           Staff?           @relation(fields: [staffId], references: [id])
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([email, tenantId])
@@ -436,15 +437,13 @@ model StudentParent {
   state               String?
   country             String?
   pinCode             String?
-  userId              Int?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  user                User?    @relation("ParentUserLinks", fields: [userId], references: [id])
+  user                User?
 
   @@index([studentId])
   @@index([tenantId])
-  @@index([userId])
 }
 
 model MasterData {
@@ -834,18 +833,6 @@ model ResultPublication {
 
   @@unique([academicYearId, classId, examId])
   @@index([tenantId, academicYearId])
-}
-
-// =========================================================
-// AI TEACHER CO-PILOT CHAT HISTORY
-// =========================================================
-
-model ChatbotQA {
-  id        Int      @id @default(autoincrement())
-  keywords  String
-  answer    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model AIConversation {
