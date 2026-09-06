@@ -5,7 +5,6 @@ const { HttpError } = require('./httpError');
 exports.generateToken = (user) => {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) {
-    // Do not generate tokens with weak/missing secrets.
     throw new HttpError(500, 'Authentication is not configured', {
       code: 'AUTH_MISCONFIGURED',
       expose: false,
@@ -18,7 +17,7 @@ exports.generateToken = (user) => {
       identity: user.identity,
       staffId: user.staff ? user.staff.id : null,
       staffRole: user.staff ? user.staff.role : null,
-      parentId: user.parentId || null,
+      studentId: user.studentId || null,
     },
     secret,
     {

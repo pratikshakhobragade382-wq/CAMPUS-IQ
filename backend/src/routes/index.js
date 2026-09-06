@@ -28,6 +28,8 @@ const notificationRoutes = require('../modules/notification/notification.routes'
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
 const aiRoutes = require('../modules/ai/ai.routes');
 const chatbotRoutes = require("../modules/chatbot/chatbot.routes");
+const parentRoutes = require('../modules/parent/parent.routes');
+const studentPortalRoutes = require('../modules/student-portal/studentPortal.routes');
 // =========================================================
 // ROUTE CHECKER
 // =========================================================
@@ -190,6 +192,18 @@ registerRoute(
   "/chatbot",
   chatbotRoutes,
   "chatbot"
+);
+
+registerRoute(
+  '/parent',
+  parentRoutes,
+  'parent'
+);
+
+registerRoute(
+  '/student-portal',
+  studentPortalRoutes,
+  'studentPortal'
 );
 // =========================================================
 // EXPORT ROUTER

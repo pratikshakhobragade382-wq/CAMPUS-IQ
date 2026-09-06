@@ -3,3 +3,11 @@ node_modules
 .env
 
 /src/generated/prisma
+
+# Local debug scripts / DB dumps — never commit
+*.dump
+check-login*.js
+fix-email-case.js
+list-admins.js
+list-classes.js
+backfill-parent-links.js

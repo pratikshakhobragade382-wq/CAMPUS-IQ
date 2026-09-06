@@ -59,13 +59,14 @@ model User {
   isDeleted       Boolean          @default(false)
   identity        Identity         @default(admin)
   staffId         Int?             @unique
+  studentId       Int?             @unique
   avatarUrl       String?
-  parentId        Int?             @unique
   phone           String?
   aiConversations AIConversation[]
   aiMessages      AIMessage[]
-  parent          StudentParent?   @relation(fields: [parentId], references: [id])
+  parentLinks     StudentParent[]  @relation("ParentUserLinks")
   staff           Staff?           @relation(fields: [staffId], references: [id])
+  student         Student?         @relation(fields: [studentId], references: [id])
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([email, tenantId])
@@ -404,6 +405,7 @@ model Student {
   tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   studentAttendances  StudentAttendance[]
   parents             StudentParent[]
+  user                User?
 
   @@unique([admissionNo, tenantId])
   @@index([tenantId])
@@ -434,13 +436,15 @@ model StudentParent {
   state               String?
   country             String?
   pinCode             String?
+  userId              Int?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  user                User?
+  user                User?    @relation("ParentUserLinks", fields: [userId], references: [id])
 
   @@index([studentId])
   @@index([tenantId])
+  @@index([userId])
 }
 
 model MasterData {

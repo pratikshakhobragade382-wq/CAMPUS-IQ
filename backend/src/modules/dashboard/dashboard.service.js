@@ -1506,7 +1506,240 @@ async function getTeacherSummary(
   };
 }
 
+
+/*
+ * ============================================================
+ * STUDENT / PARENT DASHBOARD
+ * ============================================================
+ */
+
+async function buildStudentDashboard(tenantId, studentId) {
+  const now = new Date();
+  const todayStart = utcStartOfDay(now);
+  const tomorrowStart = utcAddDays(todayStart, 1);
+  const sevenDaysAgo = utcAddDays(todayStart, -6);
+  const jsDay = now.getDay();
+  const dayOfWeek = jsDay === 0 ? null : jsDay;
+
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, tenantId, isDeleted: false },
+    select: {
+      id: true,
+      studentName: true,
+      admissionNo: true,
+      photoUrl: true,
+      classId: true,
+      sectionId: true,
+      class: { select: { id: true, name: true } },
+      section: { select: { id: true, name: true } }
+    }
+  });
+
+  if (!student) throw new Error('Student not found');
+
+  const [
+    todaySchedule,
+    weeklyAttendanceRows,
+    assignments,
+    upcomingExams,
+    recentAttendance
+  ] = await Promise.all([
+    dayOfWeek
+      ? prisma.timetable.findMany({
+          where: {
+            tenantId,
+            classId: student.classId,
+            dayOfWeek,
+            isActive: true,
+            OR: [{ sectionId: student.sectionId }, { sectionId: null }]
+          },
+          include: {
+            subject: { select: { id: true, name: true } },
+            staff: { select: { id: true, name: true } },
+            periodSlot: {
+              select: { slotNo: true, label: true, startTime: true, endTime: true }
+            }
+          },
+          orderBy: { periodSlot: { slotNo: 'asc' } }
+        })
+      : Promise.resolve([]),
+
+    prisma.studentAttendance.findMany({
+      where: {
+        tenantId,
+        studentId: student.id,
+        date: { gte: sevenDaysAgo, lt: tomorrowStart }
+      },
+      select: { date: true, status: true }
+    }),
+
+    prisma.assignment.findMany({
+      where: {
+        tenantId,
+        classId: student.classId,
+        isActive: true,
+        OR: [{ sectionId: student.sectionId }, { sectionId: null }]
+      },
+      include: {
+        AssignmentSubmission: {
+          where: { studentId: student.id },
+          select: { status: true, submittedAt: true }
+        }
+      },
+      orderBy: { dueDate: 'desc' },
+      take: 20
+    }),
+
+    prisma.exam.findMany({
+      where: {
+        tenantId,
+        isActive: true,
+        classId: student.classId,
+        startDate: { gte: todayStart }
+      },
+      select: { id: true, name: true, examType: true, startDate: true, endDate: true },
+      orderBy: { startDate: 'asc' },
+      take: 5
+    }),
+
+    prisma.studentAttendance.findMany({
+      where: { tenantId, studentId: student.id },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: { id: true, date: true, status: true, updatedAt: true }
+    })
+  ]);
+
+  const todayAttendanceRow = weeklyAttendanceRows.find(
+    (row) => utcStartOfDay(row.date).getTime() === todayStart.getTime()
+  );
+
+  const attendanceByDate = {};
+  for (const row of weeklyAttendanceRows) {
+    const key = row.date.toISOString().slice(0, 10);
+    if (!attendanceByDate[key]) {
+      attendanceByDate[key] = { present: 0, absent: 0, late: 0 };
+    }
+    if (row.status === 'present') attendanceByDate[key].present++;
+    else if (row.status === 'absent') attendanceByDate[key].absent++;
+    else if (row.status === 'late') attendanceByDate[key].late++;
+  }
+
+  const attendanceOverview = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = utcAddDays(todayStart, -i);
+    const key = date.toISOString().slice(0, 10);
+    const bucket = attendanceByDate[key] || { present: 0, absent: 0, late: 0 };
+    attendanceOverview.push({
+      name: DAY_LABELS[date.getUTCDay()],
+      date: key,
+      present: bucket.present,
+      absent: bucket.absent,
+      late: bucket.late
+    });
+  }
+
+  const presentDays = weeklyAttendanceRows.filter(
+    (r) => r.status === 'present' || r.status === 'late'
+  ).length;
+  const attendancePercentage =
+    weeklyAttendanceRows.length > 0
+      ? Math.round((presentDays / weeklyAttendanceRows.length) * 100)
+      : 0;
+
+  const pendingAssignments = assignments.filter(
+    (a) => new Date(a.dueDate) >= todayStart && a.AssignmentSubmission.length === 0
+  ).length;
+
+  const recentActivity = recentAttendance.map((a) => ({
+    id: `attendance-${a.id}`,
+    type: 'attendance',
+    title: 'Attendance marked',
+    description: `Marked ${a.status} on ${a.date.toISOString().slice(0, 10)}`,
+    date: a.updatedAt
+  }));
+
+  return {
+    profile: {
+      id: student.id,
+      name: student.studentName,
+      admissionNo: student.admissionNo,
+      photoUrl: student.photoUrl,
+      class: student.class ? student.class.name : null,
+      section: student.section ? student.section.name : null
+    },
+    todaySchedule: todaySchedule.map((t) => ({
+      id: t.id,
+      period: t.periodSlot.label,
+      slotNo: t.periodSlot.slotNo,
+      startTime: t.periodSlot.startTime,
+      endTime: t.periodSlot.endTime,
+      subject: t.subject.name,
+      teacher: t.staff ? t.staff.name : null
+    })),
+    attendanceOverview,
+    stats: {
+      todayStatus: todayAttendanceRow ? todayAttendanceRow.status : null,
+      attendancePercentage,
+      pendingAssignments,
+      totalAssignments: assignments.length
+    },
+    upcomingExams,
+    recentActivity
+  };
+}
+
+async function getStudentSummary(tenantId, studentId) {
+  return buildStudentDashboard(tenantId, studentId);
+}
+
+async function getParentSummary(tenantId, userId, requestedStudentId) {
+  const { getStudentIdsForParent } = require('../student/student.service');
+  const studentIds = await getStudentIdsForParent(userId, tenantId);
+
+  if (!studentIds.length) {
+    throw new Error('No linked children found');
+  }
+
+  const activeStudentId = requestedStudentId
+    ? parseInt(requestedStudentId)
+    : studentIds[0];
+
+  if (!studentIds.includes(activeStudentId)) {
+    throw new Error('Student not found');
+  }
+
+  const children = await prisma.student.findMany({
+    where: { id: { in: studentIds }, tenantId, isDeleted: false },
+    select: {
+      id: true,
+      studentName: true,
+      photoUrl: true,
+      class: { select: { name: true } },
+      section: { select: { name: true } }
+    },
+    orderBy: { studentName: 'asc' }
+  });
+
+  const activeChildDashboard = await buildStudentDashboard(tenantId, activeStudentId);
+
+  return {
+    children: children.map((c) => ({
+      id: c.id,
+      name: c.studentName,
+      photoUrl: c.photoUrl,
+      class: c.class ? c.class.name : null,
+      section: c.section ? c.section.name : null
+    })),
+    activeStudentId,
+    ...activeChildDashboard
+  };
+}
+
+
 module.exports = {
   getSummary,
-  getTeacherSummary
+  getTeacherSummary,
+  getStudentSummary,
+  getParentSummary
 };
