@@ -704,7 +704,8 @@ export default function TeacherExams() {
                   {reportData.student?.name || 'Student Report Card'}
                 </h2>
                 <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
-                  Admission No: {reportData.student?.admissionNo || '—'} | Class:{' '}
+                  Admission No: {reportData.student?.admissionNo || '—'} | Roll No:{' '}
+                  {reportData.student?.rollNo || '—'} | Class:{' '}
                   {reportData.student?.class || '—'}
                 </p>
               </div>
@@ -721,9 +722,27 @@ export default function TeacherExams() {
                         border: '1px solid #e2e8f0',
                       }}
                     >
-                      <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 12px 0', color: '#1e293b' }}>
-                        {ex.examName} ({ex.examType?.replace(/_/g, ' ')})
-                      </h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <h4 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: '#1e293b' }}>
+                          {ex.examName} ({ex.examType?.replace(/_/g, ' ')})
+                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {ex.hasAnyMarks === false && (
+                            <span style={{
+                              fontSize: 11, fontWeight: 600, color: '#f59e0b',
+                              background: '#fef3c7', padding: '2px 8px', borderRadius: 6
+                            }}>
+                              No Marks Entered
+                            </span>
+                          )}
+                          <span style={{
+                            fontSize: 11, fontWeight: 700,
+                            color: ex.isActive !== false ? '#16a34a' : '#64748b'
+                          }}>
+                            {ex.isActive !== false ? '● Active' : '○ Completed'}
+                          </span>
+                        </div>
+                      </div>
 
                       <table className="marks-table">
                         <thead>
@@ -732,19 +751,42 @@ export default function TeacherExams() {
                             <th>Max Marks</th>
                             <th>Marks Obtained</th>
                             <th>Grade</th>
+                            <th>Status</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {(ex.subjects || ex.marks)?.map((m, mi) => (
-                            <tr key={mi}>
-                              <td>{m.subjectName}</td>
-                              <td>{m.maxMarks}</td>
-                              <td>{m.isAbsent ? 'Absent' : m.marksObtained}</td>
-                              <td>
-                                <span className="grade-pill">{m.grade || '—'}</span>
-                              </td>
-                            </tr>
-                          ))}
+                          {(ex.subjects || ex.marks)?.map((m, mi) => {
+                            const isNotEntered = m.status === 'not_entered' || (m.markId === null && m.maxMarks === null);
+                            return (
+                              <tr key={mi} style={isNotEntered ? { opacity: 0.55 } : {}}>
+                                <td>{m.subjectName}</td>
+                                <td>{isNotEntered ? '—' : m.maxMarks}</td>
+                                <td style={m.isAbsent ? { color: '#ef4444', fontWeight: 600 } : {}}>
+                                  {isNotEntered ? '—' : m.isAbsent ? 'Absent' : m.marksObtained}
+                                </td>
+                                <td>
+                                  <span className="grade-pill">
+                                    {isNotEntered ? '—' : m.grade || '—'}
+                                  </span>
+                                </td>
+                                <td>
+                                  {isNotEntered ? (
+                                    <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 12 }}>
+                                      Not Entered
+                                    </span>
+                                  ) : m.isAbsent ? (
+                                    <span style={{ color: '#ef4444', fontWeight: 600, fontSize: 12 }}>
+                                      Absent
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: '#16a34a', fontWeight: 600, fontSize: 12 }}>
+                                      ✓ Entered
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -752,7 +794,7 @@ export default function TeacherExams() {
                 </div>
               ) : (
                 <p style={{ color: '#64748b', textAlign: 'center', padding: 30 }}>
-                  No published exam marks found for this student.
+                  No exams found for this student's class in the current academic year.
                 </p>
               )}
             </div>

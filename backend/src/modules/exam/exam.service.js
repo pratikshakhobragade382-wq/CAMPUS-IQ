@@ -389,8 +389,23 @@ const getStudentReportCard = async (tenantId, studentId, academicYearId, actingU
     acYearId = activeAY.id;
   }
 
-  // FIX: removed isActive:true filter on exam so deactivated exams still
-  // appear on the historical report card instead of vanishing.
+  // ── Fetch ALL exams for this student's class in the academic year ──
+  const allExamsForClass = await prisma.exam.findMany({
+    where: {
+      tenantId,
+      classId: student.classId,
+      academicYearId: acYearId,
+    },
+    orderBy: { startDate: 'asc' },
+  });
+
+  // ── Fetch ALL subjects for this tenant ──
+  const allSubjects = await prisma.subject.findMany({
+    where: { tenantId, isDeleted: false },
+    orderBy: { name: 'asc' },
+  });
+
+  // ── Fetch ALL entered marks for this student across all exams in the academic year ──
   const marks = await prisma.examMark.findMany({
     where: {
       tenantId,
@@ -410,32 +425,63 @@ const getStudentReportCard = async (tenantId, studentId, academicYearId, actingU
     ]
   });
 
-  const examMap = {};
+  // ── Build a lookup: examId -> subjectId -> mark ──
+  const markLookup = {};
   marks.forEach(mark => {
-    const examId = mark.exam.id;
-    if (!examMap[examId]) {
-      examMap[examId] = {
-        examId: mark.exam.id,
-        examName: mark.exam.name,
-        examType: mark.exam.examType,
-        startDate: mark.exam.startDate,
-        endDate: mark.exam.endDate,
-        subjects: []
+    if (!markLookup[mark.examId]) markLookup[mark.examId] = {};
+    markLookup[mark.examId][mark.subjectId] = mark;
+  });
+
+  // ── Build the complete report card with ALL exams and ALL subjects ──
+  const exams = allExamsForClass.map(exam => {
+    const examMarks = markLookup[exam.id] || {};
+    const hasAnyMarks = Object.keys(examMarks).length > 0;
+
+    const subjects = allSubjects.map(subject => {
+      const mark = examMarks[subject.id];
+      if (mark) {
+        return {
+          markId: mark.id,
+          subjectId: subject.id,
+          subjectName: subject.name,
+          subjectCode: subject.code,
+          maxMarks: Number(mark.maxMarks),
+          marksObtained: mark.marksObtained !== null ? Number(mark.marksObtained) : null,
+          isAbsent: mark.isAbsent,
+          grade: mark.grade,
+          gradePoint: mark.gradePoint !== null ? Number(mark.gradePoint) : null,
+          remark: mark.remark,
+          enteredBy: mark.enteredBy.name,
+          status: 'entered'
+        };
+      }
+      // Subject exists but no marks entered yet for this exam
+      return {
+        markId: null,
+        subjectId: subject.id,
+        subjectName: subject.name,
+        subjectCode: subject.code,
+        maxMarks: null,
+        marksObtained: null,
+        isAbsent: false,
+        grade: null,
+        gradePoint: null,
+        remark: null,
+        enteredBy: null,
+        status: 'not_entered'
       };
-    }
-    examMap[examId].subjects.push({
-      markId: mark.id,
-      subjectId: mark.subject.id,
-      subjectName: mark.subject.name,
-      subjectCode: mark.subject.code,
-      maxMarks: Number(mark.maxMarks),
-      marksObtained: mark.marksObtained !== null ? Number(mark.marksObtained) : null,
-      isAbsent: mark.isAbsent,
-      grade: mark.grade,
-      gradePoint: mark.gradePoint !== null ? Number(mark.gradePoint) : null,
-      remark: mark.remark,
-      enteredBy: mark.enteredBy.name
     });
+
+    return {
+      examId: exam.id,
+      examName: exam.name,
+      examType: exam.examType,
+      startDate: exam.startDate,
+      endDate: exam.endDate,
+      isActive: exam.isActive,
+      hasAnyMarks,
+      subjects
+    };
   });
 
   return {
@@ -447,7 +493,7 @@ const getStudentReportCard = async (tenantId, studentId, academicYearId, actingU
       class: student.class.name
     },
     academicYearId: acYearId,
-    exams: Object.values(examMap)
+    exams
   };
 };
 
