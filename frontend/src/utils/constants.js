@@ -7,7 +7,9 @@
 // API Configuration
 // =====================================================
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
 export const API_TIMEOUT = 10000;
 
 // =====================================================
@@ -44,7 +46,14 @@ export const STAFF_STATUS = {
   RETIRED: "retired",
 };
 
-/** Matches Prisma enum AttendanceStatus exactly */
+/**
+ * Matches Prisma enum AttendanceStatus exactly.
+ *
+ * IMPORTANT:
+ * We keep all backend/database attendance statuses here.
+ * The selectable options shown in the Teacher Portal are
+ * controlled separately by ATTENDANCE_STATUS_OPTIONS below.
+ */
 export const ATTENDANCE_STATUS = {
   PRESENT: "present",
   ABSENT: "absent",
@@ -54,13 +63,21 @@ export const ATTENDANCE_STATUS = {
   LEAVE: "leave",
 };
 
+/**
+ * Attendance options shown in the attendance dropdown.
+ *
+ * Teacher Portal:
+ * Only Present and Absent are selectable.
+ */
 export const ATTENDANCE_STATUS_OPTIONS = [
-  { value: "present", label: "Present" },
-  { value: "absent", label: "Absent" },
-  { value: "late", label: "Late" },
-  { value: "half_day", label: "Half Day" },
-  { value: "holiday", label: "Holiday" },
-  { value: "leave", label: "Leave" },
+  {
+    value: "present",
+    label: "Present",
+  },
+  {
+    value: "absent",
+    label: "Absent",
+  },
 ];
 
 export const FEE_STATUS = {
@@ -195,7 +212,7 @@ export const ROUTES = {
   // Used by the "View all" button in NotificationBell
   NOTIFICATIONS: "/notifications",
 
-  PROFILE: '/profile',
+  PROFILE: "/profile",
 };
 
 // =====================================================
@@ -209,24 +226,44 @@ export const CUSTOM_FIELD_CONTROLS = {
 };
 
 export const CUSTOM_FIELD_CONTROL_OPTIONS = [
-  { value: "TextBox", label: "TextBox" },
-  { value: "DropDown", label: "DropDown" },
+  {
+    value: "TextBox",
+    label: "TextBox",
+  },
+  {
+    value: "DropDown",
+    label: "DropDown",
+  },
 ];
 
-/** Identities allowed to create/update/delete fields & options */
-export const CUSTOM_FIELD_MANAGE_ROLES = ["admin", "management", "principal"];
+/**
+ * Identities allowed to create/update/delete fields & options
+ */
+export const CUSTOM_FIELD_MANAGE_ROLES = [
+  "admin",
+  "management",
+  "principal",
+];
 
 /**
  * Identities allowed to create/update/delete Master subjects
  * Matches authorize('admin', 'management', 'principal') on subject routes
  */
-export const MASTER_MANAGE_ROLES = ["admin", "management", "principal"];
+export const MASTER_MANAGE_ROLES = [
+  "admin",
+  "management",
+  "principal",
+];
 
 /**
  * Identities allowed to create/update/delete/bulk Master Data values
  * Matches authorize('admin', 'management', 'principal') on master-data routes
  */
-export const MASTER_DATA_MANAGE_ROLES = ["admin", "management", "principal"];
+export const MASTER_DATA_MANAGE_ROLES = [
+  "admin",
+  "management",
+  "principal",
+];
 
 /**
  * Valid Master Data categories from backend
@@ -252,7 +289,9 @@ export const MASTER_DATA_CATEGORIES = [
   "Designation",
 ];
 
-/** Identities allowed to save student custom field values */
+/**
+ * Identities allowed to save student custom field values
+ */
 export const CUSTOM_FIELD_VALUE_SAVE_ROLES = [
   "admin",
   "management",
