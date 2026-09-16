@@ -19,35 +19,51 @@ export default function ParentSidebar() {
       icon: "fa-solid fa-bars-staggered",
       path: "/parent/dashboard",
     },
+
     {
       label: "My Children",
       icon: "fa-solid fa-user-group",
       path: "/parent/children",
     },
+
     {
       label: "Calendar",
       icon: "fa-regular fa-calendar",
       path: "/parent/calendar",
     },
+
     {
       label: "Attendance",
       icon: "fa-solid fa-user-check",
       path: "/parent/attendance",
     },
+
     {
       label: "Assignments",
       icon: "fa-solid fa-clipboard-list",
       path: "/parent/assignments",
     },
+
     {
       label: "Timetable",
       icon: "fa-solid fa-clock",
       path: "/parent/timetable",
     },
+
     {
       label: "Exams",
       icon: "fa-solid fa-file-lines",
       path: "/parent/exams",
+    },
+
+    // =================================================
+    // AI PERFORMANCE
+    // =================================================
+
+    {
+      label: "AI Performance Predictor",
+      icon: "fa-solid fa-chart-line",
+      path: "/parent/ai-performance",
     },
   ];
 
@@ -57,11 +73,13 @@ export default function ParentSidebar() {
       icon: "fa-regular fa-bell",
       path: "/parent/notifications",
     },
+
     {
       label: "My Profile",
       icon: "fa-regular fa-user",
       path: "/parent/profile",
     },
+
     {
       label: "Settings",
       icon: "fa-solid fa-gear",
@@ -76,30 +94,54 @@ export default function ParentSidebar() {
 
   return (
     <aside className="parent-sidebar">
-      {/* Logo */}
+
+      {/* =================================================
+          LOGO
+      ================================================= */}
+
       <div className="parent-sidebar-logo">
-        <img src={logo} alt="Campus IQ" />
+        <img
+          src={logo}
+          alt="Campus IQ"
+        />
       </div>
 
-      {/* Parent Profile */}
+      {/* =================================================
+          PARENT PROFILE
+      ================================================= */}
+
       <div className="parent-sidebar-profile">
+
         <div className="parent-sidebar-avatar">
           {parentName.charAt(0).toUpperCase()}
         </div>
 
         <div className="parent-sidebar-profile-info">
-          <strong>{parentName}</strong>
-          <span>Parent</span>
+
+          <strong>
+            {parentName}
+          </strong>
+
+          <span>
+            Parent
+          </span>
+
         </div>
+
       </div>
 
-      {/* Navigation */}
+      {/* =================================================
+          NAVIGATION
+      ================================================= */}
+
       <nav className="parent-sidebar-nav">
+
         <p className="parent-sidebar-section-title">
           MAIN MENU
         </p>
 
         {menuItems.map((item) => (
+
           <NavLink
             key={item.path}
             to={item.path}
@@ -109,9 +151,15 @@ export default function ParentSidebar() {
               }`
             }
           >
+
             <i className={item.icon}></i>
-            <span>{item.label}</span>
+
+            <span>
+              {item.label}
+            </span>
+
           </NavLink>
+
         ))}
 
         <p className="parent-sidebar-section-title parent-sidebar-other-title">
@@ -119,6 +167,7 @@ export default function ParentSidebar() {
         </p>
 
         {bottomItems.map((item) => (
+
           <NavLink
             key={item.path}
             to={item.path}
@@ -128,23 +177,41 @@ export default function ParentSidebar() {
               }`
             }
           >
+
             <i className={item.icon}></i>
-            <span>{item.label}</span>
+
+            <span>
+              {item.label}
+            </span>
+
           </NavLink>
+
         ))}
+
       </nav>
 
-      {/* Logout */}
+      {/* =================================================
+          LOGOUT
+      ================================================= */}
+
       <div className="parent-sidebar-footer">
+
         <button
           type="button"
           className="parent-sidebar-logout"
           onClick={handleLogout}
         >
+
           <i className="fa-solid fa-right-from-bracket"></i>
-          <span>Logout</span>
+
+          <span>
+            Logout
+          </span>
+
         </button>
+
       </div>
+
     </aside>
   );
 }

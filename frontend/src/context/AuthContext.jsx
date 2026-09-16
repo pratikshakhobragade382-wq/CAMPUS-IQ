@@ -1,112 +1,154 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import axiosClient from "../api/axios";
-import { STORAGE_KEYS } from "../utils/constants";
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.USER_DATA);
-
     try {
-      return stored ? JSON.parse(stored) : null;
+      const savedUser = localStorage.getItem("user");
+      return savedUser ? JSON.parse(savedUser) : null;
     } catch (error) {
-      console.error("Invalid stored user:", error);
-      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      console.error("Unable to read saved user:", error);
       return null;
     }
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const isAuthenticated = !!user;
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-  // =========================================================
-  // LOGIN
-  // =========================================================
+    if (!token) {
+      setUser(null);
+    }
+  }, []);
 
-  const login = async ({ email, password }) => {
+  const login = async (formOrEmail, passwordArg, tenantIdArg = 1) => {
     setLoading(true);
-    setError("");
 
     try {
-      const loginData = {
+      /*
+       * Supports both:
+       *
+       * login({
+       *   email,
+       *   password,
+       *   tenantId
+       * })
+       *
+       * and:
+       *
+       * login(email, password, tenantId)
+       */
+
+      let email;
+      let password;
+      let tenantId;
+
+      if (
+        typeof formOrEmail === "object" &&
+        formOrEmail !== null
+      ) {
+        email = formOrEmail.email;
+        password = formOrEmail.password;
+        tenantId = formOrEmail.tenantId ?? 1;
+      } else {
+        email = formOrEmail;
+        password = passwordArg;
+        tenantId = tenantIdArg ?? 1;
+      }
+
+      email = typeof email === "string" ? email.trim() : "";
+      password = typeof password === "string" ? password : "";
+
+      if (!email) {
+        throw new Error("Please enter your email.");
+      }
+
+      if (!password) {
+        throw new Error("Please enter your password.");
+      }
+
+      const response = await axiosClient.post("/auth/login", {
         email,
         password,
+        tenantId: Number(tenantId) || 1,
+      });
+
+      const data = response?.data?.data;
+
+      if (!data?.token || !data?.user) {
+        throw new Error(
+          "Invalid login response received from CampusIQ backend."
+        );
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      setUser(data.user);
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.token,
       };
+    } catch (error) {
+      console.error("CampusIQ LOGIN ERROR:", error);
 
-      // Local development
-      if (import.meta.env.DEV) {
-        loginData.tenantId = 1;
+      if (error?.response) {
+        const backendMessage =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Login failed.";
+
+        throw new Error(backendMessage);
       }
 
-      const res = await axiosClient.post("/auth/login", loginData);
-
-      const responseData = res.data?.data;
-
-      if (!responseData?.user || !responseData?.token) {
-        setError("Invalid login response from server.");
-        return false;
+      if (error instanceof Error) {
+        throw error;
       }
 
-      const loggedInUser = responseData.user;
-      const token = responseData.token;
-
-      // SAVE AUTH DATA (same keys that axios.js reads)
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-      localStorage.setItem(
-        STORAGE_KEYS.USER_DATA,
-        JSON.stringify(loggedInUser)
-      );
-
-      setUser(loggedInUser);
-
-      return loggedInUser;
-    } catch (err) {
-      console.error("Login failed:", err);
-
-      setError(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
-          "Login failed"
-      );
-
-      return false;
+      throw new Error("Login failed.");
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
-
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
     setUser(null);
-    setError("");
+  };
+
+  const value = {
+    user,
+    setUser,
+    loading,
+    login,
+    logout,
+    isAuthenticated: !!localStorage.getItem("token"),
   };
 
   return (
-    <AuthContext.Provider
-  value={{
-    user,
-    login,
-    logout,
-    loading,
-    isLoading: loading,
-    isAuthenticated,
-    error,
-  }}
->
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error(
+      "useAuth must be used inside AuthProvider"
+    );
+  }
+
+  return context;
+};
+
+export default AuthContext;

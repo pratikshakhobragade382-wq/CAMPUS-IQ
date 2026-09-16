@@ -1,99 +1,52 @@
-/**
- * Axios configuration for CampusIQ API
- * Single source of truth for all HTTP requests.
- *
- * Supports:
- * - Normal JSON requests
- * - FormData requests such as AI image uploads
- */
-
 import axios from "axios";
-import { STORAGE_KEYS } from "../utils/constants";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:8000/api/v1";
-
-if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
-  // Fail loudly in a production build rather than silently calling localhost.
-  console.error(
-    "[CampusIQ] VITE_API_URL is not set. The app will try to call localhost, " +
-      "which will not work in production. Set VITE_API_URL in your deployment environment."
-  );
-}
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-
-  timeout: 15000,
-
+const axiosClient = axios.create({
+  baseURL: "http://localhost:8000/api/v1",
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// =====================================================
-// REQUEST INTERCEPTOR
-// =====================================================
-
-api.interceptors.request.use(
+axiosClient.interceptors.request.use(
   (config) => {
-    // -------------------------------------------------
-    // Attach JWT
-    // -------------------------------------------------
-
-    const token = localStorage.getItem(
-      STORAGE_KEYS.AUTH_TOKEN
-    );
+    const token = localStorage.getItem("token");
 
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // -------------------------------------------------
-    // IMPORTANT:
-    // Let the browser/Axios set Content-Type automatically
-    // when sending FormData.
-    //
-    // This is required for image uploads.
-    // -------------------------------------------------
-
-    if (config.data instanceof FormData) {
-      delete config.headers["Content-Type"];
     }
 
     return config;
   },
-
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// =====================================================
-// RESPONSE INTERCEPTOR
-// =====================================================
-
-api.interceptors.response.use(
-  (response) => response,
-
+axiosClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear authentication data
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    console.error(
+      "CampusIQ API Error:",
+      error?.response?.status,
+      error?.response?.data || error.message
+    );
 
-      // -------------------------------------------------
-      // Redirect based on the current portal
-      //
-      // Teacher -> Teacher Login
-      // Admin   -> Admin Login
-      // -------------------------------------------------
+    if (error?.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
 
-      const loginPath = window.location.pathname.startsWith("/teacher")
-        ? "/teacher-login"
-        : "/login";
+      const currentPath = window.location.pathname;
 
-      if (window.location.pathname !== loginPath) {
-        window.location.href = loginPath;
+      if (currentPath.startsWith("/teacher")) {
+        window.location.href = "/teacher-login";
+      } else if (currentPath.startsWith("/parent")) {
+        window.location.href = "/parent-login";
+      } else {
+        window.location.href = "/login";
       }
     }
 
@@ -101,4 +54,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+export default axiosClient;

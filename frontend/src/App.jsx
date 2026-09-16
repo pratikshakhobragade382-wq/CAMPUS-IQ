@@ -35,6 +35,9 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 import ParentLogin from "./parent/ParentLogin";
 import ParentLayout from "./parent/layout/ParentLayout";
 
+// AI Performance Predictor
+import AIPerformancePredictor from "./parent/AIPerformancePredictor";
+
 // =====================================================
 // TEACHER
 // =====================================================
@@ -96,7 +99,6 @@ import AddUser from "./pages/admin/AddUser";
 import Notifications from "./pages/Notifications/Notifications";
 import Profile from "./pages/Profile/Profile";
 
-
 // =====================================================
 // APP CONTENT
 // =====================================================
@@ -104,9 +106,7 @@ import Profile from "./pages/Profile/Profile";
 function AppContent() {
   const location = useLocation();
 
-  /*
-   * Hide chatbot on authentication pages.
-   */
+  // Hide chatbot on authentication pages
   const hideChatbot = [
     "/login",
     "/register",
@@ -183,7 +183,6 @@ function AppContent() {
           element={<Register />}
         />
 
-
         {/* =====================================================
             PARENT PORTAL
         ===================================================== */}
@@ -207,6 +206,7 @@ function AppContent() {
                 }}
               >
                 <h2>Parent Dashboard</h2>
+
                 <p>
                   Parent dashboard is coming next.
                 </p>
@@ -214,8 +214,16 @@ function AppContent() {
             }
           />
 
-        </Route>
+          {/* =================================================
+              AI PERFORMANCE PREDICTOR
+          ================================================= */}
 
+          <Route
+            path="/parent/ai-performance"
+            element={<AIPerformancePredictor />}
+          />
+
+        </Route>
 
         {/* =====================================================
             TEACHER ROUTES
@@ -293,7 +301,6 @@ function AppContent() {
           />
 
         </Route>
-
 
         {/* =====================================================
             ADMIN ROUTES
@@ -429,7 +436,6 @@ function AppContent() {
 
         </Route>
 
-
         {/* =====================================================
             FALLBACK
         ===================================================== */}
@@ -451,7 +457,6 @@ function AppContent() {
     </>
   );
 }
-
 
 // =====================================================
 // APP

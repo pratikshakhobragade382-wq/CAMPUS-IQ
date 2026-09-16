@@ -1,213 +1,114 @@
-
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
 
-// =========================================================
-// IMPORT ROUTES
-// =========================================================
+/*
+|--------------------------------------------------------------------------
+| ROUTE IMPORTS
+|--------------------------------------------------------------------------
+*/
 
-const authRoutes = require('../modules/auth/authRoutes');
-const academicYearRoutes = require('../modules/academicYear/academicYearRoutes');
-const classRoutes = require('../modules/class/class.routes');
-const sectionRoutes = require('../modules/section/section.routes');
-const departmentRoutes = require('../modules/department/department.routes');
-const subjectRoutes = require('../modules/master/subject.routes');
-const staffRoutes = require('../modules/staff/staff.routes');
-const studentRoutes = require('../modules/student/student.routes');
-const masterDataRoutes = require('../modules/master-data/master-data.routes');
-const customFieldsRoutes = require('../modules/custom-fields/custom-fields.routes');
-const timetableRoutes = require('../modules/timetable/timetable.routes');
-const attendanceRoutes = require('../modules/attendance/attendance.routes');
-const holidayRoutes = require('../modules/holiday/holiday.routes');
-const feeRoutes = require('../modules/fee/fee.routes');
-const examRoutes = require('../modules/exam/exam.routes');
-const assignmentRoutes = require('../modules/assignment/assignment.routes');
-const settingsRoutes = require('../modules/settings/settings.routes');
-const notificationRoutes = require('../modules/notification/notification.routes');
-const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
-const aiRoutes = require('../modules/ai/ai.routes');
+const authRoutes = require("../modules/auth/authRoutes");
+
+const studentRoutes = require("../modules/student/student.routes");
+const staffRoutes = require("../modules/staff/staff.routes");
+const parentRoutes = require("../modules/parent/parent.routes");
+
+const attendanceRoutes = require("../modules/attendance/attendance.routes");
+const assignmentRoutes = require("../modules/assignment/assignment.routes");
+const examRoutes = require("../modules/exam/exam.routes");
+
+const classRoutes = require("../modules/class/class.routes");
+const departmentRoutes = require("../modules/department/department.routes");
+const sectionRoutes = require("../modules/section/section.routes");
+
+const dashboardRoutes = require("../modules/dashboard/dashboard.routes");
+
+const academicYearRoutes = require("../modules/academicYear/academicYearRoutes");
+
+const feeRoutes = require("../modules/fee/fee.routes");
+const holidayRoutes = require("../modules/holiday/holiday.routes");
+
+const timetableRoutes = require("../modules/timetable/timetable.routes");
+
+const notificationRoutes = require("../modules/notification/notification.routes");
+
+const customFieldsRoutes = require("../modules/custom-fields/custom-fields.routes");
+
+const settingsRoutes = require("../modules/settings/settings.routes");
+
+const masterDataRoutes = require("../modules/master-data/master-data.routes");
+
+const subjectRoutes = require("../modules/master/subject.routes");
+
+const aiRoutes = require("../modules/ai/ai.routes");
+
+const performanceRoutes = require("../modules/performance/performance.routes");
+
 const chatbotRoutes = require("../modules/chatbot/chatbot.routes");
-const parentRoutes = require('../modules/parent/parent.routes');
-const studentPortalRoutes = require('../modules/student-portal/studentPortal.routes');
-// =========================================================
-// ROUTE CHECKER
-// =========================================================
 
-function registerRoute(path, route, routeName) {
-  console.log(
-    `[ROUTE CHECK] ${routeName}: ${typeof route}`
-  );
+const studentPortalRoutes = require("../modules/student-portal/studentPortal.routes");
 
-  if (typeof route !== 'function') {
-    console.error('');
-    console.error('==============================================');
-    console.error('ERROR: INVALID ROUTE');
-    console.error('==============================================');
-    console.error(`Route name : ${routeName}`);
-    console.error(`Route path : ${path}`);
-    console.error(`Type       : ${typeof route}`);
-    console.error('');
-    console.error(
-      'This route file is not exporting an Express router.'
-    );
-    console.error(
-      'It should normally end with: module.exports = router;'
-    );
-    console.error('==============================================');
-    console.error('');
 
-    throw new TypeError(
-      `Invalid route "${routeName}". Expected an Express router/function but received ${typeof route}.`
-    );
-  }
+/*
+|--------------------------------------------------------------------------
+| ROUTE MOUNTS
+|--------------------------------------------------------------------------
+*/
 
-  router.use(path, route);
-}
+router.use("/auth", authRoutes);
 
-// =========================================================
-// REGISTER ROUTES
-// =========================================================
+router.use("/students", studentRoutes);
 
-registerRoute(
-  '/dashboard',
-  dashboardRoutes,
-  'dashboard'
-);
+router.use("/staff", staffRoutes);
 
-registerRoute(
-  '/auth',
-  authRoutes,
-  'auth'
-);
+router.use("/parents", parentRoutes);
 
-registerRoute(
-  '/academic-years',
-  academicYearRoutes,
-  'academicYears'
-);
+router.use("/parents", performanceRoutes);
 
-registerRoute(
-  '/classes',
-  classRoutes,
-  'classes'
-);
+router.use("/attendance", attendanceRoutes);
 
-registerRoute(
-  '/sections',
-  sectionRoutes,
-  'sections'
-);
+router.use("/assignments", assignmentRoutes);
 
-registerRoute(
-  '/departments',
-  departmentRoutes,
-  'departments'
-);
+router.use("/exams", examRoutes);
 
-registerRoute(
-  '/subjects',
-  subjectRoutes,
-  'subjects'
-);
+router.use("/classes", classRoutes);
 
-registerRoute(
-  '/staff',
-  staffRoutes,
-  'staff'
-);
+router.use("/departments", departmentRoutes);
 
-registerRoute(
-  '/students',
-  studentRoutes,
-  'students'
-);
+router.use("/sections", sectionRoutes);
 
-registerRoute(
-  '/master-data',
-  masterDataRoutes,
-  'masterData'
-);
+router.use("/dashboard", dashboardRoutes);
 
-registerRoute(
-  '/custom-fields',
-  customFieldsRoutes,
-  'customFields'
-);
+router.use("/academic-years", academicYearRoutes);
 
-registerRoute(
-  '/timetable',
-  timetableRoutes,
-  'timetable'
-);
+router.use("/fees", feeRoutes);
 
-registerRoute(
-  '/attendance',
-  attendanceRoutes,
-  'attendance'
-);
+router.use("/holidays", holidayRoutes);
 
-registerRoute(
-  '/holidays',
-  holidayRoutes,
-  'holidays'
-);
+router.use("/timetable", timetableRoutes);
 
-registerRoute(
-  '/fees',
-  feeRoutes,
-  'fees'
-);
+router.use("/notifications", notificationRoutes);
 
-registerRoute(
-  '/exams',
-  examRoutes,
-  'exams'
-);
+router.use("/custom-fields", customFieldsRoutes);
 
-registerRoute(
-  '/assignments',
-  assignmentRoutes,
-  'assignments'
-);
+router.use("/settings", settingsRoutes);
 
-registerRoute(
-  '/settings',
-  settingsRoutes,
-  'settings'
-);
+router.use("/master-data", masterDataRoutes);
 
-registerRoute(
-  '/notifications',
-  notificationRoutes,
-  'notifications'
-);
+router.use("/subjects", subjectRoutes);
 
-registerRoute(
-  '/ai',
-  aiRoutes,
-  'ai'
-);
-registerRoute(
-  "/chatbot",
-  chatbotRoutes,
-  "chatbot"
-);
+router.use("/ai", aiRoutes);
 
-registerRoute(
-  '/parent',
-  parentRoutes,
-  'parent'
-);
+router.use("/chatbot", chatbotRoutes);
 
-registerRoute(
-  '/student-portal',
-  studentPortalRoutes,
-  'studentPortal'
-);
-// =========================================================
-// EXPORT ROUTER
-// =========================================================
+router.use("/student-portal", studentPortalRoutes);
+
+
+/*
+|--------------------------------------------------------------------------
+| EXPORT ROUTER
+|--------------------------------------------------------------------------
+*/
 
 module.exports = router;
-

@@ -61,13 +61,13 @@ model User {
   staffId         Int?             @unique
   avatarUrl       String?
   parentId        Int?             @unique
-  studentId       Int?             @unique
   phone           String?
+  studentId       Int?             @unique
   aiConversations AIConversation[]
   aiMessages      AIMessage[]
   StudentParent   StudentParent?   @relation(fields: [parentId], references: [id])
-  student         Student?         @relation(fields: [studentId], references: [id])
   staff           Staff?           @relation(fields: [staffId], references: [id])
+  student         Student?         @relation(fields: [studentId], references: [id])
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([email, tenantId])

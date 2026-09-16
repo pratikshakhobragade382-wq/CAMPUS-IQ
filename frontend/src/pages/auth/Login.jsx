@@ -15,33 +15,42 @@ export default function Login() {
   });
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((previous) => ({
+      ...previous,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const ok = await login(form);
-    if (ok) {
-      const isTeacher =
-        ok.identity === "staff" &&
-        (ok.role === "teacher" ||
-          ok.staff?.role === "teacher" ||
-          ok.staffRole === "teacher");
+    const result = await login({
+      email: form.email,
+      password: form.password,
+      tenantId: form.tenantId,
+    });
 
-      navigate(isTeacher ? "/teacher/dashboard" : "/dashboard");
+    if (result) {
+      const isTeacher =
+        result.identity === "staff" &&
+        (
+          result.role === "teacher" ||
+          result.staff?.role === "teacher" ||
+          result.staffRole === "teacher"
+        );
+
+      navigate(
+        isTeacher
+          ? "/teacher/dashboard"
+          : "/dashboard"
+      );
     }
   };
 
   return (
     <div className="login-page">
-
       <div className="login-card">
 
-        {/* Campus IQ Logo */}
         <div className="login-logo-wrapper">
           <img
             src={logo}
@@ -50,13 +59,11 @@ export default function Login() {
           />
         </div>
 
-        {/* Login Heading */}
         <div className="login-header">
           <h2>Welcome Back!</h2>
           <p>Sign in to continue to Campus IQ</p>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="auth-error">
             <i className="fa-solid fa-circle-exclamation"></i>
@@ -66,15 +73,12 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
 
-          {/* Email */}
           <div className="form-group">
-
             <label htmlFor="email">
               Email
             </label>
 
             <div className="input-wrapper">
-
               <i className="fa-solid fa-envelope input-icon"></i>
 
               <input
@@ -86,21 +90,15 @@ export default function Login() {
                 placeholder="Enter your email"
                 required
               />
-
             </div>
-
           </div>
 
-
-          {/* Password */}
           <div className="form-group">
-
             <label htmlFor="password">
               Password
             </label>
 
             <div className="input-wrapper">
-
               <i className="fa-solid fa-lock input-icon"></i>
 
               <input
@@ -112,21 +110,15 @@ export default function Login() {
                 placeholder="Enter your password"
                 required
               />
-
             </div>
-
           </div>
 
-
-          {/* Tenant ID */}
           <div className="form-group">
-
             <label htmlFor="tenantId">
               Tenant ID
             </label>
 
             <div className="input-wrapper">
-
               <i className="fa-solid fa-building input-icon"></i>
 
               <input
@@ -136,15 +128,12 @@ export default function Login() {
                 value={form.tenantId}
                 onChange={handleChange}
                 placeholder="Enter tenant ID"
+                min="1"
                 required
               />
-
             </div>
-
           </div>
 
-
-          {/* Login Button */}
           <button
             className="login-submit-btn"
             type="submit"
@@ -165,8 +154,6 @@ export default function Login() {
 
         </form>
 
-
-        {/* Register */}
         <p className="auth-footer">
           No account?{" "}
           <Link to="/register">
@@ -175,7 +162,6 @@ export default function Login() {
         </p>
 
       </div>
-
     </div>
   );
 }
