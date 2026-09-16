@@ -1,279 +1,207 @@
-// =====================================================
-// CAMPUSIQ LOCAL AI SERVICE
-// =====================================================
-// Uses Ollama + Qwen2.5-VL locally.
-// No paid OpenAI API is used.
-// =====================================================
-
-const { HttpError } = require("../../utils/httpError");
 const prisma = require("../../prisma/prismaClient");
 
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-const OLLAMA_URL = `${OLLAMA_BASE_URL}/api/chat`;
-const OLLAMA_TAGS_URL = `${OLLAMA_BASE_URL}/api/tags`;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
-// Priority list of models to use if present in Ollama
-const PREFERRED_MODELS = [
-  process.env.OLLAMA_MODEL,
-  "qwen2.5vl:7b",
-  "qwen2.5vl:3b",
-  "qwen2.5-coder",
-  "qwen2.5",
-  "llama3.2-vision",
-  "llama3.2",
-].filter(Boolean);
-
-let cachedModel = null;
-let lastModelCheck = 0;
-
-/**
- * Automatically detects which model is installed in the local Ollama instance.
- */
-async function resolveOllamaModel() {
-  const now = Date.now();
-  if (cachedModel && now - lastModelCheck < 60000) {
-    return cachedModel;
-  }
-
-  try {
-    const res = await fetch(OLLAMA_TAGS_URL, { signal: AbortSignal.timeout(3000) });
-    if (res.ok) {
-      const data = await res.json();
-      const installedModels = (data.models || []).map((m) => m.name || m.model || "");
-
-      // 1. If explicit env variable is set and present
-      if (process.env.OLLAMA_MODEL && installedModels.some((n) => n.includes(process.env.OLLAMA_MODEL))) {
-        cachedModel = process.env.OLLAMA_MODEL;
-        lastModelCheck = now;
-        return cachedModel;
-      }
-
-      // 2. Check preferred model list against installed models
-      for (const pref of PREFERRED_MODELS) {
-        const found = installedModels.find((n) => n === pref || n.startsWith(`${pref}:`) || n.includes(pref));
-        if (found) {
-          cachedModel = found;
-          lastModelCheck = now;
-          return cachedModel;
-        }
-      }
-
-      // 3. Fallback to any installed model
-      if (installedModels.length > 0) {
-        cachedModel = installedModels[0];
-        lastModelCheck = now;
-        return cachedModel;
-      }
-    }
-  } catch (err) {
-    console.warn("Could not query Ollama tags:", err.message);
-  }
-
-  // Default fallback
-  cachedModel = process.env.OLLAMA_MODEL || "qwen2.5vl:7b";
-  lastModelCheck = now;
-  return cachedModel;
-}
-
-// =====================================================
-// OLLAMA TIMEOUT
-// =====================================================
-
-const OLLAMA_TIMEOUT = 5 * 60 * 1000;
-
-// =====================================================
-// CAMPUSIQ AI SYSTEM PROMPT
-// =====================================================
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/interactions";
 
 const SYSTEM_PROMPT = `
-You are CampusIQ AI Teacher Co-Pilot.
+You are CampusIQ AI Teacher Co-Pilot, an intelligent teaching assistant
+for school teachers.
 
-You are an intelligent teaching assistant for school teachers.
-
-Help teachers with:
-- Question papers
-- MCQs
-- Homework
+Your job is to help teachers with:
+- Creating question papers
+- Creating MCQs
+- Homework and assignments
 - Lesson explanations
-- Teaching ideas
-- Educational content
-- Image and document analysis
+- Notes and study material
+- Answer keys
+- Classroom activities
+- Educational planning
+- Explaining uploaded images
+- General academic questions
 
-Keep responses clear, structured and suitable for school education.
+Always provide accurate, clear and practical answers.
 
-When generating educational content, consider the class,
-subject, topic and difficulty mentioned by the teacher.
-
-When an image is provided:
-- Carefully analyze the image.
-- Identify relevant text, questions, diagrams or educational content.
-- Do not invent information that is not visible in the image.
-- If something is unclear, say so.
-
-Use previous conversation as context.
-Maintain continuity for follow-up questions.
-
-Keep answers concise unless the teacher asks for detail.
+When generating educational content:
+- Keep it suitable for the requested class/grade.
+- Use clear headings and bullet points when useful.
+- For MCQs, provide options and clearly mention the correct answer.
+- For question papers, organize questions properly.
+- Do not unnecessarily mention that you are an AI.
+- Keep the response professional and teacher-friendly.
 `;
-
-// =====================================================
-// AI CHAT SERVICE
-// =====================================================
 
 async function chatWithAI(
   message,
-  image = null,
-  conversationId = null,
-  tenantId = null,
-  userId = null
+  image,
+  conversationId,
+  tenantId,
+  userId
 ) {
-  if ((!message || !message.trim()) && !image) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is missing in backend .env");
+  }
+
+  if (!message && !image) {
     throw new Error("Message or image is required");
   }
 
-  // ---------------------------------------------------
-  // LOAD PREVIOUS CONVERSATION
-  // ---------------------------------------------------
+  // ---------------------------------------------------------
+  // GET PREVIOUS CHAT HISTORY
+  // ---------------------------------------------------------
 
-  let previousMessages = [];
+  let history = [];
 
-  if (conversationId && tenantId && userId) {
-    previousMessages = await prisma.aIMessage.findMany({
+  if (conversationId) {
+    const messages = await prisma.aIMessage.findMany({
       where: {
-        conversationId: Number(conversationId),
-        tenantId,
-        userId,
+        conversationId,
       },
       orderBy: {
         createdAt: "asc",
       },
-      take: 10,
-      select: {
-        role: true,
-        content: true,
-      },
+      take: 20,
+    });
+
+    history = messages;
+  }
+
+  // ---------------------------------------------------------
+  // BUILD GEMINI INPUT
+  // ---------------------------------------------------------
+
+  const input = [];
+
+  // Previous conversation
+  for (const item of history) {
+    if (!item.content) continue;
+
+    input.push({
+      type: item.role === "assistant" ? "text" : "text",
+      text:
+        item.role === "assistant"
+          ? `Assistant: ${item.content}`
+          : `User: ${item.content}`,
     });
   }
 
-  // ---------------------------------------------------
-  // BUILD OLLAMA MESSAGE ARRAY
-  // ---------------------------------------------------
-
-  const messages = [
-    {
-      role: "system",
-      content: SYSTEM_PROMPT,
-    },
-  ];
-
-  for (const msg of previousMessages) {
-    if (msg.role === "user" || msg.role === "assistant") {
-      messages.push({
-        role: msg.role,
-        content: msg.content,
-      });
-    }
+  // Current user message
+  if (message) {
+    input.push({
+      type: "text",
+      text: message,
+    });
   }
 
-  const userMessage = {
-    role: "user",
-    content: message?.trim() || "Please analyze this image.",
-  };
-
+  // Current image
   if (image) {
-    userMessage.images = [image.buffer.toString("base64")];
+    input.push({
+      type: "image",
+      data: image.buffer.toString("base64"),
+      mime_type: image.mimetype,
+    });
   }
 
-  messages.push(userMessage);
-
-  // ---------------------------------------------------
-  // TIMEOUT CONTROLLER
-  // ---------------------------------------------------
+  // ---------------------------------------------------------
+  // GEMINI INTERACTIONS API
+  // ---------------------------------------------------------
 
   const controller = new AbortController();
 
   const timeout = setTimeout(() => {
     controller.abort();
-  }, OLLAMA_TIMEOUT);
+  }, 120000);
 
   try {
-    const activeModel = await resolveOllamaModel();
-    console.log(`AI: Sending request to Ollama (${activeModel})...`);
-
-    const response = await fetch(OLLAMA_URL, {
+    const response = await fetch(GEMINI_URL, {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
       },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: activeModel,
-        messages,
-        stream: false,
-        keep_alive: "30m",
-        options: {
-          num_predict: 512,
-          temperature: 0.2,
-          num_ctx: 2048,
-        },
-      }),
-    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`AI: Ollama request error (${response.status}):`, errorText);
-      throw new HttpError(
-        502,
-        `Local AI error: ${errorText || response.statusText}. Please ensure model "${activeModel}" is downloaded.`,
-        { code: "OLLAMA_ERROR", expose: true }
-      );
-    }
+      body: JSON.stringify({
+        model: GEMINI_MODEL,
+
+        system_instruction: SYSTEM_PROMPT,
+
+        input,
+
+        store: false,
+      }),
+
+      signal: controller.signal,
+    });
 
     const data = await response.json();
 
-    const aiResponse =
-      data?.message?.content?.trim() || "No response generated.";
+    if (!response.ok) {
+      console.error("Gemini API Error:", data);
 
-    console.log("AI: Ollama response received successfully.");
+      const errorMessage =
+        data?.error?.message ||
+        data?.message ||
+        "Gemini API request failed.";
 
-    return aiResponse;
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          "Gemini API authentication failed. Check your GEMINI_API_KEY."
+        );
+      }
+
+      if (response.status === 429) {
+        throw new Error(
+          "Gemini API rate limit reached. Please wait a moment and try again."
+        );
+      }
+
+      if (response.status === 400) {
+        throw new Error(`Gemini API bad request: ${errorMessage}`);
+      }
+
+      throw new Error(`Gemini API error: ${errorMessage}`);
+    }
+
+    // ---------------------------------------------------------
+    // EXTRACT TEXT FROM INTERACTION RESPONSE
+    // ---------------------------------------------------------
+
+    const steps = data?.steps || [];
+
+    let reply = "";
+
+    for (const step of steps) {
+      if (step.type !== "model_output") continue;
+
+      const content = step.content || [];
+
+      for (const item of content) {
+        if (item.type === "text" && item.text) {
+          reply += item.text;
+        }
+      }
+    }
+
+    if (!reply.trim()) {
+      throw new Error("Gemini returned an empty response.");
+    }
+
+    return reply.trim();
   } catch (error) {
-    if (error?.name === "AbortError") {
-      throw new HttpError(
-        504,
-        "The local AI model took too long to respond. Please try again.",
-        { code: "AI_TIMEOUT", expose: true }
+    if (error.name === "AbortError") {
+      throw new Error(
+        "Gemini request timed out. Please try again."
       );
     }
 
-    if (
-      error?.code === "ECONNREFUSED" ||
-      error?.cause?.code === "ECONNREFUSED"
-    ) {
-      throw new HttpError(
-        503,
-        "Ollama is not running. Please start Ollama on your computer and try again.",
-        { code: "OLLAMA_NOT_RUNNING", expose: true }
-      );
-    }
-
-    if (error instanceof HttpError) {
-      throw error;
-    }
-
-    throw new HttpError(
-      500,
-      error?.message || "Failed to generate AI response. Please ensure Ollama is running.",
-      { code: "AI_GENERATION_FAILED", expose: true }
-    );
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
 }
-
-// =====================================================
-// EXPORT
-// =====================================================
 
 module.exports = {
   chatWithAI,

@@ -70,11 +70,6 @@
   box-shadow: 0 4px 14px rgba(20, 184, 166, 0.22);
 }
 
-/* .create-class-button:hover {
-  background: #38bdf8;
-  color: #000000;
-  transform: translateY(-1px);
-} */
 
 .create-class-button:active {
   background: #0ea5e9;
