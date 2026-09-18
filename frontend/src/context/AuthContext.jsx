@@ -1,135 +1,385 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
 import axiosClient from "../api/axios";
 
 const AuthContext = createContext(null);
 
+/*
+============================================================
+ DEFAULT TENANT
+============================================================
+
+ For local development:
+
+ VITE_TENANT_ID=1
+
+ If VITE_TENANT_ID is not present,
+ tenant 1 will be used.
+
+============================================================
+*/
+
+const DEFAULT_TENANT_ID =
+  Number(import.meta.env.VITE_TENANT_ID) || 1;
+
+/*
+============================================================
+ AUTH PROVIDER
+============================================================
+*/
+
 export const AuthProvider = ({ children }) => {
+  /*
+   * --------------------------------------------------------
+   * USER
+   * --------------------------------------------------------
+   */
+
   const [user, setUser] = useState(() => {
     try {
-      const savedUser = localStorage.getItem("user");
-      return savedUser ? JSON.parse(savedUser) : null;
+      const savedUser =
+        localStorage.getItem("user");
+
+      return savedUser
+        ? JSON.parse(savedUser)
+        : null;
     } catch (error) {
-      console.error("Unable to read saved user:", error);
+      console.error(
+        "Unable to read saved user:",
+        error
+      );
+
       return null;
     }
   });
 
-  const [loading, setLoading] = useState(false);
+  /*
+   * --------------------------------------------------------
+   * LOADING
+   * --------------------------------------------------------
+   */
+
+  const [loading, setLoading] =
+    useState(false);
+
+  /*
+   * --------------------------------------------------------
+   * ERROR
+   * --------------------------------------------------------
+   */
+
+  const [error, setError] =
+    useState("");
+
+  /*
+   * --------------------------------------------------------
+   * CHECK EXISTING SESSION
+   * --------------------------------------------------------
+   */
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
 
-    if (!token) {
+    const savedUser =
+      localStorage.getItem("user");
+
+    if (!token || !savedUser) {
       setUser(null);
     }
   }, []);
 
-  const login = async (formOrEmail, passwordArg, tenantIdArg = 1) => {
+  /*
+============================================================
+ LOGIN
+============================================================
+
+ Supports both:
+
+ login({
+   email,
+   password,
+   tenantId
+ })
+
+ and:
+
+ login(
+   email,
+   password,
+   tenantId
+ )
+
+ Returns:
+
+ user object on success
+ null on failure
+
+============================================================
+*/
+
+  const login = async (
+    formOrEmail,
+    passwordArg,
+    tenantIdArg =
+      DEFAULT_TENANT_ID
+  ) => {
     setLoading(true);
+    setError("");
 
     try {
-      /*
-       * Supports both:
-       *
-       * login({
-       *   email,
-       *   password,
-       *   tenantId
-       * })
-       *
-       * and:
-       *
-       * login(email, password, tenantId)
-       */
+      let email = "";
+      let password = "";
+      let tenantId =
+        DEFAULT_TENANT_ID;
 
-      let email;
-      let password;
-      let tenantId;
+      /*
+       * ------------------------------------------------------
+       * OBJECT FORM
+       * ------------------------------------------------------
+       */
 
       if (
         typeof formOrEmail === "object" &&
         formOrEmail !== null
       ) {
-        email = formOrEmail.email;
-        password = formOrEmail.password;
-        tenantId = formOrEmail.tenantId ?? 1;
-      } else {
-        email = formOrEmail;
-        password = passwordArg;
-        tenantId = tenantIdArg ?? 1;
+        email =
+          formOrEmail.email || "";
+
+        password =
+          formOrEmail.password || "";
+
+        tenantId =
+          formOrEmail.tenantId ??
+          DEFAULT_TENANT_ID;
       }
 
-      email = typeof email === "string" ? email.trim() : "";
-      password = typeof password === "string" ? password : "";
+      /*
+       * ------------------------------------------------------
+       * EMAIL + PASSWORD FORM
+       * ------------------------------------------------------
+       */
+
+      else {
+        email =
+          formOrEmail || "";
+
+        password =
+          passwordArg || "";
+
+        tenantId =
+          tenantIdArg ??
+          DEFAULT_TENANT_ID;
+      }
+
+      /*
+       * ------------------------------------------------------
+       * NORMALIZE
+       * ------------------------------------------------------
+       */
+
+      email =
+        typeof email === "string"
+          ? email.trim()
+          : "";
+
+      password =
+        typeof password === "string"
+          ? password
+          : "";
+
+      tenantId =
+        Number(tenantId) ||
+        DEFAULT_TENANT_ID;
+
+      /*
+       * ------------------------------------------------------
+       * VALIDATION
+       * ------------------------------------------------------
+       */
 
       if (!email) {
-        throw new Error("Please enter your email.");
+        throw new Error(
+          "Please enter your email."
+        );
       }
 
       if (!password) {
-        throw new Error("Please enter your password.");
+        throw new Error(
+          "Please enter your password."
+        );
       }
 
-      const response = await axiosClient.post("/auth/login", {
-        email,
-        password,
-        tenantId: Number(tenantId) || 1,
-      });
+      /*
+       * ------------------------------------------------------
+       * BACKEND LOGIN
+       * ------------------------------------------------------
+       */
 
-      const data = response?.data?.data;
+      const response =
+        await axiosClient.post(
+          "/auth/login",
+          {
+            email,
+            password,
+            tenantId,
+          }
+        );
 
-      if (!data?.token || !data?.user) {
+      const data =
+        response?.data?.data;
+
+      /*
+       * ------------------------------------------------------
+       * VALIDATE RESPONSE
+       * ------------------------------------------------------
+       */
+
+      if (
+        !data?.token ||
+        !data?.user
+      ) {
         throw new Error(
           "Invalid login response received from CampusIQ backend."
         );
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      /*
+       * ------------------------------------------------------
+       * SAVE SESSION
+       * ------------------------------------------------------
+       */
+
+      localStorage.setItem(
+        "token",
+        data.token
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+      );
+
+      /*
+       * ------------------------------------------------------
+       * UPDATE REACT STATE
+       * ------------------------------------------------------
+       */
 
       setUser(data.user);
 
-      return {
-        success: true,
-        user: data.user,
-        token: data.token,
-      };
-    } catch (error) {
-      console.error("CampusIQ LOGIN ERROR:", error);
+      /*
+       * ------------------------------------------------------
+       * IMPORTANT
+       *
+       * Return the USER directly.
+       *
+       * ParentLogin.jsx and TeacherLogin.jsx
+       * expect:
+       *
+       * loggedInUser.identity
+       *
+       * not:
+       *
+       * loggedInUser.user.identity
+       * ------------------------------------------------------
+       */
 
-      if (error?.response) {
-        const backendMessage =
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Login failed.";
+      return data.user;
+    } catch (loginError) {
+      console.error(
+        "CampusIQ LOGIN ERROR:",
+        loginError
+      );
 
-        throw new Error(backendMessage);
+      let message =
+        "Login failed. Please check your credentials.";
+
+      /*
+       * Backend error
+       */
+
+      if (loginError?.response) {
+        message =
+          loginError.response?.data?.message ||
+          loginError.response?.data?.error ||
+          message;
       }
 
-      if (error instanceof Error) {
-        throw error;
+      /*
+       * Frontend validation error
+       */
+
+      else if (
+        loginError instanceof Error
+      ) {
+        message =
+          loginError.message;
       }
 
-      throw new Error("Login failed.");
+      setError(message);
+
+      /*
+       * ParentLogin / TeacherLogin
+       * already handle null as failed login.
+       */
+
+      return null;
     } finally {
       setLoading(false);
     }
   };
+
+  /*
+============================================================
+ LOGOUT
+============================================================
+*/
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
     setUser(null);
+    setError("");
   };
+
+  /*
+============================================================
+ CONTEXT VALUE
+============================================================
+*/
+
+  const token =
+    localStorage.getItem("token");
+
+  const isAuthenticated =
+    !!token && !!user;
 
   const value = {
     user,
+
     setUser,
+
     loading,
+
+    /*
+     * Used by Login components
+     */
+    isLoading: loading,
+
+    error,
+
     login,
+
     logout,
-    isAuthenticated: !!localStorage.getItem("token"),
+
+    isAuthenticated,
   };
 
   return (
@@ -139,8 +389,15 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+/*
+============================================================
+ USE AUTH
+============================================================
+*/
+
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(

@@ -1,7 +1,11 @@
-const performanceService = require("./performance.service");
-const {
-  generatePerformanceInsights,
-} = require("./gemini.service");
+const performanceService =
+  require("./performance.service");
+
+/*
+============================================================
+ HELPERS
+============================================================
+*/
 
 function getUserId(req) {
   return (
@@ -22,10 +26,18 @@ function getTenantId(req) {
 
 function isParent(req) {
   return (
-    req?.user?.identity === "parent" ||
-    req?.user?.role === "parent"
+    req?.user?.identity ===
+      "parent" ||
+    req?.user?.role ===
+      "parent"
   );
 }
+
+/*
+============================================================
+ GET PERFORMANCE
+============================================================
+*/
 
 const getPerformance = async (
   req,
@@ -33,8 +45,17 @@ const getPerformance = async (
   next
 ) => {
   try {
-    const tenantId = getTenantId(req);
-    const userId = getUserId(req);
+    const tenantId =
+      getTenantId(req);
+
+    const userId =
+      getUserId(req);
+
+    /*
+     * ------------------------------------------------------
+     * TENANT CHECK
+     * ------------------------------------------------------
+     */
 
     if (!tenantId) {
       return res.status(401).json({
@@ -44,6 +65,12 @@ const getPerformance = async (
       });
     }
 
+    /*
+     * ------------------------------------------------------
+     * USER CHECK
+     * ------------------------------------------------------
+     */
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -51,6 +78,12 @@ const getPerformance = async (
           "Authenticated user information is missing.",
       });
     }
+
+    /*
+     * ------------------------------------------------------
+     * PARENT CHECK
+     * ------------------------------------------------------
+     */
 
     if (!isParent(req)) {
       return res.status(403).json({
@@ -60,39 +93,51 @@ const getPerformance = async (
       });
     }
 
-    const academicYearId =
-      req.query.academicYearId
-        ? Number(req.query.academicYearId)
-        : undefined;
+    /*
+     * ------------------------------------------------------
+     * ACADEMIC YEAR
+     * ------------------------------------------------------
+     */
+
+    let academicYearId;
 
     if (
-      req.query.academicYearId &&
-      !Number.isInteger(academicYearId)
+      req.query.academicYearId !==
+      undefined
     ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid academic year.",
-      });
+      academicYearId =
+        Number(
+          req.query.academicYearId
+        );
+
+      if (
+        !Number.isInteger(
+          academicYearId
+        ) ||
+        academicYearId <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid academic year.",
+        });
+      }
     }
 
     /*
-     * Existing CampusIQ performance service remains
-     * responsible for:
-     *
-     * - parent → child authorization
-     * - real database data
-     * - academic metrics
-     * - prediction
-     * - charts/trends
-     * - subject analysis
+     * ------------------------------------------------------
+     * PERFORMANCE SERVICE
+     * ------------------------------------------------------
      */
+
     const result =
-      await performanceService.getPerformanceTracker({
-        userId,
-        tenantId,
-        academicYearId,
-      });
+      await performanceService.getPerformanceTracker(
+        {
+          userId,
+          tenantId,
+          academicYearId,
+        }
+      );
 
     if (!result) {
       return res.status(404).json({
@@ -103,33 +148,64 @@ const getPerformance = async (
     }
 
     /*
-     * Gemini receives ONLY the already-authorized,
-     * aggregated academic information.
+     * ------------------------------------------------------
+     * DO NOT CALL GEMINI AGAIN HERE
+     * ------------------------------------------------------
      *
-     * It does not receive database credentials,
-     * tenant information or authentication details.
+     * performance.service.js already generates its
+     * explanation.
+     *
+     * We expose that explanation as aiInsights so the
+     * existing Parent UI can use it.
+     * ------------------------------------------------------
      */
+
     const tracker =
-      result?.tracker ||
-      result?.data ||
-      result;
+      result?.tracker || null;
 
-    const aiInsights =
-      await generatePerformanceInsights(
-        tracker
-      );
+    if (tracker) {
+      tracker.aiInsights = {
+        summary:
+          tracker?.explanation
+            ?.summary ||
+          tracker?.summary ||
+          "",
 
-    const finalTracker = {
-      ...tracker,
+        strengths:
+          Array.isArray(
+            tracker?.explanation
+              ?.strengths
+          )
+            ? tracker.explanation
+                .strengths
+            : [],
 
-      aiInsights,
+        focusAreas:
+          Array.isArray(
+            tracker?.explanation
+              ?.focusAreas
+          )
+            ? tracker.explanation
+                .focusAreas
+            : [],
 
-      /*
-       * Keep the technical implementation hidden
-       * from the parent-facing response.
-       */
-      prediction: tracker?.prediction || {},
-    };
+        recommendations:
+          Array.isArray(
+            tracker?.recommendations
+          )
+            ? tracker.recommendations
+            : [],
+
+        parentMessage:
+          "Use these academic insights as a guide for supporting consistent learning and communication with the school.",
+      };
+    }
+
+    /*
+     * ------------------------------------------------------
+     * RESPONSE
+     * ------------------------------------------------------
+     */
 
     return res.json({
       success: true,
@@ -137,7 +213,7 @@ const getPerformance = async (
       data: {
         ...result,
 
-        tracker: finalTracker,
+        tracker,
       },
     });
   } catch (error) {

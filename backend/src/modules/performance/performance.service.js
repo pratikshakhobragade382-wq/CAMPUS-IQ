@@ -1197,7 +1197,7 @@ Rules:
     const timeout =
       setTimeout(() => {
         controller.abort();
-      }, 25000);
+      }, 8000);
 
     const response =
       await fetch(
@@ -1656,37 +1656,35 @@ const buildChildPerformance =
       });
 
     /* ---------------------------------------------------------
-       AI EXPLANATION
+       PERFORMANCE EXPLANATION
+       
+       IMPORTANT:
+       Do NOT wait for Gemini here.
+       
+       The parent performance page should load immediately
+       from the real ERP data already calculated above.
+       
+       basicInsights is generated locally from:
+       - examination performance
+       - attendance
+       - assignment completion
+       - assessment trend
+       - subject performance
     --------------------------------------------------------- */
 
-    const explanation =
-      await generateAIExplanation({
-        student: {
-          name:
-            child.studentName,
-        },
+    const explanation = {
+      summary:
+        "The performance report is based on the available examination, attendance and assignment records. The current academic pattern is shown through the performance score, subject performance, attendance, assignment completion and assessment trend.",
 
-        academicYear,
+      strengths:
+        basicInsights.strengths,
 
-        metrics,
+      focusAreas:
+        basicInsights.focusAreas,
 
-        prediction: {
-          score,
-
-          label:
-            category.label,
-        },
-
-        trend,
-
-        subjects:
-          exams.subjectAverages,
-
-        attendance,
-
-        assignments:
-          assignmentStats,
-      });
+      generatedBy:
+        "Academic analysis",
+    };
 
     return {
       student: {

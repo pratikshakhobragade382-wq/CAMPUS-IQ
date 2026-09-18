@@ -5,14 +5,39 @@ const {
 } = require("../notification/notification.service");
 
 function getBcryptCost() {
-  const raw = Number.parseInt(process.env.BCRYPT_COST || "12", 10);
+  const raw = Number.parseInt(
+    process.env.BCRYPT_COST || "12",
+    10
+  );
+
   const cost = Number.isFinite(raw) ? raw : 12;
+
   return Math.min(14, Math.max(10, cost));
 }
 
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
+
+// ============================================================
+// PRISMA TRANSACTION OPTIONS
+// ============================================================
+// Prisma's default interactive transaction timeout is 5 seconds.
+//
+// Student creation can take longer because it may create:
+// - Student
+// - Father / Mother / Guardian
+// - Parent login users
+// - Student login user
+// - bcrypt password hashes
+//
+// We therefore allow up to 15 seconds.
+// ============================================================
+
+const TRANSACTION_OPTIONS = {
+  maxWait: 10000,
+  timeout: 15000,
+};
 
 // ============================================================
 // PARENT LOGIN LINKING
@@ -25,32 +50,51 @@ function pad2(n) {
 // If the parent User does not exist, we create it first
 // and then connect it to the StudentParent record.
 // ============================================================
-async function maybeCreateParentUser(tx, studentParent, tenantId) {
-  if (!studentParent.email || !studentParent.mobile) return null;
 
-  const digits = String(studentParent.mobile).replace(/\D/g, "");
+async function maybeCreateParentUser(
+  tx,
+  studentParent,
+  tenantId
+) {
+  if (
+    !studentParent.email ||
+    !studentParent.mobile
+  ) {
+    return null;
+  }
 
-  if (digits.length < 4) return null;
+  const digits = String(
+    studentParent.mobile
+  ).replace(/\D/g, "");
 
-  const existingUser = await tx.user.findUnique({
-    where: {
-      email_tenantId: {
-        email: studentParent.email,
-        tenantId,
+  if (digits.length < 4) {
+    return null;
+  }
+
+  const existingUser =
+    await tx.user.findUnique({
+      where: {
+        email_tenantId: {
+          email: studentParent.email,
+          tenantId,
+        },
       },
-    },
-  });
+    });
 
   // ----------------------------------------------------------
   // Parent User already exists
   // ----------------------------------------------------------
+
   if (existingUser) {
-    if (existingUser.identity !== "parent") return null;
+    if (existingUser.identity !== "parent") {
+      return null;
+    }
 
     await tx.studentParent.update({
       where: {
         id: studentParent.id,
       },
+
       data: {
         user: {
           connect: {
@@ -66,30 +110,35 @@ async function maybeCreateParentUser(tx, studentParent, tenantId) {
   // ----------------------------------------------------------
   // Create new Parent User
   // ----------------------------------------------------------
+
   const rawPassword = digits.slice(-6);
 
-  const hashedPassword = await bcrypt.hash(
-    rawPassword,
-    getBcryptCost()
-  );
+  const hashedPassword =
+    await bcrypt.hash(
+      rawPassword,
+      getBcryptCost()
+    );
 
-  const newUser = await tx.user.create({
-    data: {
-      name: studentParent.name,
-      email: studentParent.email,
-      password: hashedPassword,
-      tenantId,
-      identity: "parent",
-    },
-  });
+  const newUser =
+    await tx.user.create({
+      data: {
+        name: studentParent.name,
+        email: studentParent.email,
+        password: hashedPassword,
+        tenantId,
+        identity: "parent",
+      },
+    });
 
   // ----------------------------------------------------------
   // Connect StudentParent to the new User
   // ----------------------------------------------------------
+
   await tx.studentParent.update({
     where: {
       id: studentParent.id,
     },
+
     data: {
       user: {
         connect: {
@@ -113,53 +162,78 @@ async function maybeCreateParentUser(tx, studentParent, tenantId) {
 // Password:
 // DOB as DDMMYYYY
 // ============================================================
-async function maybeCreateStudentUser(tx, student, tenantId) {
-  const existingLink = await tx.user.findUnique({
-    where: {
-      studentId: student.id,
-    },
-  });
 
-  if (existingLink) return null;
-
-  const tenant = await tx.tenant.findUnique({
-    where: {
-      id: tenantId,
-    },
-    select: {
-      subdomain: true,
-    },
-  });
-
-  const loginEmail = `${student.admissionNo.toLowerCase()}@${tenant.subdomain.toLowerCase()}.student`;
-
-  const existingByEmail = await tx.user.findUnique({
-    where: {
-      email_tenantId: {
-        email: loginEmail,
-        tenantId,
+async function maybeCreateStudentUser(
+  tx,
+  student,
+  tenantId
+) {
+  const existingLink =
+    await tx.user.findUnique({
+      where: {
+        studentId: student.id,
       },
-    },
-  });
+    });
 
-  if (existingByEmail) return null;
+  if (existingLink) {
+    return null;
+  }
+
+  const tenant =
+    await tx.tenant.findUnique({
+      where: {
+        id: tenantId,
+      },
+
+      select: {
+        subdomain: true,
+      },
+    });
+
+  if (!tenant?.subdomain) {
+    throw new Error(
+      "Tenant subdomain not found"
+    );
+  }
+
+  const loginEmail =
+    `${student.admissionNo.toLowerCase()}@${tenant.subdomain.toLowerCase()}.student`;
+
+  const existingByEmail =
+    await tx.user.findUnique({
+      where: {
+        email_tenantId: {
+          email: loginEmail,
+          tenantId,
+        },
+      },
+    });
+
+  if (existingByEmail) {
+    return null;
+  }
 
   let rawPassword;
 
   if (student.dateOfBirth) {
-    const d = new Date(student.dateOfBirth);
+    const d = new Date(
+      student.dateOfBirth
+    );
 
-    rawPassword = `${pad2(d.getDate())}${pad2(
-      d.getMonth() + 1
-    )}${d.getFullYear()}`;
+    rawPassword =
+      `${pad2(d.getDate())}${pad2(
+        d.getMonth() + 1
+      )}${d.getFullYear()}`;
   } else {
-    rawPassword = `${student.admissionNo}@123`;
+    rawPassword =
+      `${student.admissionNo}@123`;
   }
 
-  const hashedPassword = await bcrypt.hash(
-    rawPassword,
-    getBcryptCost()
-  );
+  const hashedPassword =
+    await bcrypt.hash(
+      rawPassword,
+      getBcryptCost()
+    );
 
   await tx.user.create({
     data: {
@@ -183,41 +257,58 @@ async function maybeCreateStudentUser(tx, student, tenantId) {
 // ============================================================
 // Returns ALL student IDs linked to a parent's user account.
 // ============================================================
-async function getStudentIdsForParent(userId, tenantId) {
-  if (!userId) return [];
 
-  const user = await prisma.user.findFirst({
-    where: {
-      id: userId,
-      tenantId,
-      identity: "parent",
-      isDeleted: false,
-    },
-    select: {
-      parentId: true,
-    },
-  });
+async function getStudentIdsForParent(
+  userId,
+  tenantId
+) {
+  if (!userId) {
+    return [];
+  }
 
-  if (!user?.parentId) return [];
+  const user =
+    await prisma.user.findFirst({
+      where: {
+        id: userId,
+        tenantId,
+        identity: "parent",
+        isDeleted: false,
+      },
 
-  const parent = await prisma.studentParent.findFirst({
-    where: {
-      id: user.parentId,
-      tenantId,
-    },
-    select: {
-      studentId: true,
-    },
-  });
+      select: {
+        parentId: true,
+      },
+    });
 
-  return parent?.studentId ? [parent.studentId] : [];
+  if (!user?.parentId) {
+    return [];
+  }
+
+  const parent =
+    await prisma.studentParent.findFirst({
+      where: {
+        id: user.parentId,
+        tenantId,
+      },
+
+      select: {
+        studentId: true,
+      },
+    });
+
+  return parent?.studentId
+    ? [parent.studentId]
+    : [];
 }
 
 // =====================================================
 // CREATE STUDENT
 // =====================================================
 
-const createStudent = async (data, tenantId) => {
+const createStudent = async (
+  data,
+  tenantId
+) => {
   const {
     admissionNo,
     feeNo,
@@ -279,53 +370,67 @@ const createStudent = async (data, tenantId) => {
   // ----------------------------------------------------------
   // Check duplicate admission number
   // ----------------------------------------------------------
-  const existing = await prisma.student.findFirst({
-    where: {
-      admissionNo,
-      tenantId,
-      isDeleted: false,
-    },
-  });
+
+  const existing =
+    await prisma.student.findFirst({
+      where: {
+        admissionNo,
+        tenantId,
+        isDeleted: false,
+      },
+    });
 
   if (existing) {
-    throw new Error("Admission number already exists");
+    throw new Error(
+      "Admission number already exists"
+    );
   }
 
   // ----------------------------------------------------------
   // Validate class
   // ----------------------------------------------------------
-  const validClass = await prisma.class.findFirst({
-    where: {
-      id: parseInt(classId),
-      tenantId,
-      isDeleted: false,
-    },
-    select: {
-      id: true,
-    },
-  });
 
-  if (!validClass) {
-    throw new Error("Invalid class for this tenant");
-  }
-
-  // ----------------------------------------------------------
-  // Validate section
-  // ----------------------------------------------------------
-  if (sectionId) {
-    const validSection = await prisma.section.findFirst({
+  const validClass =
+    await prisma.class.findFirst({
       where: {
-        id: parseInt(sectionId),
+        id: parseInt(classId),
         tenantId,
         isDeleted: false,
       },
+
       select: {
         id: true,
       },
     });
 
+  if (!validClass) {
+    throw new Error(
+      "Invalid class for this tenant"
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Validate section
+  // ----------------------------------------------------------
+
+  if (sectionId) {
+    const validSection =
+      await prisma.section.findFirst({
+        where: {
+          id: parseInt(sectionId),
+          tenantId,
+          isDeleted: false,
+        },
+
+        select: {
+          id: true,
+        },
+      });
+
     if (!validSection) {
-      throw new Error("Invalid section for this tenant");
+      throw new Error(
+        "Invalid section for this tenant"
+      );
     }
   }
 
@@ -334,146 +439,177 @@ const createStudent = async (data, tenantId) => {
   // ==========================================================
   // TRANSACTION
   // ==========================================================
-  const txResult = await prisma.$transaction(async (tx) => {
-    // --------------------------------------------------------
-    // Create Student
-    // --------------------------------------------------------
-    const created = await tx.student.create({
-      data: {
-        admissionNo,
-        feeNo,
-        siblingAdmNo,
-        studentName,
-        childLivingWith,
-        photoUrl,
-        signatureUrl,
-        fatherTitle,
-        fatherName,
-        motherTitle,
-        motherName,
-        classId: parseInt(classId),
-        sectionId: sectionId ? parseInt(sectionId) : null,
-        stream,
-        feeGroup,
-        feePaymentStartFrom,
 
-        dateOfBirth: dateOfBirth
-          ? new Date(dateOfBirth)
-          : null,
+  const txResult =
+    await prisma.$transaction(
+      async (tx) => {
+        // --------------------------------------------------------
+        // Create Student
+        // --------------------------------------------------------
 
-        dateOfAdmission: dateOfAdmission
-          ? new Date(dateOfAdmission)
-          : null,
+        const created =
+          await tx.student.create({
+            data: {
+              admissionNo,
+              feeNo,
+              siblingAdmNo,
+              studentName,
+              childLivingWith,
+              photoUrl,
+              signatureUrl,
+              fatherTitle,
+              fatherName,
+              motherTitle,
+              motherName,
 
-        dateOfJoin: dateOfJoin
-          ? new Date(dateOfJoin)
-          : null,
+              classId: parseInt(classId),
 
-        rollNo,
-        gender,
-        admissionType,
-        classAdmitted,
-        emergencyPhoneNo,
-        house,
-        boardingCategory,
-        board,
-        medium,
-        boardRegistrationNo,
-        studentEmail,
-        countryCode,
-        communicationMobile,
-        communicationEmail,
-        aadharNo,
-        remark,
-        feeRemark,
-        uniqueNo,
-        grNo,
-        rfidNo,
-        eNach,
-        bankName,
-        accountNo,
-        ifsc,
-        virtualAccountNo,
-        apaarId,
-        srnNo,
-        bloodGroup,
-        religion,
-        category,
-        motherTongue,
-        nationality,
-        maritalStatus,
-        tenantId,
+              sectionId: sectionId
+                ? parseInt(sectionId)
+                : null,
+
+              stream,
+              feeGroup,
+              feePaymentStartFrom,
+
+              dateOfBirth:
+                dateOfBirth
+                  ? new Date(dateOfBirth)
+                  : null,
+
+              dateOfAdmission:
+                dateOfAdmission
+                  ? new Date(dateOfAdmission)
+                  : null,
+
+              dateOfJoin:
+                dateOfJoin
+                  ? new Date(dateOfJoin)
+                  : null,
+
+              rollNo,
+              gender,
+              admissionType,
+              classAdmitted,
+              emergencyPhoneNo,
+              house,
+              boardingCategory,
+              board,
+              medium,
+              boardRegistrationNo,
+              studentEmail,
+              countryCode,
+              communicationMobile,
+              communicationEmail,
+              aadharNo,
+              remark,
+              feeRemark,
+              uniqueNo,
+              grNo,
+              rfidNo,
+              eNach,
+              bankName,
+              accountNo,
+              ifsc,
+              virtualAccountNo,
+              apaarId,
+              srnNo,
+              bloodGroup,
+              religion,
+              category,
+              motherTongue,
+              nationality,
+              maritalStatus,
+              tenantId,
+            },
+          });
+
+        // --------------------------------------------------------
+        // Prepare parents
+        // --------------------------------------------------------
+
+        const parentsInput = [];
+
+        if (father) {
+          parentsInput.push({
+            ...father,
+            relation: "father",
+          });
+        }
+
+        if (mother) {
+          parentsInput.push({
+            ...mother,
+            relation: "mother",
+          });
+        }
+
+        if (guardian) {
+          parentsInput.push({
+            ...guardian,
+            relation: "guardian",
+          });
+        }
+
+        // --------------------------------------------------------
+        // Create parents
+        // --------------------------------------------------------
+
+        for (
+          const parent of parentsInput
+        ) {
+          const createdParent =
+            await tx.studentParent.create({
+              data: {
+                ...parent,
+                studentId: created.id,
+                tenantId,
+              },
+            });
+
+          const rawPassword =
+            await maybeCreateParentUser(
+              tx,
+              createdParent,
+              tenantId
+            );
+
+          if (rawPassword) {
+            parentCredentials.push({
+              relation:
+                createdParent.relation,
+
+              name:
+                createdParent.name,
+
+              email:
+                createdParent.email,
+
+              password:
+                rawPassword,
+            });
+          }
+        }
+
+        // --------------------------------------------------------
+        // Create student login
+        // --------------------------------------------------------
+
+        const studentCredentials =
+          await maybeCreateStudentUser(
+            tx,
+            created,
+            tenantId
+          );
+
+        return {
+          created,
+          studentCredentials,
+        };
       },
-    });
 
-    // --------------------------------------------------------
-    // Prepare parents
-    // --------------------------------------------------------
-    const parentsInput = [];
-
-    if (father) {
-      parentsInput.push({
-        ...father,
-        relation: "father",
-      });
-    }
-
-    if (mother) {
-      parentsInput.push({
-        ...mother,
-        relation: "mother",
-      });
-    }
-
-    if (guardian) {
-      parentsInput.push({
-        ...guardian,
-        relation: "guardian",
-      });
-    }
-
-    // --------------------------------------------------------
-    // Create parents
-    // --------------------------------------------------------
-    for (const parent of parentsInput) {
-      const createdParent = await tx.studentParent.create({
-        data: {
-          ...parent,
-          studentId: created.id,
-          tenantId,
-        },
-      });
-
-      const rawPassword = await maybeCreateParentUser(
-        tx,
-        createdParent,
-        tenantId
-      );
-
-      if (rawPassword) {
-        parentCredentials.push({
-          relation: createdParent.relation,
-          name: createdParent.name,
-          email: createdParent.email,
-          password: rawPassword,
-        });
-      }
-    }
-
-    // --------------------------------------------------------
-    // Create student login
-    // --------------------------------------------------------
-    const studentCredentials = await maybeCreateStudentUser(
-      tx,
-      created,
-      tenantId
+      TRANSACTION_OPTIONS
     );
-
-    return {
-      created,
-      studentCredentials,
-    };
-  });
 
   const {
     created: student,
@@ -483,21 +619,31 @@ const createStudent = async (data, tenantId) => {
   // ----------------------------------------------------------
   // Get complete student
   // ----------------------------------------------------------
-  const fullStudent = await getStudentById(
-    student.id,
-    tenantId
-  );
+
+  const fullStudent =
+    await getStudentById(
+      student.id,
+      tenantId
+    );
 
   // ----------------------------------------------------------
   // Notification
   // ----------------------------------------------------------
+
   try {
     await createNotification({
       tenantId,
-      title: "New Student Added",
-      message: `${fullStudent.studentName} has been added as a new student.`,
+
+      title:
+        "New Student Added",
+
+      message:
+        `${fullStudent.studentName} has been added as a new student.`,
+
       type: "student",
+
       priority: "normal",
+
       audience: "all",
     });
   } catch (notifyErr) {
@@ -509,7 +655,9 @@ const createStudent = async (data, tenantId) => {
 
   return {
     ...fullStudent,
+
     parentCredentials,
+
     studentCredentials,
   };
 };
@@ -531,12 +679,19 @@ const getAllStudents = async (
     gender,
   } = query;
 
-  const pageNumber = parseInt(page);
-  const limitNumber = parseInt(limit);
-  const skip = (pageNumber - 1) * limitNumber;
+  const pageNumber =
+    parseInt(page);
+
+  const limitNumber =
+    parseInt(limit);
+
+  const skip =
+    (pageNumber - 1) *
+    limitNumber;
 
   const where = {
     tenantId,
+
     isDeleted: false,
 
     ...(search && {
@@ -547,12 +702,14 @@ const getAllStudents = async (
             mode: "insensitive",
           },
         },
+
         {
           admissionNo: {
             contains: search,
             mode: "insensitive",
           },
         },
+
         {
           grNo: {
             contains: search,
@@ -574,11 +731,16 @@ const getAllStudents = async (
   // ----------------------------------------------------------
   // Parent can only see allowed students
   // ----------------------------------------------------------
-  if (requester && requester.identity === "parent") {
-    const allowedIds = await getStudentIdsForParent(
-      requester.userId,
-      tenantId
-    );
+
+  if (
+    requester &&
+    requester.identity === "parent"
+  ) {
+    const allowedIds =
+      await getStudentIdsForParent(
+        requester.userId,
+        tenantId
+      );
 
     where.id = {
       in: allowedIds,
@@ -588,15 +750,26 @@ const getAllStudents = async (
   // ----------------------------------------------------------
   // Student can only see themselves
   // ----------------------------------------------------------
-  if (requester && requester.identity === "student") {
-    where.id = requester.studentId || -1;
+
+  if (
+    requester &&
+    requester.identity === "student"
+  ) {
+    where.id =
+      requester.studentId || -1;
   }
 
-  const [students, total] = await Promise.all([
+  const [
+    students,
+    total,
+  ] = await Promise.all([
     prisma.student.findMany({
       where,
+
       skip,
+
       take: limitNumber,
+
       orderBy: {
         createdAt: "desc",
       },
@@ -630,9 +803,15 @@ const getAllStudents = async (
 
     pagination: {
       total,
+
       page: pageNumber,
+
       limit: limitNumber,
-      totalPages: Math.ceil(total / limitNumber),
+
+      totalPages:
+        Math.ceil(
+          total / limitNumber
+        ),
     },
   };
 };
@@ -649,70 +828,95 @@ const getStudentById = async (
   // ----------------------------------------------------------
   // Parent authorization
   // ----------------------------------------------------------
-  if (requester && requester.identity === "parent") {
-    const allowedIds = await getStudentIdsForParent(
-      requester.userId,
-      tenantId
-    );
 
-    if (!allowedIds.includes(parseInt(id))) {
-      throw new Error("Student not found");
+  if (
+    requester &&
+    requester.identity === "parent"
+  ) {
+    const allowedIds =
+      await getStudentIdsForParent(
+        requester.userId,
+        tenantId
+      );
+
+    if (
+      !allowedIds.includes(
+        parseInt(id)
+      )
+    ) {
+      throw new Error(
+        "Student not found"
+      );
     }
   }
 
   // ----------------------------------------------------------
   // Student authorization
   // ----------------------------------------------------------
-  if (requester && requester.identity === "student") {
-    if (requester.studentId !== parseInt(id)) {
-      throw new Error("Student not found");
+
+  if (
+    requester &&
+    requester.identity === "student"
+  ) {
+    if (
+      requester.studentId !==
+      parseInt(id)
+    ) {
+      throw new Error(
+        "Student not found"
+      );
     }
   }
 
-  const student = await prisma.student.findFirst({
-    where: {
-      id: parseInt(id),
-      tenantId,
-      isDeleted: false,
-    },
+  const student =
+    await prisma.student.findFirst({
+      where: {
+        id: parseInt(id),
 
-    include: {
-      class: {
-        select: {
-          id: true,
-          name: true,
-        },
+        tenantId,
+
+        isDeleted: false,
       },
 
-      section: {
-        select: {
-          id: true,
-          name: true,
+      include: {
+        class: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
-      },
 
-      parents: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              identity: true,
+        section: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+
+        parents: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                identity: true,
+              },
             },
           },
         },
-      },
 
-      customFieldValues: {
-        include: {
-          customField: true,
+        customFieldValues: {
+          include: {
+            customField: true,
+          },
         },
       },
-    },
-  });
+    });
 
   if (!student) {
-    throw new Error("Student not found");
+    throw new Error(
+      "Student not found"
+    );
   }
 
   return student;
@@ -727,16 +931,21 @@ const updateStudent = async (
   data,
   tenantId
 ) => {
-  const existing = await prisma.student.findFirst({
-    where: {
-      id: parseInt(id),
-      tenantId,
-      isDeleted: false,
-    },
-  });
+  const existing =
+    await prisma.student.findFirst({
+      where: {
+        id: parseInt(id),
+
+        tenantId,
+
+        isDeleted: false,
+      },
+    });
 
   if (!existing) {
-    throw new Error("Student not found");
+    throw new Error(
+      "Student not found"
+    );
   }
 
   const {
@@ -750,40 +959,58 @@ const updateStudent = async (
   // ----------------------------------------------------------
   // Validate class
   // ----------------------------------------------------------
+
   if (studentData.classId) {
-    const validClass = await prisma.class.findFirst({
-      where: {
-        id: parseInt(studentData.classId),
-        tenantId,
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const validClass =
+      await prisma.class.findFirst({
+        where: {
+          id: parseInt(
+            studentData.classId
+          ),
+
+          tenantId,
+
+          isDeleted: false,
+        },
+
+        select: {
+          id: true,
+        },
+      });
 
     if (!validClass) {
-      throw new Error("Invalid class for this tenant");
+      throw new Error(
+        "Invalid class for this tenant"
+      );
     }
   }
 
   // ----------------------------------------------------------
   // Validate section
   // ----------------------------------------------------------
+
   if (studentData.sectionId) {
-    const validSection = await prisma.section.findFirst({
-      where: {
-        id: parseInt(studentData.sectionId),
-        tenantId,
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const validSection =
+      await prisma.section.findFirst({
+        where: {
+          id: parseInt(
+            studentData.sectionId
+          ),
+
+          tenantId,
+
+          isDeleted: false,
+        },
+
+        select: {
+          id: true,
+        },
+      });
 
     if (!validSection) {
-      throw new Error("Invalid section for this tenant");
+      throw new Error(
+        "Invalid section for this tenant"
+      );
     }
   }
 
@@ -792,113 +1019,181 @@ const updateStudent = async (
   // ==========================================================
   // TRANSACTION
   // ==========================================================
-  await prisma.$transaction(async (tx) => {
-    const {
-      classId: _cid,
-      sectionId: _sid,
-      dateOfBirth: _dob,
-      dateOfAdmission: _doa,
-      dateOfJoin: _doj,
-      ...restStudentData
-    } = studentData;
 
-    // --------------------------------------------------------
-    // Update Student
-    // --------------------------------------------------------
-    await tx.student.update({
-      where: {
-        id: parseInt(id),
-      },
-
-      data: {
-        ...restStudentData,
-
-        ...(studentData.classId && {
-          classId: parseInt(studentData.classId),
-        }),
-
-        ...(studentData.sectionId && {
-          sectionId: parseInt(studentData.sectionId),
-        }),
-
-        ...(studentData.dateOfBirth && {
-          dateOfBirth: new Date(
-            studentData.dateOfBirth
-          ),
-        }),
-
-        ...(studentData.dateOfAdmission && {
-          dateOfAdmission: new Date(
-            studentData.dateOfAdmission
-          ),
-        }),
-
-        ...(studentData.dateOfJoin && {
-          dateOfJoin: new Date(
-            studentData.dateOfJoin
-          ),
-        }),
-      },
-    });
-
-    // --------------------------------------------------------
-    // Parent entries
-    // --------------------------------------------------------
-    const parentEntries = [
-      ["father", father],
-      ["mother", mother],
-      ["guardian", guardian],
-    ];
-
-    // --------------------------------------------------------
-    // Update / Create parents
-    // --------------------------------------------------------
-    for (const [relation, parentData] of parentEntries) {
-      if (!parentData) continue;
-
+  await prisma.$transaction(
+    async (tx) => {
       const {
-        tenantId: _t,
-        ...safeParentData
-      } = parentData;
+        classId: _cid,
+        sectionId: _sid,
+        dateOfBirth: _dob,
+        dateOfAdmission: _doa,
+        dateOfJoin: _doj,
+        ...restStudentData
+      } = studentData;
 
-      const existingParent =
-        await tx.studentParent.findFirst({
-          where: {
-            studentId: parseInt(id),
-            relation,
-          },
+      // --------------------------------------------------------
+      // Update Student
+      // --------------------------------------------------------
 
-          include: {
-            user: {
-              select: {
-                id: true,
-              },
-            },
-          },
-        });
+      await tx.student.update({
+        where: {
+          id: parseInt(id),
+        },
 
-      let parentRecord;
+        data: {
+          ...restStudentData,
 
-      // ------------------------------------------------------
-      // Existing parent
-      // ------------------------------------------------------
-      if (existingParent) {
-        parentRecord =
-          await tx.studentParent.update({
+          ...(studentData.classId && {
+            classId: parseInt(
+              studentData.classId
+            ),
+          }),
+
+          ...(studentData.sectionId && {
+            sectionId: parseInt(
+              studentData.sectionId
+            ),
+          }),
+
+          ...(studentData.dateOfBirth && {
+            dateOfBirth:
+              new Date(
+                studentData.dateOfBirth
+              ),
+          }),
+
+          ...(studentData.dateOfAdmission && {
+            dateOfAdmission:
+              new Date(
+                studentData.dateOfAdmission
+              ),
+          }),
+
+          ...(studentData.dateOfJoin && {
+            dateOfJoin:
+              new Date(
+                studentData.dateOfJoin
+              ),
+          }),
+        },
+      });
+
+      // --------------------------------------------------------
+      // Parent entries
+      // --------------------------------------------------------
+
+      const parentEntries = [
+        ["father", father],
+        ["mother", mother],
+        ["guardian", guardian],
+      ];
+
+      // --------------------------------------------------------
+      // Update / Create parents
+      // --------------------------------------------------------
+
+      for (
+        const [
+          relation,
+          parentData,
+        ] of parentEntries
+      ) {
+        if (!parentData) {
+          continue;
+        }
+
+        const {
+          tenantId: _t,
+          ...safeParentData
+        } = parentData;
+
+        const existingParent =
+          await tx.studentParent.findFirst({
             where: {
-              id: existingParent.id,
+              studentId: parseInt(id),
+
+              relation,
             },
 
-            data: {
-              ...safeParentData,
-              tenantId,
+            include: {
+              user: {
+                select: {
+                  id: true,
+                },
+              },
             },
           });
 
-        // ----------------------------------------------------
-        // Parent does not have login yet
-        // ----------------------------------------------------
-        if (!existingParent.user) {
+        let parentRecord;
+
+        // ------------------------------------------------------
+        // Existing parent
+        // ------------------------------------------------------
+
+        if (existingParent) {
+          parentRecord =
+            await tx.studentParent.update({
+              where: {
+                id: existingParent.id,
+              },
+
+              data: {
+                ...safeParentData,
+
+                tenantId,
+              },
+            });
+
+          // ----------------------------------------------------
+          // Parent does not have login yet
+          // ----------------------------------------------------
+
+          if (
+            !existingParent.user
+          ) {
+            const rawPassword =
+              await maybeCreateParentUser(
+                tx,
+                parentRecord,
+                tenantId
+              );
+
+            if (rawPassword) {
+              parentCredentials.push({
+                relation,
+
+                name:
+                  parentRecord.name,
+
+                email:
+                  parentRecord.email,
+
+                password:
+                  rawPassword,
+              });
+            }
+          }
+        }
+
+        // ------------------------------------------------------
+        // New parent
+        // ------------------------------------------------------
+
+        else {
+          parentRecord =
+            await tx.studentParent.create({
+              data: {
+                ...safeParentData,
+
+                relation,
+
+                studentId:
+                  parseInt(id),
+
+                tenantId,
+              },
+            });
+
           const rawPassword =
             await maybeCreateParentUser(
               tx,
@@ -909,57 +1204,37 @@ const updateStudent = async (
           if (rawPassword) {
             parentCredentials.push({
               relation,
-              name: parentRecord.name,
-              email: parentRecord.email,
-              password: rawPassword,
+
+              name:
+                parentRecord.name,
+
+              email:
+                parentRecord.email,
+
+              password:
+                rawPassword,
             });
           }
         }
       }
+    },
 
-      // ------------------------------------------------------
-      // New parent
-      // ------------------------------------------------------
-      else {
-        parentRecord =
-          await tx.studentParent.create({
-            data: {
-              ...safeParentData,
-              relation,
-              studentId: parseInt(id),
-              tenantId,
-            },
-          });
-
-        const rawPassword =
-          await maybeCreateParentUser(
-            tx,
-            parentRecord,
-            tenantId
-          );
-
-        if (rawPassword) {
-          parentCredentials.push({
-            relation,
-            name: parentRecord.name,
-            email: parentRecord.email,
-            password: rawPassword,
-          });
-        }
-      }
-    }
-  });
+    TRANSACTION_OPTIONS
+  );
 
   // ----------------------------------------------------------
   // Get updated student
   // ----------------------------------------------------------
-  const fullStudent = await getStudentById(
-    id,
-    tenantId
-  );
+
+  const fullStudent =
+    await getStudentById(
+      id,
+      tenantId
+    );
 
   return {
     ...fullStudent,
+
     parentCredentials,
   };
 };
@@ -972,16 +1247,21 @@ const deleteStudent = async (
   id,
   tenantId
 ) => {
-  const existing = await prisma.student.findFirst({
-    where: {
-      id: parseInt(id),
-      tenantId,
-      isDeleted: false,
-    },
-  });
+  const existing =
+    await prisma.student.findFirst({
+      where: {
+        id: parseInt(id),
+
+        tenantId,
+
+        isDeleted: false,
+      },
+    });
 
   if (!existing) {
-    throw new Error("Student not found");
+    throw new Error(
+      "Student not found"
+    );
   }
 
   await prisma.student.update({
@@ -995,7 +1275,8 @@ const deleteStudent = async (
   });
 
   return {
-    message: "Student deleted successfully",
+    message:
+      "Student deleted successfully",
   };
 };
 
