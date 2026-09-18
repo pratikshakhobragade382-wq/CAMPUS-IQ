@@ -8,7 +8,7 @@ import logo from "../assets/logo.png";
 import "./ParentLogin.css";
 
 export default function ParentLogin() {
-  const { login, loading, error, logout } = useAuth();
+  const { login, loading, logout } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -17,6 +17,7 @@ export default function ParentLogin() {
   });
 
   const [roleError, setRoleError] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   const handleChange = (e) => {
     setForm({
@@ -25,30 +26,61 @@ export default function ParentLogin() {
     });
 
     setRoleError("");
+    setLoginError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setRoleError("");
+    setLoginError("");
 
-    const loggedInUser = await login(form);
+    try {
+      // login() returns:
+      // {
+      //   success: true,
+      //   user: {...},
+      //   token: "..."
+      // }
 
-    if (!loggedInUser) return;
+      const loginResult = await login(form);
 
-    // Only parent accounts can access Parent Portal
-    if (loggedInUser.identity !== "parent") {
-      logout();
+      // Get the actual user object
+      const loggedInUser = loginResult?.user;
 
-      setRoleError(
-        "This account is not registered as a parent."
+      if (!loggedInUser) {
+        setLoginError("Invalid login response received.");
+        return;
+      }
+
+      // =====================================================
+      // PARENT ROLE VALIDATION
+      // =====================================================
+
+      if (loggedInUser?.identity !== "parent") {
+        logout();
+
+        setRoleError(
+          "This account is not registered as a parent."
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // SUCCESS
+      // =====================================================
+
+      navigate("/parent/dashboard", {
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Parent login error:", error);
+
+      setLoginError(
+        error?.message || "Invalid email or password."
       );
-
-      return;
     }
-
-    // Parent login successful
-    navigate("/parent/dashboard");
   };
 
   return (
@@ -61,9 +93,11 @@ export default function ParentLogin() {
         ===================================================== */}
 
         <div className="parent-login-logo">
-          <img src={logo} alt="CampusIQ" />
+          <img
+            src={logo}
+            alt="CampusIQ"
+          />
         </div>
-
 
         {/* =====================================================
             PARENT PORTAL BADGE
@@ -73,7 +107,6 @@ export default function ParentLogin() {
           <Users size={13} />
           <span>Parent Portal</span>
         </div>
-
 
         {/* =====================================================
             HEADER
@@ -86,7 +119,6 @@ export default function ParentLogin() {
             Sign in to continue to your parent dashboard
           </p>
         </div>
-
 
         {/* =====================================================
             LOGIN FORM
@@ -126,7 +158,6 @@ export default function ParentLogin() {
 
           </div>
 
-
           {/* PASSWORD */}
 
           <div className="parent-form-group">
@@ -156,15 +187,13 @@ export default function ParentLogin() {
 
           </div>
 
-
           {/* ERROR */}
 
-          {(error || roleError) && (
+          {(loginError || roleError) && (
             <div className="parent-login-error">
-              {roleError || error}
+              {roleError || loginError}
             </div>
           )}
-
 
           {/* SIGN IN BUTTON */}
 
@@ -173,15 +202,16 @@ export default function ParentLogin() {
             className="parent-login-button"
             disabled={loading}
           >
+
             <LogIn size={16} />
 
             <span>
               {loading ? "Signing In..." : "Sign In"}
             </span>
+
           </button>
 
         </form>
-
 
         {/* =====================================================
             FOOTER

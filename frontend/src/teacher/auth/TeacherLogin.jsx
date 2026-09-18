@@ -5,7 +5,7 @@ import logo from "../../assets/logo.png";
 import "./TeacherLogin.css";
 
 export default function TeacherLogin() {
-  const { login, loading, error } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -14,6 +14,7 @@ export default function TeacherLogin() {
   });
 
   const [roleError, setRoleError] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   // =========================================================
   // HANDLE INPUT CHANGE
@@ -25,8 +26,8 @@ export default function TeacherLogin() {
       [e.target.name]: e.target.value,
     });
 
-    // Clear teacher-specific error when user starts typing again
     setRoleError("");
+    setLoginError("");
   };
 
   // =========================================================
@@ -36,74 +37,64 @@ export default function TeacherLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Clear previous teacher role error
     setRoleError("");
+    setLoginError("");
 
-    /*
-      login() returns:
+    try {
+      // login() returns:
+      // {
+      //   success: true,
+      //   user: {...},
+      //   token: "..."
+      // }
 
-      - loggedInUser → when login is successful
-      - false        → when login fails
+      const loginResult = await login(form);
 
-      The returned user is used directly instead of reading
-      localStorage immediately after login.
-    */
+      // Get the actual user from the login result
+      const loggedInUser = loginResult?.user;
 
-    const loggedInUser = await login(form);
+      if (!loggedInUser) {
+        setLoginError("Invalid login response received.");
+        return;
+      }
 
-    // Login failed
-    if (!loggedInUser) {
-      return;
-    }
+      // =======================================================
+      // TEACHER ROLE VALIDATION
+      // =======================================================
 
-    // =======================================================
-    // TEACHER ROLE VALIDATION
-    // =======================================================
-    //
-    // Teacher accounts must satisfy BOTH conditions:
-    //
-    // identity = "staff"
-    // staff.role = "teacher"
-    //
-    // This prevents Admin/Student accounts from entering
-    // through the Teacher Portal.
-    // =======================================================
+      const isTeacher =
+        loggedInUser?.identity === "staff" &&
+        loggedInUser?.staff?.role === "teacher";
 
-    const isTeacher =
-      loggedInUser?.identity === "staff" &&
-      loggedInUser?.staff?.role === "teacher";
+      // =======================================================
+      // WRONG ROLE
+      // =======================================================
 
-    // =======================================================
-    // WRONG ROLE
-    // =======================================================
+      if (!isTeacher) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
 
-    if (!isTeacher) {
-      /*
-        The credentials were valid, but this account does not
-        belong to the Teacher Portal.
+        setRoleError(
+          "This account is not registered as a teacher."
+        );
 
-        Remove the authentication created by login().
-      */
+        return;
+      }
 
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      // =======================================================
+      // SUCCESS
+      // =======================================================
 
-      setRoleError(
-        "This account is not registered as a teacher."
+      navigate("/teacher/dashboard", {
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Teacher login error:", error);
+
+      setLoginError(
+        error?.message || "Invalid email or password."
       );
-
-      return;
     }
-
-    // =======================================================
-    // SUCCESS
-    // =======================================================
-
-    // Teacher authentication successful.
-    // Send the teacher to the new Teacher Dashboard.
-    navigate("/teacher/dashboard", {
-      replace: true,
-    });
   };
 
   // =========================================================
@@ -152,13 +143,13 @@ export default function TeacherLogin() {
             LOGIN ERROR
         ====================================================== */}
 
-        {(error || roleError) && (
+        {(loginError || roleError) && (
           <div className="teacher-auth-error">
 
             <i className="fa-solid fa-circle-exclamation"></i>
 
             <span>
-              {roleError || error}
+              {roleError || loginError}
             </span>
 
           </div>
