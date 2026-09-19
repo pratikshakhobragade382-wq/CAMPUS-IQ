@@ -14,23 +14,19 @@ export default function TeacherLogin() {
   const {
     login,
     loading,
+    error,
     logout,
   } = useAuth();
 
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
-  const [form, setForm] =
-    useState({
-      email: "",
-      password: "",
-    });
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
 
-  const [roleError, setRoleError] =
-    useState("");
-
-  const [loginError, setLoginError] =
-    useState("");
+  const [roleError, setRoleError] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   // =========================================================
   // HANDLE INPUT CHANGE
@@ -63,8 +59,6 @@ export default function TeacherLogin() {
 
     try {
       /*
-       * IMPORTANT:
-       *
        * AuthContext.login() returns the USER directly.
        *
        * Correct:
@@ -77,12 +71,11 @@ export default function TeacherLogin() {
        * const loggedInUser = loginResult.user;
        */
 
-      const loggedInUser =
-        await login(form);
+      const loggedInUser = await login(form);
 
-      // -------------------------------------------------------
+      // =====================================================
       // LOGIN FAILED
-      // -------------------------------------------------------
+      // =====================================================
 
       if (!loggedInUser) {
         setLoginError(
@@ -92,25 +85,21 @@ export default function TeacherLogin() {
         return;
       }
 
-      // =======================================================
+      // =====================================================
       // TEACHER ROLE VALIDATION
-      // =======================================================
+      // =====================================================
 
       const isTeacher =
-        loggedInUser.identity ===
-          "staff" &&
+        loggedInUser?.identity === "staff" &&
         (
-          loggedInUser.staff?.role ===
-            "teacher" ||
-          loggedInUser.role ===
-            "teacher" ||
-          loggedInUser.staffRole ===
-            "teacher"
+          loggedInUser.staff?.role === "teacher" ||
+          loggedInUser.role === "teacher" ||
+          loggedInUser.staffRole === "teacher"
         );
 
-      // =======================================================
+      // =====================================================
       // WRONG ROLE
-      // =======================================================
+      // =====================================================
 
       if (!isTeacher) {
         logout();
@@ -122,24 +111,21 @@ export default function TeacherLogin() {
         return;
       }
 
-      // =======================================================
+      // =====================================================
       // SUCCESS
-      // =======================================================
+      // =====================================================
 
-      navigate(
-        "/teacher/dashboard",
-        {
-          replace: true,
-        }
-      );
-    } catch (error) {
+      navigate("/teacher/dashboard", {
+        replace: true,
+      });
+    } catch (loginError) {
       console.error(
         "Teacher login error:",
-        error
+        loginError
       );
 
       setLoginError(
-        error?.message ||
+        loginError?.message ||
           "Invalid email or password."
       );
     }
@@ -196,16 +182,14 @@ export default function TeacherLogin() {
             LOGIN ERROR
         ====================================================== */}
 
-        {(loginError ||
-          roleError) && (
+        {(loginError || roleError || error) && (
 
           <div className="teacher-auth-error">
 
             <i className="fa-solid fa-circle-exclamation"></i>
 
             <span>
-              {roleError ||
-                loginError}
+              {roleError || loginError || error}
             </span>
 
           </div>

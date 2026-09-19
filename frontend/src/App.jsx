@@ -47,6 +47,7 @@ import ParentCalendar from "./parent/ParentCalendar";
 import ParentProfile from "./parent/ParentProfile";
 import ParentSettings from "./parent/ParentSettings";
 import ParentNotifications from "./parent/ParentNotifications";
+import ParentComplaints from "./parent/complaints/ParentComplaints";
 
 /*
 ============================================================
@@ -94,6 +95,14 @@ import Settings from "./pages/Settings/Settings";
 
 /*
 ============================================================
+ COMPLAINT MANAGEMENT
+============================================================
+*/
+
+import Complaints from "./pages/Complaints/Complaints";
+
+/*
+============================================================
  STAFF
 ============================================================
 */
@@ -126,8 +135,7 @@ import Profile from "./pages/Profile/Profile";
 */
 
 function AppContent() {
-  const location =
-    useLocation();
+  const location = useLocation();
 
   const hideChatbot = [
     "/login",
@@ -135,57 +143,30 @@ function AppContent() {
     "/portal-login",
     "/teacher-login",
     "/parent-login",
-  ].includes(
-    location.pathname
-  );
+  ].includes(location.pathname);
 
   return (
     <>
       <Routes>
-
         {/* ==================================================
             PUBLIC
         ================================================== */}
 
-        <Route
-          path="/"
-          element={<IndexPage />}
-        />
+        <Route path="/" element={<IndexPage />} />
 
-        <Route
-          path="/about"
-          element={<About />}
-        />
+        <Route path="/about" element={<About />} />
 
-        <Route
-          path="/features"
-          element={<Features />}
-        />
+        <Route path="/features" element={<Features />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/portal-login"
-          element={<PortalLogin />}
-        />
+        <Route path="/portal-login" element={<PortalLogin />} />
 
-        <Route
-          path="/parent-login"
-          element={<ParentLogin />}
-        />
+        <Route path="/parent-login" element={<ParentLogin />} />
 
-        <Route
-          path="/teacher-login"
-          element={<TeacherLogin />}
-        />
+        <Route path="/teacher-login" element={<TeacherLogin />} />
 
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+        <Route path="/register" element={<Register />} />
 
         {/* ==================================================
             PARENT PORTAL
@@ -193,14 +174,11 @@ function AppContent() {
 
         <Route
           element={
-            <ProtectedRoute
-              allowedRoles={["parent"]}
-            >
+            <ProtectedRoute allowedRoles={["parent"]}>
               <ParentLayout />
             </ProtectedRoute>
           }
         >
-
           <Route
             path="/parent/dashboard"
             element={
@@ -209,13 +187,10 @@ function AppContent() {
                   padding: "30px",
                 }}
               >
-                <h2>
-                  Parent Dashboard
-                </h2>
+                <h2>Parent Dashboard</h2>
 
                 <p>
-                  Parent dashboard is
-                  coming next.
+                  Parent dashboard is coming next.
                 </p>
               </div>
             }
@@ -223,9 +198,7 @@ function AppContent() {
 
           <Route
             path="/parent/children"
-            element={
-              <MyChildren />
-            }
+            element={<MyChildren />}
           />
 
           {/* ==================================================
@@ -234,53 +207,47 @@ function AppContent() {
 
           <Route
             path="/parent/calendar"
-            element={
-              <ParentCalendar />
-            }
+            element={<ParentCalendar />}
           />
 
           <Route
             path="/parent/attendance"
-            element={
-              <ParentAttendance />
-            }
+            element={<ParentAttendance />}
           />
 
           <Route
             path="/parent/assignments"
-            element={
-              <ParentAssignments />
-            }
+            element={<ParentAssignments />}
           />
 
           <Route
             path="/parent/ai-performance"
-            element={
-              <AIPerformancePredictor />
-            }
+            element={<AIPerformancePredictor />}
           />
 
           <Route
             path="/parent/profile"
-            element={
-              <ParentProfile />
-            }
+            element={<ParentProfile />}
           />
 
           <Route
             path="/parent/settings"
-            element={
-              <ParentSettings />
-            }
+            element={<ParentSettings />}
           />
 
           <Route
             path="/parent/notifications"
-            element={
-              <ParentNotifications />
-            }
+            element={<ParentNotifications />}
           />
 
+          {/* ==================================================
+              PARENT COMPLAINT MANAGEMENT
+          ================================================== */}
+
+          <Route
+            path="/parent/complaints"
+            element={<ParentComplaints />}
+          />
         </Route>
 
         {/* ==================================================
@@ -289,91 +256,65 @@ function AppContent() {
 
         <Route
           element={
-            <ProtectedRoute
-              allowedRoles={["teacher"]}
-            >
+            <ProtectedRoute allowedRoles={["teacher"]}>
               <TeacherLayout />
             </ProtectedRoute>
           }
         >
-
           <Route
             path="/teacher/dashboard"
-            element={
-              <TeacherDashboard />
-            }
+            element={<TeacherDashboard />}
           />
 
           <Route
             path="/teacher/notifications"
-            element={
-              <TeacherNotifications />
-            }
+            element={<TeacherNotifications />}
           />
 
           <Route
             path="/teacher/students"
-            element={
-              <TeacherStudents />
-            }
+            element={<TeacherStudents />}
           />
 
           <Route
             path="/teacher/profile"
-            element={
-              <TeacherProfile />
-            }
+            element={<TeacherProfile />}
           />
 
           <Route
             path="/teacher/settings"
-            element={
-              <TeacherSettings />
-            }
+            element={<TeacherSettings />}
           />
 
           <Route
             path="/teacher/ai-copilot"
-            element={
-              <AICopilot />
-            }
+            element={<AICopilot />}
           />
 
           <Route
             path="/teacher/classes"
-            element={
-              <MyClasses />
-            }
+            element={<MyClasses />}
           />
 
           <Route
             path="/teacher/timetable"
-            element={
-              <TeacherTimetable />
-            }
+            element={<TeacherTimetable />}
           />
 
           <Route
             path="/teacher/exams"
-            element={
-              <TeacherExams />
-            }
+            element={<TeacherExams />}
           />
 
           <Route
             path="/teacher/assignments"
-            element={
-              <TeacherAssignments />
-            }
+            element={<TeacherAssignments />}
           />
 
           <Route
             path="/teacher/attendance"
-            element={
-              <TeacherAttendance />
-            }
+            element={<TeacherAttendance />}
           />
-
         </Route>
 
         {/* ==================================================
@@ -382,182 +323,139 @@ function AppContent() {
 
         <Route
           element={
-            <ProtectedRoute
-              allowedRoles={["admin"]}
-            >
+            <ProtectedRoute allowedRoles={["admin"]}>
               <DashboardLayout />
             </ProtectedRoute>
           }
         >
-
           <Route
             path="/dashboard"
-            element={
-              <Dashboard />
-            }
+            element={<Dashboard />}
           />
 
           <Route
             path="/academic-year"
-            element={
-              <AcademicYear />
-            }
+            element={<AcademicYear />}
           />
 
           <Route
             path="/master"
-            element={
-              <Master />
-            }
+            element={<Master />}
           />
 
           <Route
             path="/master-data"
-            element={
-              <MasterData />
-            }
+            element={<MasterData />}
           />
 
           <Route
             path="/department"
-            element={
-              <Department />
-            }
+            element={<Department />}
           />
 
           <Route
             path="/class"
-            element={
-              <ClassPage />
-            }
+            element={<ClassPage />}
           />
 
           <Route
             path="/section"
-            element={
-              <Section />
-            }
+            element={<Section />}
           />
 
           <Route
             path="/student"
-            element={
-              <Student />
-            }
+            element={<Student />}
           />
 
           <Route
             path="/student/new"
-            element={
-              <StudentForm />
-            }
+            element={<StudentForm />}
           />
 
           <Route
             path="/student/:id"
-            element={
-              <StudentView />
-            }
+            element={<StudentView />}
           />
 
           <Route
             path="/student/:id/edit"
-            element={
-              <StudentForm />
-            }
+            element={<StudentForm />}
           />
 
           <Route
             path="/attendance"
-            element={
-              <Attendance />
-            }
+            element={<Attendance />}
           />
 
           <Route
             path="/exam"
-            element={
-              <Exam />
-            }
+            element={<Exam />}
           />
 
           <Route
             path="/fee"
-            element={
-              <Fee />
-            }
+            element={<Fee />}
           />
 
           <Route
             path="/holiday"
-            element={
-              <Holiday />
-            }
+            element={<Holiday />}
           />
 
           <Route
             path="/timetable"
-            element={
-              <Timetable />
-            }
+            element={<Timetable />}
           />
 
           <Route
             path="/custom-fields"
-            element={
-              <CustomFields />
-            }
+            element={<CustomFields />}
           />
 
           <Route
             path="/settings"
-            element={
-              <Settings />
-            }
+            element={<Settings />}
           />
 
           <Route
             path="/notifications"
-            element={
-              <Notifications />
-            }
+            element={<Notifications />}
           />
 
           <Route
             path="/profile"
-            element={
-              <Profile />
-            }
+            element={<Profile />}
           />
 
           <Route
             path="/staff"
-            element={
-              <Staff />
-            }
+            element={<Staff />}
           />
 
           <Route
             path="/staff/new"
-            element={
-              <AddStaff />
-            }
+            element={<AddStaff />}
           />
 
           <Route
             path="/staff/:id/edit"
-            element={
-              <EditStaff />
-            }
+            element={<EditStaff />}
           />
 
           <Route
             path="/users/new"
-            element={
-              <AddUser />
-            }
+            element={<AddUser />}
           />
 
+          {/* ================================================
+              COMPLAINT MANAGEMENT
+              ================================================ */}
+
+          <Route
+            path="/complaints"
+            element={<Complaints />}
+          />
         </Route>
 
         {/* ==================================================
@@ -573,12 +471,9 @@ function AppContent() {
             />
           }
         />
-
       </Routes>
 
-      {!hideChatbot && (
-        <Chatbot />
-      )}
+      {!hideChatbot && <Chatbot />}
     </>
   );
 }
@@ -592,19 +487,13 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-
       <AuthProvider>
-
         <SidebarProvider>
-
           <AppContent />
-
         </SidebarProvider>
 
         <ToastContainer />
-
       </AuthProvider>
-
     </BrowserRouter>
   );
 }

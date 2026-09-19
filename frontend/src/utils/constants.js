@@ -204,7 +204,8 @@ export const ROUTES = {
   TIMETABLE: "/timetable",
   CUSTOM_FIELDS: "/custom-fields",
 
-  SETTINGS: "/settings",
+    SETTINGS: "/settings",
+    COMPLAINTS: "/complaints",
 
   // ===================================================
   // Notifications
@@ -407,6 +408,13 @@ export const SIDEBAR_MENU = [
     label: "Custom Fields",
     icon: "Layers",
     path: ROUTES.CUSTOM_FIELDS,
+  },
+
+    {
+    id: "complaints",
+    label: "Complaints",
+    icon: "MessageSquareWarning",
+    path: ROUTES.COMPLAINTS,
   },
 
   {

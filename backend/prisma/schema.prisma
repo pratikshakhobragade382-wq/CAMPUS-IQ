@@ -947,3 +947,110 @@ enum NotificationPriority {
   high
   urgent
 }
+
+
+// =====================================================
+// AI COMPLAINT MANAGEMENT
+// Append everything below to prisma/schema.prisma, then run:
+//   npx prisma migrate dev --name add_complaint_management
+// =====================================================
+
+enum ComplaintCategory {
+  ACADEMIC
+  FEES
+  TRANSPORT
+  TEACHER
+  INFRASTRUCTURE
+  HOSTEL
+  TECHNICAL
+  SAFETY
+  ADMINISTRATION
+  OTHER
+}
+
+// Declared low -> high so orderBy priority desc puts CRITICAL first.
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplaintSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum ComplaintEmotion {
+  ANGRY
+  SAD
+  FRUSTRATED
+  WORRIED
+  URGENT
+  NEUTRAL
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ComplaintSuggestionStatus {
+  PENDING
+  ACCEPTED
+  MODIFIED
+  REJECTED
+}
+
+// PENDING  = analysis still running
+// COMPLETED = analysed by Gemini
+// FALLBACK = Gemini unavailable, basic keyword rules were used
+enum ComplaintAiStatus {
+  PENDING
+  COMPLETED
+  FALLBACK
+}
+
+model Complaint {
+  id           Int  @id @default(autoincrement())
+  tenantId     Int
+  parentUserId Int
+  studentId    Int?
+
+  // What the parent wrote
+  subject     String
+  description String
+
+  // AI analysis (admin can override category / priority / department)
+  category              ComplaintCategory  @default(OTHER)
+  priority              ComplaintPriority  @default(MEDIUM)
+  priorityReason        String?
+  sentiment             ComplaintSentiment @default(NEUTRAL)
+  emotion               ComplaintEmotion   @default(NEUTRAL)
+  issueTag              String?
+  aiSummary             String?
+  aiSuggestedResolution String?
+  aiStatus              ComplaintAiStatus  @default(PENDING)
+  aiAnalyzedAt          DateTime?
+
+  // Admin workflow
+  department       String                    @default("Administration")
+  status           ComplaintStatus           @default(PENDING)
+  suggestionStatus ComplaintSuggestionStatus @default(PENDING)
+  finalResolution  String?
+  adminReply       String?
+  repliedAt        DateTime?
+  resolvedAt       DateTime?
+  handledById      Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, category])
+  @@index([tenantId, parentUserId])
+  @@index([tenantId, createdAt])
+}

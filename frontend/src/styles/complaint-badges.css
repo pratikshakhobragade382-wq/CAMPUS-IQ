@@ -1,0 +1,90 @@
+/* Shared by the admin Complaints page and the parent My complaints page.
+   Colours follow the CampusIQ pastel theme with darker text for contrast. */
+
+.cmp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  background: #eef0f5;
+  color: #465069;
+}
+
+/* Priority */
+.cmp-badge--low {
+  background: #e6fbc8;
+  color: #3d6410;
+}
+.cmp-badge--medium {
+  background: #d1e8fc;
+  color: #1b5488;
+}
+.cmp-badge--high {
+  background: #ffcd90;
+  color: #8a4200;
+}
+.cmp-badge--critical {
+  background: #ffd9d6;
+  color: #a4231a;
+}
+
+/* Status */
+.cmp-badge--pending {
+  background: #fff0d9;
+  color: #8a4200;
+}
+.cmp-badge--in-progress {
+  background: #d1e8fc;
+  color: #1b5488;
+}
+.cmp-badge--resolved {
+  background: #e6fbc8;
+  color: #3d6410;
+}
+.cmp-badge--closed {
+  background: #eceff4;
+  color: #576078;
+}
+
+/* Sentiment */
+.cmp-badge--positive {
+  background: #e6fbc8;
+  color: #3d6410;
+}
+.cmp-badge--neutral {
+  background: #eceff4;
+  color: #576078;
+}
+.cmp-badge--negative {
+  background: #ffe1dd;
+  color: #a4231a;
+}
+
+/* Suggestion decisions */
+.cmp-badge--accepted {
+  background: #e6fbc8;
+  color: #3d6410;
+}
+.cmp-badge--modified {
+  background: #d1e8fc;
+  color: #1b5488;
+}
+.cmp-badge--rejected {
+  background: #ffe1dd;
+  color: #a4231a;
+}
+
+/* Category and emotion chips */
+.cmp-badge--category {
+  background: #fcefff;
+  color: #6f2a78;
+}
+.cmp-badge--emotion {
+  background: #fff6e8;
+  color: #8a4200;
+}

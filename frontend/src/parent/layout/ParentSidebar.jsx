@@ -67,6 +67,16 @@ export default function ParentSidebar() {
       icon: "fa-solid fa-chart-line",
       path: "/parent/ai-performance",
     },
+
+    // =================================================
+    // COMPLAINT MANAGEMENT
+    // =================================================
+
+    {
+      label: "Report Complaint",
+      icon: "fa-solid fa-file-circle-exclamation",
+      path: "/parent/complaints",
+    },
   ];
 
   const bottomItems = [

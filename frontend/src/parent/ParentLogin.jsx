@@ -16,6 +16,7 @@ export default function ParentLogin() {
   const {
     login,
     loading,
+    error,
     logout,
   } = useAuth();
 
@@ -26,14 +27,11 @@ export default function ParentLogin() {
     password: "",
   });
 
-  const [roleError, setRoleError] =
-    useState("");
-
-  const [loginError, setLoginError] =
-    useState("");
+  const [roleError, setRoleError] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   // =========================================================
-  // HANDLE INPUT
+  // HANDLE INPUT CHANGE
   // =========================================================
 
   const handleChange = (e) => {
@@ -63,8 +61,6 @@ export default function ParentLogin() {
 
     try {
       /*
-       * IMPORTANT:
-       *
        * AuthContext.login() returns the USER directly.
        *
        * It does NOT return:
@@ -81,12 +77,11 @@ export default function ParentLogin() {
        * is correct.
        */
 
-      const loggedInUser =
-        await login(form);
+      const loggedInUser = await login(form);
 
-      // -------------------------------------------------------
+      // =====================================================
       // LOGIN FAILED
-      // -------------------------------------------------------
+      // =====================================================
 
       if (!loggedInUser) {
         setLoginError(
@@ -96,14 +91,18 @@ export default function ParentLogin() {
         return;
       }
 
-      // =======================================================
+      // =====================================================
       // PARENT ROLE VALIDATION
-      // =======================================================
+      // =====================================================
 
-      if (
-        loggedInUser.identity !==
-        "parent"
-      ) {
+      const isParent =
+        loggedInUser?.identity === "parent";
+
+      // =====================================================
+      // WRONG ROLE
+      // =====================================================
+
+      if (!isParent) {
         logout();
 
         setRoleError(
@@ -113,24 +112,21 @@ export default function ParentLogin() {
         return;
       }
 
-      // =======================================================
+      // =====================================================
       // SUCCESS
-      // =======================================================
+      // =====================================================
 
-      navigate(
-        "/parent/dashboard",
-        {
-          replace: true,
-        }
-      );
-    } catch (error) {
+      navigate("/parent/dashboard", {
+        replace: true,
+      });
+    } catch (loginError) {
       console.error(
         "Parent login error:",
-        error
+        loginError
       );
 
       setLoginError(
-        error?.message ||
+        loginError?.message ||
           "Invalid email or password."
       );
     }
@@ -261,13 +257,9 @@ export default function ParentLogin() {
               ERROR
           ================================================== */}
 
-          {(loginError ||
-            roleError) && (
+          {(loginError || roleError || error) && (
             <div className="parent-login-error">
-
-              {roleError ||
-                loginError}
-
+              {roleError || loginError || error}
             </div>
           )}
 

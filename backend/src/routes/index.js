@@ -80,6 +80,8 @@ const chatbotRoutes =
 const studentPortalRoutes =
   require("../modules/student-portal/studentPortal.routes");
 
+  const complaintRoutes = require("../modules/complaint/complaint.routes");
+
 /*
 |--------------------------------------------------------------------------
 | ROUTE MOUNTS
@@ -214,6 +216,8 @@ router.use(
   "/student-portal",
   studentPortalRoutes
 );
+
+router.use("/complaints", complaintRoutes);
 
 /*
 |--------------------------------------------------------------------------
