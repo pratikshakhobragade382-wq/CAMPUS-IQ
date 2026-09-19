@@ -39,6 +39,9 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 import ParentLogin from "./parent/ParentLogin";
 import ParentLayout from "./parent/layout/ParentLayout";
 import AIPerformancePredictor from "./parent/AIPerformancePredictor";
+import MyChildren from "./parent/MyChildren";
+import ParentAttendance from "./parent/ParentAttendance";
+import ParentAssignments from "./parent/ParentAssignments";
 
 /*
 ============================================================
@@ -214,6 +217,27 @@ function AppContent() {
                   coming next.
                 </p>
               </div>
+            }
+          />
+
+          <Route
+            path="/parent/children"
+            element={
+              <MyChildren />
+            }
+          />
+
+          <Route
+            path="/parent/attendance"
+            element={
+              <ParentAttendance />
+            }
+          />
+
+          <Route
+            path="/parent/assignments"
+            element={
+              <ParentAssignments />
             }
           />
 
