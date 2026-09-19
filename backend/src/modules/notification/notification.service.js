@@ -250,17 +250,10 @@ const getNotificationVisibility = async (user) => {
       });
     }
 
-    // Parent can receive section notifications.
+    // Parent can receive student-targeted notifications
+    // for the child's class/section. There is no
+    // NotificationAudience value named "section".
     if (sectionIds.length > 0) {
-      visibility.push({
-        audience: "section",
-        sectionId: {
-          in: sectionIds,
-        },
-      });
-
-      // Parent can also receive student-targeted
-      // notifications for the student's class/section.
       visibility.push({
         OR: [
           {

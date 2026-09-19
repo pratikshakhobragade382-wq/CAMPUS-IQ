@@ -44,6 +44,9 @@ import MyChildren from "./parent/MyChildren";
 import ParentAttendance from "./parent/ParentAttendance";
 import ParentAssignments from "./parent/ParentAssignments";
 import ParentCalendar from "./parent/ParentCalendar";
+import ParentProfile from "./parent/ParentProfile";
+import ParentSettings from "./parent/ParentSettings";
+import ParentNotifications from "./parent/ParentNotifications";
 
 /*
 ============================================================
@@ -254,6 +257,27 @@ function AppContent() {
             path="/parent/ai-performance"
             element={
               <AIPerformancePredictor />
+            }
+          />
+
+          <Route
+            path="/parent/profile"
+            element={
+              <ParentProfile />
+            }
+          />
+
+          <Route
+            path="/parent/settings"
+            element={
+              <ParentSettings />
+            }
+          />
+
+          <Route
+            path="/parent/notifications"
+            element={
+              <ParentNotifications />
             }
           />
 

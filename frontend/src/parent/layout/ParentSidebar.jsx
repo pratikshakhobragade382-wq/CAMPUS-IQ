@@ -13,6 +13,8 @@ export default function ParentSidebar() {
     user?.fullName ||
     "Parent";
 
+  const avatarUrl = user?.avatarUrl || user?.parent?.avatarUrl || "";
+
   const menuItems = [
     {
       label: "Dashboard",
@@ -110,11 +112,22 @@ export default function ParentSidebar() {
           PARENT PROFILE
       ================================================= */}
 
-      <div className="parent-sidebar-profile">
+      <NavLink
+        to="/parent/profile"
+        className="parent-sidebar-profile"
+      >
 
-        <div className="parent-sidebar-avatar">
-          {parentName.charAt(0).toUpperCase()}
-        </div>
+        {avatarUrl ? (
+          <img
+            className="parent-sidebar-avatar-image"
+            src={avatarUrl}
+            alt=""
+          />
+        ) : (
+          <div className="parent-sidebar-avatar">
+            {parentName.charAt(0).toUpperCase()}
+          </div>
+        )}
 
         <div className="parent-sidebar-profile-info">
 
@@ -128,7 +141,7 @@ export default function ParentSidebar() {
 
         </div>
 
-      </div>
+      </NavLink>
 
       {/* =================================================
           NAVIGATION

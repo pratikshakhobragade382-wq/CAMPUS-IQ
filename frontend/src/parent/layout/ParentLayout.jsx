@@ -19,22 +19,25 @@ export default function ParentLayout() {
 
   useEffect(() => {
     const handleParentTopbarClick = (event) => {
-      const button = event.target.closest(
-        ".parent-topbar-icon"
-      );
+      const parentPortalElement = event.target.closest(".parent-layout");
 
-      if (!button) {
+      if (!parentPortalElement) {
         return;
       }
 
-      /*
-       * Make sure the clicked button belongs to
-       * the Parent Portal.
-       */
-      const parentPortalElement =
-        button.closest(".parent-layout");
+      const profileButton = event.target.closest(".parent-navbar-profile");
 
-      if (!parentPortalElement) {
+      if (profileButton) {
+        if (location.pathname !== "/parent/profile") {
+          navigate("/parent/profile");
+        }
+
+        return;
+      }
+
+      const button = event.target.closest(".parent-topbar-icon");
+
+      if (!button) {
         return;
       }
 
@@ -44,51 +47,24 @@ export default function ParentLayout() {
         return;
       }
 
-      /*
-       * ========================================================
-       * NOTIFICATIONS
-       * ========================================================
-       */
-
       if (
         icon.classList.contains("fa-bell") ||
-        (icon.classList.contains("fa-regular") &&
-          button.querySelector(".fa-bell"))
+        button.querySelector(".fa-bell")
       ) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (
-          location.pathname !==
-          "/parent/notifications"
-        ) {
+        if (location.pathname !== "/parent/notifications") {
           navigate("/parent/notifications");
         }
 
         return;
       }
 
-      /*
-       * ========================================================
-       * SETTINGS
-       * ========================================================
-       */
-
       if (
         icon.classList.contains("fa-gear") ||
         icon.classList.contains("fa-cog")
       ) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (
-          location.pathname !==
-          "/parent/settings"
-        ) {
+        if (location.pathname !== "/parent/settings") {
           navigate("/parent/settings");
         }
-
-        return;
       }
     };
 

@@ -1,7 +1,8 @@
 /**
  * Settings API — mirrors backend/src/modules/settings
  *
- * Teacher-accessible routes (JWT attached by axiosClient):
+ * Authenticated user routes (JWT attached by axiosClient):
+ * Used by Teacher Portal and Parent Portal.
  *   GET  /settings/profile
  *   PUT  /settings/profile
  *   PUT  /settings/password
