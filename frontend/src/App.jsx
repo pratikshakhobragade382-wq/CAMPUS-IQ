@@ -38,10 +38,12 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 import ParentLogin from "./parent/ParentLogin";
 import ParentLayout from "./parent/layout/ParentLayout";
+
 import AIPerformancePredictor from "./parent/AIPerformancePredictor";
 import MyChildren from "./parent/MyChildren";
 import ParentAttendance from "./parent/ParentAttendance";
 import ParentAssignments from "./parent/ParentAssignments";
+import ParentCalendar from "./parent/ParentCalendar";
 
 /*
 ============================================================
@@ -123,10 +125,6 @@ import Profile from "./pages/Profile/Profile";
 function AppContent() {
   const location =
     useLocation();
-
-  /*
-   * Hide chatbot on authentication pages.
-   */
 
   const hideChatbot = [
     "/login",
@@ -224,6 +222,17 @@ function AppContent() {
             path="/parent/children"
             element={
               <MyChildren />
+            }
+          />
+
+          {/* ==================================================
+              PARENT CALENDAR
+          ================================================== */}
+
+          <Route
+            path="/parent/calendar"
+            element={
+              <ParentCalendar />
             }
           />
 
