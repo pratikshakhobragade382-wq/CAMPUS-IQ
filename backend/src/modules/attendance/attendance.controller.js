@@ -13,7 +13,7 @@ const getClassAttendanceByDate = async (req, res, next) => {
   try {
     const { classId, sectionId, date } = req.query;
     if (!classId || !date) return res.status(400).json({ success: false, error: 'classId and date are required' });
-    const data = await attendanceService.getClassAttendanceByDate(req.user.tenantId, classId, sectionId, date);
+    const data = await attendanceService.getClassAttendanceByDate(req.user.tenantId, classId, sectionId, date, req.user);
     return res.status(200).json({ success: true, message: 'Class attendance fetched', data });
   } catch (error) {
     return next(error);
@@ -24,7 +24,7 @@ const getStudentAttendanceHistory = async (req, res, next) => {
   try {
     const { academicYearId, fromDate, toDate } = req.query;
     const data = await attendanceService.getStudentAttendanceHistory(
-      req.user.tenantId, req.params.studentId, academicYearId, fromDate, toDate
+      req.user.tenantId, req.params.studentId, academicYearId, fromDate, toDate, req.user
     );
     return res.status(200).json({ success: true, message: 'Attendance history fetched', data });
   } catch (error) {
@@ -38,7 +38,7 @@ const getClassMonthlyAttendanceSummary = async (req, res, next) => {
     if (!classId || !month || !year)
       return res.status(400).json({ success: false, error: 'classId, month and year are required' });
     const data = await attendanceService.getClassMonthlyAttendanceSummary(
-      req.user.tenantId, classId, sectionId, parseInt(month), parseInt(year), academicYearId
+      req.user.tenantId, classId, sectionId, parseInt(month), parseInt(year), academicYearId, req.user
     );
     return res.status(200).json({ success: true, message: 'Monthly summary fetched', data });
   } catch (error) {

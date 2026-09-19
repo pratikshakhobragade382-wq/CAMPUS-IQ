@@ -16,7 +16,8 @@ exports.createSection = async (req, res, next) => {
 exports.getAllSections = async (req, res, next) => {
   try {
     const tenantId = req.user.tenantId;
-    const sections = await service.getAllSections(tenantId);
+    const { classId } = req.query;
+    const sections = await service.getAllSections(tenantId, classId);
     res.json({ success: true, data: sections });
   } catch (err) {
     next(err);

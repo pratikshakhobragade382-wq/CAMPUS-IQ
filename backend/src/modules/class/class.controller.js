@@ -50,6 +50,30 @@ exports.getClasses = async (req, res, next) => {
   }
 };
 
+/**
+ * ============================================================
+ * GET CLASSES ASSIGNED TO THE LOGGED-IN TEACHER
+ * GET /api/classes/mine
+ * ============================================================
+ */
+exports.getMyClasses = async (req, res, next) => {
+  try {
+    const staffId = req.user.staffId || req.user.id;
+
+    const classes = await classService.getTeacherClasses({
+      tenantId: req.user.tenantId,
+      staffId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: classes,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 /**
  * ============================================================

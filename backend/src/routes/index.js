@@ -52,6 +52,7 @@ const holidayRoutes =
 
 const timetableRoutes =
   require("../modules/timetable/timetable.routes");
+const substitutionRoutes = require("../modules/substitution/substitution.routes");
 
 const notificationRoutes =
   require("../modules/notification/notification.routes");
@@ -175,6 +176,11 @@ router.use(
 router.use(
   "/timetable",
   timetableRoutes
+);
+
+router.use(
+  "/substitution",
+  substitutionRoutes
 );
 
 router.use(

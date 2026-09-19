@@ -8,9 +8,8 @@ import {
 
 import {
   addSectionToClass,
-  createClass,
   getClassById,
-  getClasses,
+  getMyClasses,
   getStudentsBySection,
 } from "../../api/class.api";
 
@@ -175,19 +174,6 @@ export default function MyClasses() {
   );
 
   /* ==========================================================
-     CREATE CLASS
-  ========================================================== */
-
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const [createForm, setCreateForm] = useState({
-    name: "",
-    section: "",
-  });
-
-  const [creating, setCreating] = useState(false);
-
-  /* ==========================================================
      CLASS DETAILS
   ========================================================== */
 
@@ -240,7 +226,7 @@ export default function MyClasses() {
           setLoading(true);
         }
 
-        const response = await getClasses();
+        const response = await getMyClasses();
 
         const data = getResponseData(response);
 
@@ -380,58 +366,6 @@ export default function MyClasses() {
     setError("");
 
     setNotice("");
-  };
-
-  /* ==========================================================
-     CREATE CLASS
-  ========================================================== */
-
-  const handleCreateClass = async (event) => {
-    event.preventDefault();
-
-    const className = createForm.name.trim();
-
-    const section = createForm.section.trim();
-
-    if (!className) {
-      setError("Please enter a class name.");
-
-      return;
-    }
-
-    try {
-      setCreating(true);
-
-      setError("");
-
-      setNotice("");
-
-      await createClass({
-        name: className,
-        ...(section ? { section } : {}),
-      });
-
-      setCreateForm({
-        name: "",
-        section: "",
-      });
-
-      setShowCreateModal(false);
-
-      setNotice("Class created successfully.");
-
-      await loadClasses(true);
-    } catch (err) {
-      console.error("Failed to create class:", err);
-
-      setError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          "Unable to create class."
-      );
-    } finally {
-      setCreating(false);
-    }
   };
 
   /* ==========================================================
@@ -742,18 +676,6 @@ export default function MyClasses() {
             </p>
           </div>
 
-          <button
-            type="button"
-            className="create-class-button"
-            onClick={() =>
-              setShowCreateModal(true)
-            }
-          >
-            <i className="fa-solid fa-plus"></i>
-
-            Create Class
-          </button>
-
         </section>
 
         {/* ==================================================
@@ -990,22 +912,8 @@ export default function MyClasses() {
             <p>
               {search
                 ? "Try a different search term."
-                : "Create your first class to get started."}
+                : "You don't have any classes assigned yet. Contact your school admin if this looks wrong."}
             </p>
-
-            {!search && (
-              <button
-                type="button"
-                className="empty-create-button"
-                onClick={() =>
-                  setShowCreateModal(true)
-                }
-              >
-                <i className="fa-solid fa-plus"></i>
-
-                Create Your First Class
-              </button>
-            )}
 
           </div>
         ) : (
@@ -1199,175 +1107,6 @@ export default function MyClasses() {
 
       </main>
 
-      {/* ====================================================
-          CREATE CLASS MODAL
-      ==================================================== */}
-
-      {showCreateModal && (
-        <div
-          className="class-modal-overlay"
-          onMouseDown={() =>
-            !creating &&
-            setShowCreateModal(false)
-          }
-        >
-
-          <div
-            className="class-modal"
-            onMouseDown={(event) =>
-              event.stopPropagation()
-            }
-          >
-
-            <div className="class-modal-header">
-
-              <div>
-
-                <span>
-                  TEACHER PORTAL
-                </span>
-
-                <h2>
-                  Create New Class
-                </h2>
-
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  !creating &&
-                  setShowCreateModal(false)
-                }
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-
-            </div>
-
-            <form
-              className="class-modal-body"
-              onSubmit={
-                handleCreateClass
-              }
-            >
-
-              <div className="form-field">
-
-                <label>
-                  Class Name
-                  <span>*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={
-                    createForm.name
-                  }
-                  onChange={(event) =>
-                    setCreateForm(
-                      (current) => ({
-                        ...current,
-                        name:
-                          event.target
-                            .value,
-                      })
-                    )
-                  }
-                  placeholder="Example: Computer Science"
-                  maxLength={80}
-                  required
-                  autoFocus
-                />
-
-              </div>
-
-              <div className="form-field">
-
-                <label>
-                  Initial Section
-                  <small>
-                    Optional
-                  </small>
-                </label>
-
-                <input
-                  type="text"
-                  value={
-                    createForm.section
-                  }
-                  onChange={(event) =>
-                    setCreateForm(
-                      (current) => ({
-                        ...current,
-                        section:
-                          event.target
-                            .value,
-                      })
-                    )
-                  }
-                  placeholder="Example: A"
-                  maxLength={20}
-                />
-
-              </div>
-
-              <div className="create-info-box">
-
-                <i className="fa-solid fa-circle-info"></i>
-
-                <p>
-                  Create the class first.
-                  You can add sections
-                  and view students after
-                  opening the class.
-                </p>
-
-              </div>
-
-              <div className="class-modal-footer">
-
-                <button
-                  type="button"
-                  className="modal-cancel-button"
-                  onClick={() =>
-                    setShowCreateModal(
-                      false
-                    )
-                  }
-                  disabled={creating}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  className="modal-primary-button"
-                  disabled={creating}
-                >
-                  {creating ? (
-                    <>
-                      <i className="fa-solid fa-spinner fa-spin"></i>
-
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-plus"></i>
-
-                      Create Class
-                    </>
-                  )}
-                </button>
-
-              </div>
-
-            </form>
-
-          </div>
-
-        </div>
-      )}
 
       {/* ====================================================
           CLASS DETAILS MODAL

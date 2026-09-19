@@ -121,6 +121,70 @@ exports.getClasses = async ({
   });
 };
 
+/**
+ * ============================================================
+ * GET CLASSES ASSIGNED TO A TEACHER
+ *
+ * A class counts as "assigned" if the teacher has at least
+ * one active timetable entry for it.
+ * ============================================================
+ */
+exports.getTeacherClasses = async ({
+  tenantId,
+  staffId,
+}) => {
+  if (!tenantId) {
+    throw new HttpError(400, "Tenant ID is required", {
+      code: "TENANT_REQUIRED",
+    });
+  }
+
+  if (!staffId) {
+    throw new HttpError(400, "Staff ID is required", {
+      code: "STAFF_REQUIRED",
+    });
+  }
+
+  const assignedClassIds = await prisma.timetable.findMany({
+    where: {
+      tenantId: Number(tenantId),
+      staffId: Number(staffId),
+      isActive: true,
+    },
+    select: {
+      classId: true,
+    },
+    distinct: ["classId"],
+  });
+
+  const classIds = assignedClassIds.map((entry) => entry.classId);
+
+  if (classIds.length === 0) {
+    return [];
+  }
+
+  return await prisma.class.findMany({
+    where: {
+      id: { in: classIds },
+      tenantId: Number(tenantId),
+      isDeleted: false,
+    },
+    include: {
+      department: true,
+      sections: {
+        where: {
+          isDeleted: false,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
 
 /**
  * ============================================================

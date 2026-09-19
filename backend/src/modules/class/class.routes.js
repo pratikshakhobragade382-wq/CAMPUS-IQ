@@ -26,8 +26,7 @@ router.post(
   authorize(
     "admin",
     "management",
-    "principal",
-    "teacher"
+    "principal"
   ),
   validateRequest({
     body: createClassBody,
@@ -45,6 +44,22 @@ router.get(
   "/",
   auth,
   controller.getClasses
+);
+
+/**
+ * ============================================================
+ * GET CLASSES ASSIGNED TO THE LOGGED-IN TEACHER
+ * GET /classes/mine
+ *
+ * IMPORTANT: must be declared before GET /:classId
+ * so "mine" is not matched as a classId param.
+ * ============================================================
+ */
+router.get(
+  "/mine",
+  auth,
+  authorize("teacher"),
+  controller.getMyClasses
 );
 
 /**

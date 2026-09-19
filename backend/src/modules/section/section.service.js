@@ -17,9 +17,13 @@ exports.createSection = async (data) => {
   return await prisma.section.create({ data });
 };
 
-exports.getAllSections = async (tenantId) => {
+exports.getAllSections = async (tenantId, classId) => {
   return await prisma.section.findMany({
-    where: { tenantId, isDeleted: false },
+    where: {
+      tenantId,
+      isDeleted: false,
+      ...(classId !== undefined ? { classId: Number(classId) } : {}),
+    },
     orderBy: { name: "asc" },
   });
 };

@@ -16,6 +16,17 @@ export const getClasses = async () => {
 };
 
 // ============================================================
+// GET CLASSES ASSIGNED TO THE LOGGED-IN TEACHER
+// ============================================================
+
+export const getMyClasses = async () => {
+  const response =
+    await axiosClient.get("/classes/mine");
+
+  return response.data;
+};
+
+// ============================================================
 // GET SINGLE CLASS
 // ============================================================
 

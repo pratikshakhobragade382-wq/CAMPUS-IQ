@@ -4,6 +4,7 @@ import TeacherTopbar from '../components/TeacherTopbar';
 import { getTeacherTimetable, getPeriodSlots } from '../../api/timetable.api';
 import { getAllStaff } from '../../api/staff.api';
 import './TeacherTimetable.css';
+import SubstitutePickerModal from './SubstitutePickerModal';
 
 const DAYS = [
   { value: 1, label: 'Monday' },
@@ -27,6 +28,17 @@ export default function TeacherTimetable() {
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [substituteContext, setSubstituteContext] = useState(null);
+
+  // Convert a day-of-week number (1=Mon..6=Sat) into an actual date within the current week
+  const getDateForDayOfWeek = (dayOfWeek) => {
+    const today = new Date();
+    const todayDow = today.getDay() === 0 ? 7 : today.getDay(); // 1=Mon..7=Sun
+    const diff = dayOfWeek - todayDow;
+    const target = new Date(today);
+    target.setDate(today.getDate() + diff);
+    return target.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
 
   // Fetch all staff / teachers
   useEffect(() => {
@@ -328,9 +340,25 @@ export default function TeacherTimetable() {
                             )}
                           </div>
                         </div>
-                        <span className="status-tag status-lecture">
-                          <i className="fa-solid fa-chalkboard-user mr-1"></i> Active Lecture
-                        </span>
+                        <div className="period-actions">
+                          <span className="status-tag status-lecture">
+                            <i className="fa-solid fa-chalkboard-user mr-1"></i> Active Lecture
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-find-substitute"
+                            onClick={() =>
+                              setSubstituteContext({
+                                timetableId: entry.id,
+                                date: getDateForDayOfWeek(selectedDay),
+                                subjectName: entry.subject?.name || `Subject #${entry.subjectId}`,
+                                className: entry.class?.name || `Class #${entry.classId}`,
+                              })
+                            }
+                          >
+                            <i className="fa-solid fa-user-plus"></i> Find Substitute
+                          </button>
+                        </div>
                       </>
                     ) : slot?.slotType === 'recess' || slot?.slotType === 'lunch' ? (
                       <>
@@ -357,6 +385,20 @@ export default function TeacherTimetable() {
         )}
       </div>
     </div>
+
+    {substituteContext && (
+      <SubstitutePickerModal
+        timetableId={substituteContext.timetableId}
+        date={substituteContext.date}
+        subjectName={substituteContext.subjectName}
+        className={substituteContext.className}
+        onClose={() => setSubstituteContext(null)}
+        onAssigned={() => {
+          setSubstituteContext(null);
+          loadTimetable(selectedStaffId);
+        }}
+      />
+    )}
   </div>
 );
 }

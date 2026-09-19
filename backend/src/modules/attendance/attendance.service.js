@@ -38,7 +38,7 @@ const countWorkingDays = (fromDate, toDate, holidayDates) => {
 // ─── AUTHORIZATION HELPERS ────────────────────
 
 const assertCanMarkClassAttendance = async (tenantId, actingUser, classId, sectionId, attendanceDate) => {
-  if (actingUser.identity === 'admin') return;
+  if (['admin', 'management', 'principal'].includes(actingUser.identity)) return;
 
   if (actingUser.identity !== 'staff' || actingUser.staffRole !== 'teacher') {
     throw new HttpError(403, 'Only teachers or admins can mark class attendance', { code: 'FORBIDDEN' });
@@ -47,26 +47,46 @@ const assertCanMarkClassAttendance = async (tenantId, actingUser, classId, secti
     throw new HttpError(403, 'This account is not linked to a staff record', { code: 'FORBIDDEN' });
   }
 
-  const teacherTimetableCount = await prisma.timetable.count({
-    where: { tenantId, staffId: actingUser.staffId, isActive: true },
+  const dayOfWeek = new Date(attendanceDate).getDay(); // 1=Mon..6=Sat, matches Timetable.dayOfWeek
+
+  const assignment = await prisma.timetable.findFirst({
+    where: {
+      tenantId,
+      staffId: actingUser.staffId,
+      classId: parseInt(classId),
+      ...(sectionId && { sectionId: parseInt(sectionId) }),
+      dayOfWeek,
+      isActive: true,
+    },
   });
-  if (teacherTimetableCount > 0) {
-    const dayOfWeek = new Date(attendanceDate).getDay(); // 1=Mon..6=Sat, matches Timetable.dayOfWeek
 
-    const assignment = await prisma.timetable.findFirst({
-      where: {
-        tenantId,
-        staffId: actingUser.staffId,
-        classId: parseInt(classId),
-        ...(sectionId && { sectionId: parseInt(sectionId) }),
-        dayOfWeek,
-        isActive: true,
-      },
-    });
+  if (!assignment) {
+    throw new HttpError(403, 'You are not timetabled to teach this class on this day', { code: 'FORBIDDEN' });
+  }
+};
 
-    if (!assignment) {
-      throw new HttpError(403, 'You are not timetabled to teach this class on this day', { code: 'FORBIDDEN' });
-    }
+const assertCanAccessClass = async (tenantId, actingUser, classId, sectionId) => {
+  if (['admin', 'management', 'principal'].includes(actingUser.identity)) return;
+
+  if (actingUser.identity !== 'staff' || actingUser.staffRole !== 'teacher') {
+    throw new HttpError(403, 'Only teachers or admins can view class attendance', { code: 'FORBIDDEN' });
+  }
+  if (!actingUser.staffId) {
+    throw new HttpError(403, 'This account is not linked to a staff record', { code: 'FORBIDDEN' });
+  }
+
+  const assignment = await prisma.timetable.findFirst({
+    where: {
+      tenantId,
+      staffId: actingUser.staffId,
+      classId: parseInt(classId),
+      ...(sectionId && { sectionId: parseInt(sectionId) }),
+      isActive: true,
+    },
+  });
+
+  if (!assignment) {
+    throw new HttpError(403, 'You are not assigned to this class', { code: 'FORBIDDEN' });
   }
 };
 
@@ -131,7 +151,9 @@ const markClassAttendance = async (data, tenantId, actingUser) => {
   return { message: `Attendance marked for ${results.length} students`, count: results.length };
 };
 
-const getClassAttendanceByDate = async (tenantId, classId, sectionId, date) => {
+const getClassAttendanceByDate = async (tenantId, classId, sectionId, date, actingUser) => {
+  await assertCanAccessClass(tenantId, actingUser, classId, sectionId);
+
   return prisma.studentAttendance.findMany({
     where: {
       tenantId,
@@ -147,11 +169,13 @@ const getClassAttendanceByDate = async (tenantId, classId, sectionId, date) => {
   });
 };
 
-const getStudentAttendanceHistory = async (tenantId, studentId, academicYearId, fromDate, toDate) => {
+const getStudentAttendanceHistory = async (tenantId, studentId, academicYearId, fromDate, toDate, actingUser) => {
   const student = await prisma.student.findFirst({
     where: { id: parseInt(studentId), tenantId, isDeleted: false },
   });
   if (!student) throw new HttpError(404, 'Student not found', { code: 'NOT_FOUND' });
+
+  await assertCanAccessClass(tenantId, actingUser, student.classId, student.sectionId);
 
   const from = fromDate ? new Date(fromDate) : new Date(new Date().getFullYear(), 0, 1);
   const to = toDate ? new Date(toDate) : new Date();
@@ -189,7 +213,9 @@ const getStudentAttendanceHistory = async (tenantId, studentId, academicYearId, 
   };
 };
 
-const getClassMonthlyAttendanceSummary = async (tenantId, classId, sectionId, month, year, academicYearId) => {
+const getClassMonthlyAttendanceSummary = async (tenantId, classId, sectionId, month, year, academicYearId, actingUser) => {
+  await assertCanAccessClass(tenantId, actingUser, classId, sectionId);
+
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0);
 

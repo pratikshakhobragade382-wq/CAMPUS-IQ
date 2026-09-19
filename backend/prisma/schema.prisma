@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Tenant {
+  substitutions       Substitution[]
   id                  Int                 @id @default(autoincrement())
   name                String
   createdAt           DateTime            @default(now())
@@ -171,75 +172,77 @@ model Subject {
 }
 
 model Staff {
-  id                       Int                 @id @default(autoincrement())
-  employeeId               String
-  name                     String
-  email                    String
-  phone                    String?
-  dateOfJoining            DateTime?
-  salary                   Decimal?            @db.Decimal(10, 2)
-  photoUrl                 String?
-  departmentId             Int?
-  tenantId                 Int
-  isDeleted                Boolean             @default(false)
-  createdAt                DateTime            @default(now())
-  updatedAt                DateTime            @updatedAt
-  role                     StaffRole?
-  gender                   Gender?
-  aadharNo                 String?
-  bloodGroup               String?
-  busUser                  Boolean             @default(false)
-  caste                    String?
-  cbseTid                  String?
-  ctetExamQualified        String?
-  dateOfBirth              DateTime?
-  emergencyContactNo       String?
-  emergencyContactPerson   String?
-  employeeLedger           String?
-  employeePresentDuty      String?
-  employeeUniqueId         String?
-  experience               String?
-  fatherName               String?
-  fileNo                   String?
-  highQualification        String?
-  identificationMark       String?
-  isReviewer               Boolean             @default(false)
-  leaveCategory            String?
-  maritalStatus            String?
-  mobileNo                 String?
-  motherName               String?
-  motherTongue             String?
-  nationality              String?
-  noticePeriod             Boolean             @default(false)
-  officialEmail            String?
-  panNo                    String?
-  placeOfBirth             String?
-  priorityNo               String?
-  qualificationForPrinting String?
-  relationWithEmployee     String?
-  religion                 String?
-  reportPerson             String?
-  rfidNo                   String?
-  signatureUrl             String?
-  socialCategory           String?
-  staffCategory            String?
-  staffDirectory           String?
-  title                    String?
-  uanNo                    String?
-  examMarksEntered         ExamMark[]
-  feeCollections           FeeCollection[]
-  resultPublications       ResultPublication[]
-  department               Department?         @relation(fields: [departmentId], references: [id])
-  tenant                   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  address                  StaffAddress?
-  staffAttendances         StaffAttendance[]
-  children                 StaffChild[]
-  otherDetails             StaffOtherDetails?
-  spouse                   StaffSpouse?
-  subjects                 StaffSubject[]
-  studentAttendancesMarked StudentAttendance[]
-  timetables               Timetable[]
-  user                     User?
+  substitutionsAsOriginal   Substitution[]      @relation("OriginalStaffSubstitutions")
+  substitutionsAsSubstitute Substitution[]      @relation("SubstituteStaffSubstitutions")
+  id                        Int                 @id @default(autoincrement())
+  employeeId                String
+  name                      String
+  email                     String
+  phone                     String?
+  dateOfJoining             DateTime?
+  salary                    Decimal?            @db.Decimal(10, 2)
+  photoUrl                  String?
+  departmentId              Int?
+  tenantId                  Int
+  isDeleted                 Boolean             @default(false)
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  role                      StaffRole?
+  gender                    Gender?
+  aadharNo                  String?
+  bloodGroup                String?
+  busUser                   Boolean             @default(false)
+  caste                     String?
+  cbseTid                   String?
+  ctetExamQualified         String?
+  dateOfBirth               DateTime?
+  emergencyContactNo        String?
+  emergencyContactPerson    String?
+  employeeLedger            String?
+  employeePresentDuty       String?
+  employeeUniqueId          String?
+  experience                String?
+  fatherName                String?
+  fileNo                    String?
+  highQualification         String?
+  identificationMark        String?
+  isReviewer                Boolean             @default(false)
+  leaveCategory             String?
+  maritalStatus             String?
+  mobileNo                  String?
+  motherName                String?
+  motherTongue              String?
+  nationality               String?
+  noticePeriod              Boolean             @default(false)
+  officialEmail             String?
+  panNo                     String?
+  placeOfBirth              String?
+  priorityNo                String?
+  qualificationForPrinting  String?
+  relationWithEmployee      String?
+  religion                  String?
+  reportPerson              String?
+  rfidNo                    String?
+  signatureUrl              String?
+  socialCategory            String?
+  staffCategory             String?
+  staffDirectory            String?
+  title                     String?
+  uanNo                     String?
+  examMarksEntered          ExamMark[]
+  feeCollections            FeeCollection[]
+  resultPublications        ResultPublication[]
+  department                Department?         @relation(fields: [departmentId], references: [id])
+  tenant                    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  address                   StaffAddress?
+  staffAttendances          StaffAttendance[]
+  children                  StaffChild[]
+  otherDetails              StaffOtherDetails?
+  spouse                    StaffSpouse?
+  subjects                  StaffSubject[]
+  studentAttendancesMarked  StudentAttendance[]
+  timetables                Timetable[]
+  user                      User?
 
   @@unique([employeeId, tenantId])
   @@unique([email, tenantId])
@@ -531,7 +534,8 @@ model PeriodSlot {
 }
 
 model Timetable {
-  id             Int          @id @default(autoincrement())
+  substitutions  Substitution[]
+  id             Int            @id @default(autoincrement())
   tenantId       Int
   academicYearId Int
   classId        Int
@@ -540,16 +544,16 @@ model Timetable {
   staffId        Int
   periodSlotId   Int
   dayOfWeek      Int
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
-  class          Class        @relation(fields: [classId], references: [id])
-  periodSlot     PeriodSlot   @relation(fields: [periodSlotId], references: [id])
-  section        Section?     @relation(fields: [sectionId], references: [id])
-  staff          Staff        @relation(fields: [staffId], references: [id])
-  subject        Subject      @relation(fields: [subjectId], references: [id])
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  academicYear   AcademicYear   @relation(fields: [academicYearId], references: [id])
+  class          Class          @relation(fields: [classId], references: [id])
+  periodSlot     PeriodSlot     @relation(fields: [periodSlotId], references: [id])
+  section        Section?       @relation(fields: [sectionId], references: [id])
+  staff          Staff          @relation(fields: [staffId], references: [id])
+  subject        Subject        @relation(fields: [subjectId], references: [id])
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, academicYearId, staffId, dayOfWeek, periodSlotId])
   @@unique([tenantId, academicYearId, classId, sectionId, dayOfWeek, periodSlotId])
@@ -948,7 +952,6 @@ enum NotificationPriority {
   urgent
 }
 
-
 // =====================================================
 // AI COMPLAINT MANAGEMENT
 // Append everything below to prisma/schema.prisma, then run:
@@ -1053,4 +1056,34 @@ model Complaint {
   @@index([tenantId, category])
   @@index([tenantId, parentUserId])
   @@index([tenantId, createdAt])
+}
+
+model Substitution {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  date              DateTime @db.Date
+  timetableId       Int
+  originalStaffId   Int
+  substituteStaffId Int
+  status            String   @default("confirmed")
+  remark            String?
+  assignedById      Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  timetable       Timetable @relation(fields: [timetableId], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  originalStaff   Staff     @relation("OriginalStaffSubstitutions", fields: [originalStaffId], references: [id])
+  substituteStaff Staff     @relation("SubstituteStaffSubstitutions", fields: [substituteStaffId], references: [id])
+
+  @@unique([tenantId, timetableId, date])
+  @@index([tenantId])
+  @@index([substituteStaffId, date])
+}
+
+model ChatbotQA {
+  id        Int      @id @default(autoincrement())
+  keywords  String
+  answer    String
+  updatedAt DateTime @updatedAt
 }
