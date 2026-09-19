@@ -1,30 +1,51 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import {
+  useNavigate,
+  Link,
+} from "react-router-dom";
+
 import { useAuth } from "../../context/AuthContext";
+
 import logo from "../../assets/logo.png";
+
 import "./TeacherLogin.css";
 
 export default function TeacherLogin() {
-  const { login, loading } = useAuth();
-  const navigate = useNavigate();
+  const {
+    login,
+    loading,
+    logout,
+  } = useAuth();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const navigate =
+    useNavigate();
 
-  const [roleError, setRoleError] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [form, setForm] =
+    useState({
+      email: "",
+      password: "",
+    });
+
+  const [roleError, setRoleError] =
+    useState("");
+
+  const [loginError, setLoginError] =
+    useState("");
 
   // =========================================================
   // HANDLE INPUT CHANGE
   // =========================================================
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const {
+      name,
+      value,
+    } = e.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
 
     setRoleError("");
     setLoginError("");
@@ -41,20 +62,33 @@ export default function TeacherLogin() {
     setLoginError("");
 
     try {
-      // login() returns:
-      // {
-      //   success: true,
-      //   user: {...},
-      //   token: "..."
-      // }
+      /*
+       * IMPORTANT:
+       *
+       * AuthContext.login() returns the USER directly.
+       *
+       * Correct:
+       *
+       * const loggedInUser = await login(form);
+       *
+       * NOT:
+       *
+       * const loginResult = await login(form);
+       * const loggedInUser = loginResult.user;
+       */
 
-      const loginResult = await login(form);
+      const loggedInUser =
+        await login(form);
 
-      // Get the actual user from the login result
-      const loggedInUser = loginResult?.user;
+      // -------------------------------------------------------
+      // LOGIN FAILED
+      // -------------------------------------------------------
 
       if (!loggedInUser) {
-        setLoginError("Invalid login response received.");
+        setLoginError(
+          "Invalid email or password."
+        );
+
         return;
       }
 
@@ -63,16 +97,23 @@ export default function TeacherLogin() {
       // =======================================================
 
       const isTeacher =
-        loggedInUser?.identity === "staff" &&
-        loggedInUser?.staff?.role === "teacher";
+        loggedInUser.identity ===
+          "staff" &&
+        (
+          loggedInUser.staff?.role ===
+            "teacher" ||
+          loggedInUser.role ===
+            "teacher" ||
+          loggedInUser.staffRole ===
+            "teacher"
+        );
 
       // =======================================================
       // WRONG ROLE
       // =======================================================
 
       if (!isTeacher) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        logout();
 
         setRoleError(
           "This account is not registered as a teacher."
@@ -85,14 +126,21 @@ export default function TeacherLogin() {
       // SUCCESS
       // =======================================================
 
-      navigate("/teacher/dashboard", {
-        replace: true,
-      });
+      navigate(
+        "/teacher/dashboard",
+        {
+          replace: true,
+        }
+      );
     } catch (error) {
-      console.error("Teacher login error:", error);
+      console.error(
+        "Teacher login error:",
+        error
+      );
 
       setLoginError(
-        error?.message || "Invalid email or password."
+        error?.message ||
+          "Invalid email or password."
       );
     }
   };
@@ -111,11 +159,13 @@ export default function TeacherLogin() {
         ====================================================== */}
 
         <div className="teacher-login-logo-wrapper">
+
           <img
             src={logo}
             alt="Campus IQ"
             className="teacher-login-logo"
           />
+
         </div>
 
         {/* =====================================================
@@ -125,8 +175,11 @@ export default function TeacherLogin() {
         <div className="teacher-login-header">
 
           <div className="teacher-login-badge">
+
             <i className="fa-solid fa-chalkboard-user"></i>
+
             Teacher Portal
+
           </div>
 
           <h2>
@@ -143,23 +196,29 @@ export default function TeacherLogin() {
             LOGIN ERROR
         ====================================================== */}
 
-        {(loginError || roleError) && (
+        {(loginError ||
+          roleError) && (
+
           <div className="teacher-auth-error">
 
             <i className="fa-solid fa-circle-exclamation"></i>
 
             <span>
-              {roleError || loginError}
+              {roleError ||
+                loginError}
             </span>
 
           </div>
+
         )}
 
         {/* =====================================================
             LOGIN FORM
         ====================================================== */}
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+        >
 
           {/* ================= EMAIL ================= */}
 

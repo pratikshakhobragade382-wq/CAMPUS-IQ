@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Mail, Lock, LogIn, Users } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  LogIn,
+  Users,
+} from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
@@ -8,7 +13,12 @@ import logo from "../assets/logo.png";
 import "./ParentLogin.css";
 
 export default function ParentLogin() {
-  const { login, loading, logout } = useAuth();
+  const {
+    login,
+    loading,
+    logout,
+  } = useAuth();
+
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -16,18 +26,34 @@ export default function ParentLogin() {
     password: "",
   });
 
-  const [roleError, setRoleError] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [roleError, setRoleError] =
+    useState("");
+
+  const [loginError, setLoginError] =
+    useState("");
+
+  // =========================================================
+  // HANDLE INPUT
+  // =========================================================
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const {
+      name,
+      value,
+    } = e.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
 
     setRoleError("");
     setLoginError("");
   };
+
+  // =========================================================
+  // HANDLE LOGIN
+  // =========================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,28 +62,48 @@ export default function ParentLogin() {
     setLoginError("");
 
     try {
-      // login() returns:
-      // {
-      //   success: true,
-      //   user: {...},
-      //   token: "..."
-      // }
+      /*
+       * IMPORTANT:
+       *
+       * AuthContext.login() returns the USER directly.
+       *
+       * It does NOT return:
+       *
+       * {
+       *   user: {...},
+       *   token: "..."
+       * }
+       *
+       * Therefore:
+       *
+       * const loggedInUser = await login(form);
+       *
+       * is correct.
+       */
 
-      const loginResult = await login(form);
+      const loggedInUser =
+        await login(form);
 
-      // Get the actual user object
-      const loggedInUser = loginResult?.user;
+      // -------------------------------------------------------
+      // LOGIN FAILED
+      // -------------------------------------------------------
 
       if (!loggedInUser) {
-        setLoginError("Invalid login response received.");
+        setLoginError(
+          "Invalid email or password."
+        );
+
         return;
       }
 
-      // =====================================================
+      // =======================================================
       // PARENT ROLE VALIDATION
-      // =====================================================
+      // =======================================================
 
-      if (loggedInUser?.identity !== "parent") {
+      if (
+        loggedInUser.identity !==
+        "parent"
+      ) {
         logout();
 
         setRoleError(
@@ -67,21 +113,32 @@ export default function ParentLogin() {
         return;
       }
 
-      // =====================================================
+      // =======================================================
       // SUCCESS
-      // =====================================================
+      // =======================================================
 
-      navigate("/parent/dashboard", {
-        replace: true,
-      });
+      navigate(
+        "/parent/dashboard",
+        {
+          replace: true,
+        }
+      );
     } catch (error) {
-      console.error("Parent login error:", error);
+      console.error(
+        "Parent login error:",
+        error
+      );
 
       setLoginError(
-        error?.message || "Invalid email or password."
+        error?.message ||
+          "Invalid email or password."
       );
     }
   };
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <div className="parent-login-page">
@@ -90,46 +147,57 @@ export default function ParentLogin() {
 
         {/* =====================================================
             LOGO
-        ===================================================== */}
+        ====================================================== */}
 
         <div className="parent-login-logo">
+
           <img
             src={logo}
             alt="CampusIQ"
           />
+
         </div>
 
         {/* =====================================================
             PARENT PORTAL BADGE
-        ===================================================== */}
+        ====================================================== */}
 
         <div className="parent-portal-badge">
+
           <Users size={13} />
-          <span>Parent Portal</span>
+
+          <span>
+            Parent Portal
+          </span>
+
         </div>
 
         {/* =====================================================
             HEADER
-        ===================================================== */}
+        ====================================================== */}
 
         <div className="parent-login-header">
-          <h1>Welcome Back, Parent!</h1>
+
+          <h1>
+            Welcome Back, Parent!
+          </h1>
 
           <p>
             Sign in to continue to your parent dashboard
           </p>
+
         </div>
 
         {/* =====================================================
             LOGIN FORM
-        ===================================================== */}
+        ====================================================== */}
 
         <form
           className="parent-login-form"
           onSubmit={handleSubmit}
         >
 
-          {/* EMAIL */}
+          {/* ================= EMAIL ================= */}
 
           <div className="parent-form-group">
 
@@ -151,6 +219,7 @@ export default function ParentLogin() {
                 placeholder="Enter your email"
                 value={form.email}
                 onChange={handleChange}
+                autoComplete="email"
                 required
               />
 
@@ -158,7 +227,7 @@ export default function ParentLogin() {
 
           </div>
 
-          {/* PASSWORD */}
+          {/* ================= PASSWORD ================= */}
 
           <div className="parent-form-group">
 
@@ -180,6 +249,7 @@ export default function ParentLogin() {
                 placeholder="Enter your password"
                 value={form.password}
                 onChange={handleChange}
+                autoComplete="current-password"
                 required
               />
 
@@ -187,15 +257,23 @@ export default function ParentLogin() {
 
           </div>
 
-          {/* ERROR */}
+          {/* =================================================
+              ERROR
+          ================================================== */}
 
-          {(loginError || roleError) && (
+          {(loginError ||
+            roleError) && (
             <div className="parent-login-error">
-              {roleError || loginError}
+
+              {roleError ||
+                loginError}
+
             </div>
           )}
 
-          {/* SIGN IN BUTTON */}
+          {/* =================================================
+              SIGN IN BUTTON
+          ================================================== */}
 
           <button
             type="submit"
@@ -206,7 +284,9 @@ export default function ParentLogin() {
             <LogIn size={16} />
 
             <span>
-              {loading ? "Signing In..." : "Sign In"}
+              {loading
+                ? "Signing In..."
+                : "Sign In"}
             </span>
 
           </button>
@@ -215,7 +295,7 @@ export default function ParentLogin() {
 
         {/* =====================================================
             FOOTER
-        ===================================================== */}
+        ====================================================== */}
 
         <div className="parent-login-footer">
 
