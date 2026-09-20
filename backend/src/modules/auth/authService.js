@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const prisma = require('../../prisma/prismaClient');
 const { generateToken } = require('../../utils/jwt');
 const { HttpError } = require('../../utils/httpError');
+const { email: emailSchema } = require('../../validation/schemas');
 
 // Identities that carry elevated, tenant-wide permissions.
 // Creating one of these requires an existing privileged caller, except for
@@ -92,17 +93,34 @@ exports.register = async ({
 // tenantId is resolved server-side from the request subdomain
 // (e.g. school1.dpinfosystem.in → tenantId for school1)
 // so the client does NOT send tenantId explicitly.
-exports.login = async ({
-  email,
-  password,
-  tenantId, // resolved from subdomain by the controller before calling this
-}) => {
+async function resolveLoginEmail(identifier, tenantId) {
+  const raw = String(identifier || '').trim();
+  if (!raw) return null;
+
+  if (raw.includes('@')) {
+    const parsed = emailSchema.safeParse(raw);
+    return parsed.success ? parsed.data : raw.toLowerCase();
+  }
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { subdomain: true },
+  });
+  if (!tenant?.subdomain) return null;
+
+  return `${raw.toLowerCase()}@${tenant.subdomain.toLowerCase()}.student`;
+}
+
+exports.login = async ({ identifier, password, tenantId }) => {
   if (!tenantId) {
     throw new HttpError(400, 'Tenant could not be resolved', { code: 'MISSING_TENANT' });
   }
 
-  // Scope the lookup to this specific tenant — prevents cross-tenant login.
-  // include staff so the JWT can carry staffId/staffRole for authorization checks.
+  const email = await resolveLoginEmail(identifier, tenantId);
+  if (!email) {
+    throw new HttpError(401, 'Invalid email or password', { code: 'INVALID_CREDENTIALS' });
+  }
+
   const user = await prisma.user.findUnique({
     where: { email_tenantId: { email, tenantId } },
     include: { staff: { select: { id: true, role: true } } },
@@ -123,4 +141,31 @@ exports.login = async ({
     user: safeUser,
     token,
   };
+};
+
+
+// ================= CHANGE PASSWORD =================
+exports.changePassword = async ({ userId, tenantId, currentPassword, newPassword }) => {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, tenantId, isDeleted: false },
+  });
+  if (!user) {
+    throw new HttpError(401, 'Invalid credentials', { code: 'INVALID_CREDENTIALS' });
+  }
+
+  const ok = await bcrypt.compare(currentPassword, user.password);
+  if (!ok) {
+    throw new HttpError(401, 'Current password is incorrect', { code: 'INVALID_CREDENTIALS' });
+  }
+
+  const hashed = await bcrypt.hash(newPassword, getBcryptCost());
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashed, mustChangePassword: false, tokenVersion: { increment: 1 } },
+    include: { staff: { select: { id: true, role: true } } },
+  });
+
+  const token = generateToken(updated);
+  const { password: _, ...safeUser } = updated;
+  return { user: safeUser, token };
 };

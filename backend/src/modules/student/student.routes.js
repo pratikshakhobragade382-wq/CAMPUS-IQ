@@ -78,4 +78,11 @@ router.delete(
 // EXPORT ROUTER
 // =====================================================
 
+router.post(
+  "/:id/reset-password",
+  require("../../middleware/authMiddleware"),
+  require("../../middleware/authorize")("admin", "management", "principal"),
+  require("./student.controller").resetStudentPassword
+);
+
 module.exports = router;

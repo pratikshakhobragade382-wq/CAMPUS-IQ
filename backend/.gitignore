@@ -11,3 +11,9 @@ fix-email-case.js
 list-admins.js
 list-classes.js
 backfill-parent-links.js
+backfill-credentials.csv
+
+*.bak*
+backfill-credentials.csv
+test-ai-login.js
+update-password.js

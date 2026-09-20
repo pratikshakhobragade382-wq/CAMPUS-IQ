@@ -127,6 +127,7 @@ async function maybeCreateParentUser(
         password: hashedPassword,
         tenantId,
         identity: "parent",
+        mustChangePassword: true,
       },
     });
 
@@ -221,9 +222,7 @@ async function maybeCreateStudentUser(
     );
 
     rawPassword =
-      `${pad2(d.getDate())}${pad2(
-        d.getMonth() + 1
-      )}${d.getFullYear()}`;
+      new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "2-digit", year: "numeric" }).format(d).replace(/\//g, "");
   } else {
     rawPassword =
       `${student.admissionNo}@123`;
@@ -243,6 +242,7 @@ async function maybeCreateStudentUser(
       tenantId,
       identity: "student",
       studentId: student.id,
+      mustChangePassword: true,
     },
   });
 
@@ -1232,10 +1232,32 @@ const updateStudent = async (
       tenantId
     );
 
+  // ----------------------------------------------------------
+  // Ensure the student has a login (idempotent, non-fatal)
+  // ----------------------------------------------------------
+
+  let studentCredentials = null;
+
+  try {
+    studentCredentials = await prisma.$transaction(
+      (tx) => maybeCreateStudentUser(tx, fullStudent, tenantId),
+      TRANSACTION_OPTIONS
+    );
+  } catch (loginErr) {
+    if (loginErr && loginErr.code !== "P2002") {
+      console.error(
+        "Student login provisioning failed (non-fatal):",
+        loginErr
+      );
+    }
+  }
+
   return {
     ...fullStudent,
 
     parentCredentials,
+
+    studentCredentials,
   };
 };
 
@@ -1264,15 +1286,16 @@ const deleteStudent = async (
     );
   }
 
-  await prisma.student.update({
-    where: {
-      id: parseInt(id),
-    },
-
-    data: {
-      isDeleted: true,
-    },
-  });
+  await prisma.$transaction([
+    prisma.student.update({
+      where: { id: parseInt(id) },
+      data: { isDeleted: true },
+    }),
+    prisma.user.updateMany({
+      where: { studentId: parseInt(id), tenantId },
+      data: { isDeleted: true },
+    }),
+  ]);
 
   return {
     message:
@@ -1284,7 +1307,60 @@ const deleteStudent = async (
 // EXPORTS
 // =====================================================
 
+// =====================================================
+// RESET STUDENT PASSWORD (admin action)
+// =====================================================
+
+function generateTempPassword() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = require("crypto").randomBytes(10);
+  let out = "";
+  for (const b of bytes) out += chars[b % chars.length];
+  return out + "@1";
+}
+
+const resetStudentPassword = async (id, tenantId) => {
+  const student = await prisma.student.findFirst({
+    where: { id: parseInt(id), tenantId, isDeleted: false },
+  });
+
+  if (!student) {
+    throw new Error("Student not found");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { studentId: student.id },
+  });
+
+  // No login yet: create one with the standard initial password.
+  if (!user) {
+    const creds = await prisma.$transaction(
+      (tx) => maybeCreateStudentUser(tx, student, tenantId),
+      TRANSACTION_OPTIONS
+    );
+    if (!creds) {
+      throw new Error("Could not create login for this student");
+    }
+    return creds;
+  }
+
+  const tempPassword = generateTempPassword();
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: await bcrypt.hash(tempPassword, getBcryptCost()),
+      mustChangePassword: true,
+      isDeleted: false,
+      tokenVersion: { increment: 1 },
+    },
+  });
+
+  return { email: user.email, password: tempPassword };
+};
+
 module.exports = {
+  resetStudentPassword,
   createStudent,
   getAllStudents,
   getStudentById,

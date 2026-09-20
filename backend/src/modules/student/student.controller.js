@@ -159,7 +159,31 @@ const deleteStudent = async (req, res) => {
 // EXPORT
 // =====================================================
 
+// =====================================================
+// RESET STUDENT PASSWORD
+// =====================================================
+
+const resetStudentPassword = async (req, res) => {
+  try {
+    const credentials = await studentService.resetStudentPassword(
+      req.params.id,
+      req.user.tenantId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Student password reset. Share these credentials once; the student must change the password at first login.",
+      data: credentials,
+    });
+  } catch (error) {
+    return res
+      .status(error.message === "Student not found" ? 404 : 500)
+      .json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
+  resetStudentPassword,
   createStudent,
   getAllStudents,
   getStudentById,

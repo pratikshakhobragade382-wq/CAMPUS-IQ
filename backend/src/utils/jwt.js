@@ -18,6 +18,8 @@ exports.generateToken = (user) => {
       staffId: user.staff ? user.staff.id : null,
       staffRole: user.staff ? user.staff.role : null,
       studentId: user.studentId || null,
+      mustChangePassword: !!user.mustChangePassword,
+      tokenVersion: user.tokenVersion || 0,
     },
     secret,
     {

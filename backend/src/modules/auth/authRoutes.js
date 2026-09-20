@@ -2,11 +2,12 @@
 const router = express.Router();
 const authController = require('./authController');
 const validateRequest = require('../../middleware/validateRequest');
-const { registerBody, loginBody } = require('./auth.validation');
+const { registerBody, loginBody, changePasswordBody } = require('./auth.validation');
 const authMiddleware = require('../../middleware/authMiddleware');
 const authorize = require('../../middleware/authorize');
 const optionalAuth = require('../../middleware/optionalAuth');
 const requireRegistrationKey = require('../../middleware/requireRegistrationKey');
+const { loginAccountLimiter } = require('../../middleware/rateLimiters');
 
 /**
  * @openapi
@@ -88,6 +89,13 @@ router.post(
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', validateRequest({ body: loginBody }), authController.login);
+router.post('/login', loginAccountLimiter, validateRequest({ body: loginBody }), authController.login);
+
+router.post(
+  '/change-password',
+  authMiddleware,
+  validateRequest({ body: changePasswordBody }),
+  authController.changePassword
+);
 
 module.exports = router;

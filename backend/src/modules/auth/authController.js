@@ -71,21 +71,37 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, email, password } = req.body;
 
     // Production → subdomain
     // Localhost → req.body.tenantId
     const tenantId = await resolveTenantId(req);
 
-    const result = await authService.login({
-      email,
-      password,
-      tenantId,
-    });
+    const result = await authService.login({ identifier: identifier || email, password, tenantId });
 
     res.status(200).json({
       success: true,
       message: "Login successful",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ================= CHANGE PASSWORD =================
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const result = await authService.changePassword({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      currentPassword,
+      newPassword,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
       data: result,
     });
   } catch (error) {
