@@ -262,56 +262,78 @@
 
 
 /* =========================================================
-   ADMIN - ORANGE
+   ADMIN - BLUE
    ========================================================= */
 
 .portal-card:nth-child(1) {
-  border-color: #ffd1b3;
+
+  border-color: #b8e5f8;
+
 }
 
 .portal-card:nth-child(1) .portal-card-icon {
-  background: #fff0e6;
-  border-color: #ffd1b3;
-  color: #ff914d;
+
+  background: #e8f8fe;
+
+  border-color: #b8e5f8;
+
+  color: #2faeea;
+
 }
 
 .portal-card:nth-child(1):hover {
-  border-color: #ff914d;
 
-  box-shadow:
-    0 14px 30px rgba(255, 145, 77, 0.18);
-}
-
-.portal-card:nth-child(1):hover .portal-card-icon {
-  background: #ff914d;
-  color: #ffffff;
-}
-
-
-/* =========================================================
-   STUDENT - SKY BLUE
-   ========================================================= */
-
-.portal-card:nth-child(2) {
-  border-color: #b8e5f8;
-}
-
-.portal-card:nth-child(2) .portal-card-icon {
-  background: #e8f8fe;
-  border-color: #b8e5f8;
-  color: #2faeea;
-}
-
-.portal-card:nth-child(2):hover {
   border-color: #2faeea;
 
   box-shadow:
     0 14px 30px rgba(47, 174, 234, 0.18);
+
+}
+
+.portal-card:nth-child(1):hover .portal-card-icon {
+
+  background: #2faeea;
+
+  color: #ffffff;
+
+}
+
+
+/* =========================================================
+   STUDENT - ORANGE
+   ========================================================= */
+
+.portal-card:nth-child(2) {
+
+  border-color: #ffd1b3;
+
+}
+
+.portal-card:nth-child(2) .portal-card-icon {
+
+  background: #fff0e6;
+
+  border-color: #ffd1b3;
+
+  color: #ff914d;
+
+}
+
+.portal-card:nth-child(2):hover {
+
+  border-color: #ff914d;
+
+  box-shadow:
+    0 14px 30px rgba(255, 145, 77, 0.18);
+
 }
 
 .portal-card:nth-child(2):hover .portal-card-icon {
-  background: #2faeea;
+
+  background: #ff914d;
+
   color: #ffffff;
+
 }
 
 
@@ -474,7 +496,7 @@
 /* Admin arrow */
 
 .portal-card:nth-child(1):hover .portal-card-arrow {
-  background: #ff914d;
+  background: #2faeea;
   color: #ffffff;
 }
 
@@ -482,7 +504,7 @@
 /* Student arrow */
 
 .portal-card:nth-child(2):hover .portal-card-arrow {
-  background: #2faeea;
+   background: #ff914d;
   color: #ffffff;
 }
 

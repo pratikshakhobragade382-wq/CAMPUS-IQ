@@ -32,6 +32,15 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 /*
 ============================================================
+ STUDENT
+============================================================
+*/
+
+import StudentLogin from "./student/Login Form/StudentLogin";
+import StudentLayout from "./student/Layout/StudentLayout";
+
+/*
+============================================================
  PARENT
 ============================================================
 */
@@ -138,36 +147,295 @@ import Profile from "./pages/Profile/Profile";
 function AppContent() {
   const location = useLocation();
 
+  /*
+  ============================================================
+   HIDE CHATBOT ON LOGIN / PUBLIC PORTAL PAGES
+  ============================================================
+  */
+
   const hideChatbot = [
     "/login",
     "/register",
     "/portal-login",
+    "/portal",
     "/teacher-login",
     "/parent-login",
+    "/student-login",
+    "/student/login",
   ].includes(location.pathname);
 
   return (
     <>
       <Routes>
+
         {/* ==================================================
             PUBLIC
         ================================================== */}
 
-        <Route path="/" element={<IndexPage />} />
+        <Route
+          path="/"
+          element={<IndexPage />}
+        />
 
-        <Route path="/about" element={<About />} />
+        <Route
+          path="/about"
+          element={<About />}
+        />
 
-        <Route path="/features" element={<Features />} />
+        <Route
+          path="/features"
+          element={<Features />}
+        />
 
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-        <Route path="/portal-login" element={<PortalLogin />} />
+        <Route
+          path="/portal-login"
+          element={<PortalLogin />}
+        />
 
-        <Route path="/parent-login" element={<ParentLogin />} />
+        {/* Backward-compatible portal URL */}
+        <Route
+          path="/portal"
+          element={<PortalLogin />}
+        />
 
-        <Route path="/teacher-login" element={<TeacherLogin />} />
+        <Route
+          path="/parent-login"
+          element={<ParentLogin />}
+        />
 
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/teacher-login"
+          element={<TeacherLogin />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        {/* ==================================================
+            STUDENT LOGIN
+        ================================================== */}
+
+        <Route
+          path="/student-login"
+          element={<StudentLogin />}
+        />
+
+        {/* Backward-compatible student login URL */}
+        <Route
+          path="/student/login"
+          element={<StudentLogin />}
+        />
+
+        {/* ==================================================
+            STUDENT PORTAL
+        ================================================== */}
+
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <StudentLayout />
+            </ProtectedRoute>
+          }
+        >
+
+          {/* STUDENT DASHBOARD */}
+
+          <Route
+            path="/student/dashboard"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Student Dashboard</h2>
+
+                <p>
+                  Welcome to your Student Portal.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT ATTENDANCE */}
+
+          <Route
+            path="/student/attendance"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Attendance</h2>
+
+                <p>
+                  Student attendance will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT ASSIGNMENTS */}
+
+          <Route
+            path="/student/assignments"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Assignments</h2>
+
+                <p>
+                  Student assignments will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT TIMETABLE */}
+
+          <Route
+            path="/student/timetable"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Timetable</h2>
+
+                <p>
+                  Student timetable will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT EXAMS */}
+
+          <Route
+            path="/student/exams"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Exams & Results</h2>
+
+                <p>
+                  Student exams and results will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT PERFORMANCE */}
+
+          <Route
+            path="/student/performance"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Performance</h2>
+
+                <p>
+                  Student performance will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT NOTIFICATIONS */}
+
+          <Route
+            path="/student/notifications"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Notifications</h2>
+
+                <p>
+                  Student notifications will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT COMPLAINTS */}
+
+          <Route
+            path="/student/complaints"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Complaints</h2>
+
+                <p>
+                  Student complaints will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT PROFILE */}
+
+          <Route
+            path="/student/profile"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>My Profile</h2>
+
+                <p>
+                  Student profile will appear here.
+                </p>
+              </div>
+            }
+          />
+
+          {/* STUDENT SETTINGS */}
+
+          <Route
+            path="/student/settings"
+            element={
+              <div
+                style={{
+                  padding: "30px",
+                }}
+              >
+                <h2>Settings</h2>
+
+                <p>
+                  Student settings will appear here.
+                </p>
+              </div>
+            }
+          />
+
+        </Route>
 
         {/* ==================================================
             PARENT PORTAL
@@ -180,6 +448,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         >
+
           <Route
             path="/parent/dashboard"
             element={
@@ -201,10 +470,6 @@ function AppContent() {
             path="/parent/children"
             element={<MyChildren />}
           />
-
-          {/* ==================================================
-              PARENT CALENDAR
-          ================================================== */}
 
           <Route
             path="/parent/calendar"
@@ -248,14 +513,11 @@ function AppContent() {
             element={<ParentNotifications />}
           />
 
-          {/* ==================================================
-              PARENT COMPLAINT MANAGEMENT
-          ================================================== */}
-
           <Route
             path="/parent/complaints"
             element={<ParentComplaints />}
           />
+
         </Route>
 
         {/* ==================================================
@@ -269,6 +531,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         >
+
           <Route
             path="/teacher/dashboard"
             element={<TeacherDashboard />}
@@ -323,6 +586,7 @@ function AppContent() {
             path="/teacher/attendance"
             element={<TeacherAttendance />}
           />
+
         </Route>
 
         {/* ==================================================
@@ -336,6 +600,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         >
+
           <Route
             path="/dashboard"
             element={<Dashboard />}
@@ -370,6 +635,10 @@ function AppContent() {
             path="/section"
             element={<Section />}
           />
+
+          {/* ==================================================
+              ADMIN STUDENT MANAGEMENT
+          ================================================== */}
 
           <Route
             path="/student"
@@ -436,6 +705,10 @@ function AppContent() {
             element={<Profile />}
           />
 
+          {/* ==================================================
+              STAFF
+          ================================================== */}
+
           <Route
             path="/staff"
             element={<Staff />}
@@ -451,19 +724,24 @@ function AppContent() {
             element={<EditStaff />}
           />
 
+          {/* ==================================================
+              ADMIN USERS
+          ================================================== */}
+
           <Route
             path="/users/new"
             element={<AddUser />}
           />
 
-          {/* ================================================
+          {/* ==================================================
               COMPLAINT MANAGEMENT
-              ================================================ */}
+          ================================================== */}
 
           <Route
             path="/complaints"
             element={<Complaints />}
           />
+
         </Route>
 
         {/* ==================================================
@@ -479,9 +757,15 @@ function AppContent() {
             />
           }
         />
+
       </Routes>
 
+      {/* ======================================================
+          GLOBAL CHATBOT
+      ====================================================== */}
+
       {!hideChatbot && <Chatbot />}
+
     </>
   );
 }
@@ -495,13 +779,19 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
+
       <AuthProvider>
+
         <SidebarProvider>
+
           <AppContent />
+
         </SidebarProvider>
 
         <ToastContainer />
+
       </AuthProvider>
+
     </BrowserRouter>
   );
 }

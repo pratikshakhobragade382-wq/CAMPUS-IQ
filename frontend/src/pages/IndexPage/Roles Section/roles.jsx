@@ -6,7 +6,6 @@ function Roles() {
 
   return (
     <section className="roles">
-
       <div className="roles-container">
 
         {/* Background Decorations */}
@@ -32,13 +31,21 @@ function Roles() {
         {/* Cards */}
         <div className="roles-grid">
 
-          {/* ================= ADMIN ================= */}
+          {/* ==================================================
+              ADMIN
+          ================================================== */}
 
           <div
             className="role-card"
             onClick={() => navigate("/login")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                navigate("/login");
+              }
+            }}
+            role="button"
+            tabIndex={0}
           >
-
             <div className="role-icon">
               <i className="fas fa-user-shield"></i>
             </div>
@@ -50,14 +57,24 @@ function Roles() {
               academics and every school activity from
               one centralized dashboard.
             </p>
-
           </div>
 
 
-          {/* ================= STUDENT ================= */}
+          {/* ==================================================
+              STUDENT
+          ================================================== */}
 
-          <div className="role-card">
-
+          <div
+            className="role-card"
+            onClick={() => navigate("/student-login")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                navigate("/student-login");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
             <div className="role-icon">
               <i className="fas fa-user-graduate"></i>
             </div>
@@ -69,17 +86,24 @@ function Roles() {
               results, notices and learning resources
               anytime from one place.
             </p>
-
           </div>
 
 
-          {/* ================= TEACHER ================= */}
+          {/* ==================================================
+              TEACHER
+          ================================================== */}
 
           <div
             className="role-card"
             onClick={() => navigate("/teacher-login")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                navigate("/teacher-login");
+              }
+            }}
+            role="button"
+            tabIndex={0}
           >
-
             <div className="role-icon">
               <i className="fas fa-chalkboard-teacher"></i>
             </div>
@@ -91,14 +115,24 @@ function Roles() {
               mark attendance and track every student's
               academic progress.
             </p>
-
           </div>
 
 
-          {/* ================= PARENT ================= */}
+          {/* ==================================================
+              PARENT
+          ================================================== */}
 
-          <div className="role-card">
-
+          <div
+            className="role-card"
+            onClick={() => navigate("/parent-login")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                navigate("/parent-login");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
             <div className="role-icon">
               <i className="fas fa-users"></i>
             </div>
@@ -110,13 +144,11 @@ function Roles() {
               fees, academic performance and important
               school announcements.
             </p>
-
           </div>
 
         </div>
 
       </div>
-
     </section>
   );
 }
