@@ -48,7 +48,8 @@ import ParentProfile from "./parent/ParentProfile";
 import ParentSettings from "./parent/ParentSettings";
 import ParentNotifications from "./parent/ParentNotifications";
 import ParentComplaints from "./parent/complaints/ParentComplaints";
-
+import ParentTimetable from "./parent/ParentTimetable";
+import ParentExams from "./parent/ParentExams";
 /*
 ============================================================
  TEACHER
@@ -219,7 +220,14 @@ function AppContent() {
             path="/parent/assignments"
             element={<ParentAssignments />}
           />
-
+          <Route
+             path="/parent/timetable"
+             element={<ParentTimetable />}
+          />  
+          <Route
+           path="/parent/exams"
+           element={<ParentExams />}
+          />
           <Route
             path="/parent/ai-performance"
             element={<AIPerformancePredictor />}
