@@ -38,10 +38,8 @@ const countWorkingDays = (fromDate, toDate, holidayDates) => {
 // ─── AUTHORIZATION HELPERS ────────────────────
 
 const assertCanMarkClassAttendance = async (tenantId, actingUser, classId, sectionId, attendanceDate) => {
-  if (['admin', 'management', 'principal'].includes(actingUser.identity)) return;
-
   if (actingUser.identity !== 'staff' || actingUser.staffRole !== 'teacher') {
-    throw new HttpError(403, 'Only teachers or admins can mark class attendance', { code: 'FORBIDDEN' });
+    throw new HttpError(403, 'Only the assigned teacher can mark student attendance', { code: 'FORBIDDEN' });
   }
   if (!actingUser.staffId) {
     throw new HttpError(403, 'This account is not linked to a staff record', { code: 'FORBIDDEN' });

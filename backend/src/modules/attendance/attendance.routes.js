@@ -15,7 +15,7 @@ router.use(authenticate);
 
 router.post(
   '/students/mark-class',
-  authorize('admin', 'management', 'principal', 'teacher'),
+  authorize('teacher'),
   controller.markClassAttendance
 );
 
@@ -39,7 +39,7 @@ router.get(
 
 router.post(
   '/staff/mark',
-  authorize('admin', 'management', 'principal'),
+  authorize('admin'),
   controller.markStaffAttendance
 );
 
