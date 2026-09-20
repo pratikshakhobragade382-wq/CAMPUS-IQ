@@ -47,6 +47,7 @@ import StudentLayout from "./student/Layout/StudentLayout";
 
 import ParentLogin from "./parent/ParentLogin";
 import ParentLayout from "./parent/layout/ParentLayout";
+import ParentDashboard from "./parent/dashboard/ParentDashboard";
 
 import AIPerformancePredictor from "./parent/AIPerformancePredictor";
 import MyChildren from "./parent/MyChildren";
@@ -59,6 +60,7 @@ import ParentNotifications from "./parent/ParentNotifications";
 import ParentComplaints from "./parent/complaints/ParentComplaints";
 import ParentTimetable from "./parent/ParentTimetable";
 import ParentExams from "./parent/ParentExams";
+
 /*
 ============================================================
  TEACHER
@@ -449,69 +451,84 @@ function AppContent() {
           }
         >
 
+          {/* PARENT DASHBOARD */}
+
           <Route
             path="/parent/dashboard"
-            element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
-                <h2>Parent Dashboard</h2>
-
-                <p>
-                  Parent dashboard is coming next.
-                </p>
-              </div>
-            }
+            element={<ParentDashboard />}
           />
+
+          {/* MY CHILDREN */}
 
           <Route
             path="/parent/children"
             element={<MyChildren />}
           />
 
+          {/* CALENDAR */}
+
           <Route
             path="/parent/calendar"
             element={<ParentCalendar />}
           />
+
+          {/* ATTENDANCE */}
 
           <Route
             path="/parent/attendance"
             element={<ParentAttendance />}
           />
 
+          {/* ASSIGNMENTS */}
+
           <Route
             path="/parent/assignments"
             element={<ParentAssignments />}
           />
+
+          {/* TIMETABLE */}
+
           <Route
-             path="/parent/timetable"
-             element={<ParentTimetable />}
-          />  
-          <Route
-           path="/parent/exams"
-           element={<ParentExams />}
+            path="/parent/timetable"
+            element={<ParentTimetable />}
           />
+
+          {/* EXAMS */}
+
+          <Route
+            path="/parent/exams"
+            element={<ParentExams />}
+          />
+
+          {/* AI PERFORMANCE */}
+
           <Route
             path="/parent/ai-performance"
             element={<AIPerformancePredictor />}
           />
+
+          {/* PROFILE */}
 
           <Route
             path="/parent/profile"
             element={<ParentProfile />}
           />
 
+          {/* SETTINGS */}
+
           <Route
             path="/parent/settings"
             element={<ParentSettings />}
           />
 
+          {/* NOTIFICATIONS */}
+
           <Route
             path="/parent/notifications"
             element={<ParentNotifications />}
           />
+
+          {/* COMPLAINTS */}
 
           <Route
             path="/parent/complaints"

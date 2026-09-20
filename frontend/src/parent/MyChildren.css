@@ -1,5 +1,6 @@
 /* =========================================================
    MY CHILDREN PAGE
+   PARENT PORTAL - PURPLE THEME
 ========================================================= */
 
 .my-children-page {
@@ -8,10 +9,10 @@
   background:
     radial-gradient(
       circle at top right,
-      rgba(59, 130, 246, 0.08),
+      rgba(124, 58, 237, 0.07),
       transparent 32%
     ),
-    #f5f7fb;
+    #faf9ff;
   color: #172033;
   box-sizing: border-box;
 }
@@ -40,7 +41,7 @@
   line-height: 1.15;
   font-weight: 800;
   letter-spacing: -0.035em;
-  color: #111827;
+  color: #1e1b4b;
 }
 
 .children-topbar p {
@@ -57,16 +58,16 @@
   gap: 8px;
   padding: 10px 18px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #ede9fe;
   border-radius: 14px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 16px rgba(76, 29, 149, 0.05);
   flex-shrink: 0;
 }
 
 .children-count-badge .count-number {
   font-size: 28px;
   font-weight: 800;
-  color: #2563eb;
+  color: #7c3aed;
   line-height: 1;
 }
 
@@ -98,14 +99,14 @@
 .child-card {
   padding: 28px;
   border-radius: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #ede9fe;
   background: #ffffff;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 8px 30px rgba(76, 29, 149, 0.05);
   transition: box-shadow 0.25s ease, transform 0.2s ease;
 }
 
 .child-card:hover {
-  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.09);
+  box-shadow: 0 12px 40px rgba(76, 29, 149, 0.09);
   transform: translateY(-2px);
 }
 
@@ -137,8 +138,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 16px;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  color: #2563eb;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  color: #7c3aed;
   font-size: 28px;
   font-weight: 800;
 }
@@ -157,7 +158,7 @@
   margin: 0;
   font-size: 22px;
   font-weight: 800;
-  color: #111827;
+  color: #1e1b4b;
   letter-spacing: -0.02em;
 }
 
@@ -176,8 +177,8 @@
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: #ede9fe;
+  color: #7c3aed;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
@@ -200,9 +201,9 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: #f8fafc;
+  background: #faf9ff;
   border-radius: 12px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #f1effa;
 }
 
 .child-detail-icon {
@@ -213,8 +214,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: #ede9fe;
+  color: #7c3aed;
 }
 
 .child-detail-text {
@@ -256,7 +257,7 @@
   gap: 8px;
   height: 42px;
   padding: 0 18px;
-  background: #2563eb;
+  background: #7c3aed;
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -268,7 +269,7 @@
 }
 
 .child-view-btn:hover {
-  background: #1d4ed8;
+  background: #6d28d9;
   transform: translateY(-1px);
 }
 
@@ -283,18 +284,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: #faf9ff;
   color: #64748b;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .child-quick-btn:hover {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
+  background: #ede9fe;
+  color: #7c3aed;
+  border-color: #c4b5fd;
 }
 
 
@@ -305,7 +309,7 @@
 .child-profile-panel {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #ede9fe;
   animation: slideDown 0.3s ease;
 }
 
@@ -314,6 +318,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -333,7 +338,7 @@
 }
 
 .profile-section-title i {
-  color: #2563eb;
+  color: #7c3aed;
   font-size: 14px;
 }
 
@@ -414,14 +419,16 @@
 .children-loading .loading-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #2563eb;
+  border: 4px solid #ede9fe;
+  border-top-color: #7c3aed;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .children-loading p {
@@ -453,9 +460,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eff6ff;
+  background: #ede9fe;
   border-radius: 20px;
-  color: #2563eb;
+  color: #7c3aed;
   margin-bottom: 20px;
 }
 
@@ -463,7 +470,7 @@
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 800;
-  color: #111827;
+  color: #1e1b4b;
 }
 
 .children-empty p {
@@ -505,7 +512,7 @@
   margin: 0 0 8px;
   font-size: 18px;
   font-weight: 800;
-  color: #111827;
+  color: #1e1b4b;
 }
 
 .children-error p {
@@ -520,7 +527,7 @@
   gap: 8px;
   height: 40px;
   padding: 0 20px;
-  background: #2563eb;
+  background: #7c3aed;
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -532,7 +539,7 @@
 }
 
 .children-retry-btn:hover {
-  background: #1d4ed8;
+  background: #6d28d9;
 }
 
 
