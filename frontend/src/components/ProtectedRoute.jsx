@@ -1,6 +1,19 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+function tokenRequiresPasswordChange() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return false;
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    return payload.mustChangePassword === true;
+  } catch {
+    return false;
+  }
+}
+
 export default function ProtectedRoute({
   children,
   allowedRoles = [],
@@ -49,6 +62,10 @@ export default function ProtectedRoute({
   // =====================================================
   // DETERMINE USER ROLE
   // =====================================================
+
+  if (tokenRequiresPasswordChange()) {
+    return <Navigate to="/change-password" replace />;
+  }
 
   let userRole = String(user?.identity || "").toLowerCase();
 

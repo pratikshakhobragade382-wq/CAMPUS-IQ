@@ -91,7 +91,21 @@ axiosClient.interceptors.response.use(
      * - 404
      * - 500
      */
-    if (error?.response?.status === 401) {
+    const requestUrl = String(error?.config?.url || "");
+    const isAuthCall =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/change-password");
+
+    if (
+      error?.response?.status === 403 &&
+      error?.response?.data?.code === "PASSWORD_CHANGE_REQUIRED" &&
+      window.location.pathname !== "/change-password"
+    ) {
+      window.location.href = "/change-password";
+      return Promise.reject(error);
+    }
+
+    if (error?.response?.status === 401 && !isAuthCall) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 

@@ -34,7 +34,7 @@ export default function StudentLogin() {
     e.preventDefault();
 
     if (!formData.email.trim() || !formData.password) {
-      setError("Please enter your email and password.");
+      setError("Please enter your admission number (or email) and password.");
       return;
     }
 
@@ -65,7 +65,8 @@ export default function StudentLogin() {
       navigate("/student/dashboard", { replace: true });
     } catch (err) {
       setError(
-        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
           err?.message ||
           "Invalid email or password. Please try again."
       );
@@ -96,7 +97,7 @@ export default function StudentLogin() {
 
         <form className="student-login-form" onSubmit={handleSubmit}>
           <div className="student-form-group">
-            <label htmlFor="student-email">Email</label>
+            <label htmlFor="student-email">Admission number or email</label>
 
             <div className="student-input-wrapper">
               <Mail
@@ -108,11 +109,11 @@ export default function StudentLogin() {
               <input
                 id="student-email"
                 name="email"
-                type="email"
+                type="text"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
-                autoComplete="email"
+                placeholder="Admission number or email"
+                autoComplete="username"
                 disabled={loading}
               />
             </div>

@@ -28,6 +28,7 @@ import Features from "./pages/IndexPage/Navbar/Features/Features";
 
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ChangePassword from "./pages/auth/ChangePassword";
 import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 /*
@@ -158,6 +159,7 @@ function AppContent() {
   const hideChatbot = [
     "/login",
     "/register",
+    "/change-password",
     "/portal-login",
     "/portal",
     "/teacher-login",
@@ -218,6 +220,11 @@ function AppContent() {
         <Route
           path="/register"
           element={<Register />}
+        />
+
+        <Route
+          path="/change-password"
+          element={<ChangePassword />}
         />
 
         {/* ==================================================
