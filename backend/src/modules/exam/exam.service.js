@@ -1,4 +1,6 @@
-// src/modules/exam/exam.service.js
+// ============================================================
+// EXAM SERVICE
+// ============================================================
 
 const prisma = require("../../prisma/prismaClient");
 
@@ -11,7 +13,7 @@ const {
 } = require("../notification/notification.service");
 
 // ============================================================
-// AUTHORIZATION HELPERS
+// AUTHORIZATION
 // ============================================================
 
 const assertIsAdmin = (actingUser) => {
@@ -93,16 +95,7 @@ const assertCanManageMarks = async (
 };
 
 // ============================================================
-// INDIAN CALENDAR / NON-WORKING DATE RULES
-// ============================================================
-//
-// These are baseline dates for the calendar.
-// Admin-created holidays from the database are ALSO checked.
-//
-// Sunday is ALWAYS blocked.
-//
-// This protects the exam scheduler even if the parent UI
-// is not being used.
+// BUILT-IN INDIAN HOLIDAYS
 // ============================================================
 
 const BUILT_IN_HOLIDAYS = {
@@ -116,10 +109,8 @@ const BUILT_IN_HOLIDAYS = {
     "2026-03-26": "Ram Navami",
     "2026-03-31": "Mahavir Jayanti",
     "2026-04-03": "Good Friday",
-    "2026-04-14":
-      "Dr. Babasaheb Ambedkar Jayanti",
-    "2026-05-01":
-      "Maharashtra Day / Buddha Purnima",
+    "2026-04-14": "Dr. Babasaheb Ambedkar Jayanti",
+    "2026-05-01": "Maharashtra Day / Buddha Purnima",
     "2026-05-28": "Bakrid",
     "2026-06-26": "Muharram",
     "2026-08-15": "Independence Day",
@@ -127,8 +118,7 @@ const BUILT_IN_HOLIDAYS = {
     "2026-08-28": "Raksha Bandhan",
     "2026-09-04": "Janmashtami",
     "2026-09-14": "Ganesh Chaturthi",
-    "2026-10-02":
-      "Mahatma Gandhi Jayanti",
+    "2026-10-02": "Mahatma Gandhi Jayanti",
     "2026-10-20": "Dussehra",
     "2026-11-08": "Diwali / Deepavali",
     "2026-11-10": "Diwali Padwa",
@@ -138,19 +128,15 @@ const BUILT_IN_HOLIDAYS = {
 
   2027: {
     "2027-01-01": "New Year's Day",
-    "2027-01-15":
-      "Makar Sankranti / Pongal",
+    "2027-01-15": "Makar Sankranti / Pongal",
     "2027-01-26": "Republic Day",
-    "2027-02-19":
-      "Chhatrapati Shivaji Maharaj Jayanti",
+    "2027-02-19": "Chhatrapati Shivaji Maharaj Jayanti",
     "2027-03-06": "Maha Shivratri",
     "2027-03-10": "Ramzan Eid",
     "2027-03-22": "Holi",
     "2027-03-26": "Good Friday",
-    "2027-04-07":
-      "Gudi Padwa / Ugadi",
-    "2027-04-14":
-      "Dr. Babasaheb Ambedkar Jayanti",
+    "2027-04-07": "Gudi Padwa / Ugadi",
+    "2027-04-14": "Dr. Babasaheb Ambedkar Jayanti",
     "2027-04-15": "Ram Navami",
     "2027-04-19": "Mahavir Jayanti",
     "2027-05-17": "Bakrid",
@@ -160,13 +146,10 @@ const BUILT_IN_HOLIDAYS = {
     "2027-08-15": "Independence Day",
     "2027-08-17": "Raksha Bandhan",
     "2027-08-25": "Janmashtami",
-    "2027-09-04":
-      "Ganesh Chaturthi",
-    "2027-10-02":
-      "Mahatma Gandhi Jayanti",
+    "2027-09-04": "Ganesh Chaturthi",
+    "2027-10-02": "Mahatma Gandhi Jayanti",
     "2027-10-09": "Dussehra",
-    "2027-10-29":
-      "Diwali / Deepavali",
+    "2027-10-29": "Diwali / Deepavali",
     "2027-11-04": "Chhat Puja",
     "2027-11-14": "Guru Nanak Jayanti",
     "2027-12-25": "Christmas Day",
@@ -176,6 +159,8 @@ const BUILT_IN_HOLIDAYS = {
 // ============================================================
 // DATE HELPERS
 // ============================================================
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const toDateKey = (date) => {
   const d = new Date(date);
@@ -187,99 +172,88 @@ const toDateKey = (date) => {
   return d.toISOString().slice(0, 10);
 };
 
+const normalizeUTCDate = (date) => {
+  const d = new Date(date);
+
+  return new Date(
+    Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate()
+    )
+  );
+};
+
+const addDaysUTC = (date, days) => {
+  const d = normalizeUTCDate(date);
+
+  d.setUTCDate(
+    d.getUTCDate() + days
+  );
+
+  return d;
+};
+
+const getInclusiveDayCount = (
+  startDate,
+  endDate
+) => {
+  const start =
+    normalizeUTCDate(startDate);
+
+  const end =
+    normalizeUTCDate(endDate);
+
+  return (
+    Math.floor(
+      (end.getTime() -
+        start.getTime()) /
+        DAY_MS
+    ) + 1
+  );
+};
+
+const isSunday = (date) => {
+  return (
+    normalizeUTCDate(date).getUTCDay() === 0
+  );
+};
+
 const getDateRange = (
   startDate,
   endDate
 ) => {
   const dates = [];
 
-  let current = new Date(
-    Date.UTC(
-      startDate.getUTCFullYear(),
-      startDate.getUTCMonth(),
-      startDate.getUTCDate()
-    )
-  );
+  let current =
+    normalizeUTCDate(startDate);
 
-  const end = new Date(
-    Date.UTC(
-      endDate.getUTCFullYear(),
-      endDate.getUTCMonth(),
-      endDate.getUTCDate()
-    )
-  );
+  const end =
+    normalizeUTCDate(endDate);
 
   while (current <= end) {
     dates.push(
       new Date(current)
     );
 
-    current.setUTCDate(
-      current.getUTCDate() + 1
-    );
+    current =
+      addDaysUTC(current, 1);
   }
 
   return dates;
 };
 
 // ============================================================
-// GET BLOCKED DATES
+// GET ADMIN HOLIDAYS
 // ============================================================
 
-const getBlockedExamDates = async (
+const getAdminHolidayMap = async ({
   tenantId,
   academicYearId,
   startDate,
-  endDate
-) => {
-  const blocked = new Map();
-
-  // ----------------------------------------------------------
-  // Built-in Indian holidays
-  // ----------------------------------------------------------
-
-  const datesToCheck = getDateRange(
-    startDate,
-    endDate
-  );
-
-  for (const date of datesToCheck) {
-    const key =
-      toDateKey(date);
-
-    const year =
-      date.getUTCFullYear();
-
-    const builtIn =
-      BUILT_IN_HOLIDAYS[year]?.[key];
-
-    if (builtIn) {
-      blocked.set(
-        key,
-        builtIn
-      );
-    }
-
-    /*
-     * Sunday is ALWAYS blocked.
-     *
-     * getUTCDay():
-     * 0 = Sunday
-     */
-
-    if (date.getUTCDay() === 0) {
-      blocked.set(
-        key,
-        "Sunday"
-      );
-    }
-  }
-
-  // ----------------------------------------------------------
-  // Admin-created holidays
-  // ----------------------------------------------------------
-
-  const adminHolidays =
+  endDate,
+}) => {
+  const holidays =
     await prisma.holiday.findMany({
       where: {
         tenantId,
@@ -302,77 +276,362 @@ const getBlockedExamDates = async (
       },
     });
 
-  /*
-   * Admin-created holiday wins over
-   * built-in holiday name.
-   */
+  const map = new Map();
 
-  adminHolidays.forEach(
-    (holiday) => {
-      const key =
-        toDateKey(
-          holiday.date
-        );
+  for (const holiday of holidays) {
+    const key =
+      toDateKey(holiday.date);
 
-      if (key) {
-        blocked.set(
-          key,
-          holiday.name ||
-            "School Holiday"
-        );
-      }
+    if (key) {
+      map.set(
+        key,
+        holiday.name ||
+          "School Holiday"
+      );
     }
-  );
+  }
 
-  return blocked;
+  return map;
 };
 
 // ============================================================
-// VALIDATE EXAM DATES
+// GET BLOCKED DATE REASON
 // ============================================================
 
-const validateExamDates = async ({
+const getBlockedReason = (
+  date,
+  adminHolidayMap
+) => {
+  const key =
+    toDateKey(date);
+
+  if (!key) {
+    return null;
+  }
+
+  // Admin holiday takes priority.
+  if (
+    adminHolidayMap.has(key)
+  ) {
+    return adminHolidayMap.get(
+      key
+    );
+  }
+
+  const year =
+    normalizeUTCDate(
+      date
+    ).getUTCFullYear();
+
+  const builtIn =
+    BUILT_IN_HOLIDAYS[year]?.[key];
+
+  if (builtIn) {
+    return builtIn;
+  }
+
+  if (isSunday(date)) {
+    return "Sunday";
+  }
+
+  return null;
+};
+
+// ============================================================
+// GET BLOCKED DATES
+// ============================================================
+
+const getBlockedExamDates = async ({
   tenantId,
   academicYearId,
   startDate,
   endDate,
 }) => {
   const blocked =
-    await getBlockedExamDates(
+    new Map();
+
+  const adminHolidayMap =
+    await getAdminHolidayMap({
       tenantId,
       academicYearId,
+      startDate,
+      endDate,
+    });
+
+  const dates =
+    getDateRange(
       startDate,
       endDate
     );
 
-  const conflicts = [];
+  for (const date of dates) {
+    const key =
+      toDateKey(date);
 
-  for (const [
-    date,
-    reason,
-  ] of blocked.entries()) {
-    conflicts.push({
-      date,
-      reason,
-    });
+    const reason =
+      getBlockedReason(
+        date,
+        adminHolidayMap
+      );
+
+    if (reason) {
+      blocked.set(
+        key,
+        reason
+      );
+    }
   }
 
-  if (conflicts.length > 0) {
-    const first =
-      conflicts[0];
+  return blocked;
+};
 
+// ============================================================
+// ADJUST EXAM DATES
+// ============================================================
+//
+// IMPORTANT:
+//
+// The old code rejected the complete exam range if it
+// contained even one holiday or Sunday.
+//
+// The new code treats the requested range as a number of
+// EXAM DAYS.
+//
+// Example:
+//
+// User selects:
+// 23 Nov -> 30 Nov
+//
+// That is 8 requested exam days.
+//
+// If 24 Nov is a holiday and 29 Nov is Sunday:
+//
+// 23 = Exam Day
+// 24 = Holiday - SKIP
+// 25 = Exam Day
+// 26 = Exam Day
+// 27 = Exam Day
+// 28 = Exam Day
+// 29 = Sunday - SKIP
+// 30 = Exam Day
+// 01 Dec = Exam Day
+// 02 Dec = Exam Day
+//
+// Final exam range becomes:
+// 23 Nov -> 02 Dec
+//
+// Therefore holidays/Sundays never become exam days.
+// ============================================================
+
+const adjustExamDates = async ({
+  tenantId,
+  academicYearId,
+  startDate,
+  endDate,
+  academicYearEndDate,
+}) => {
+  const requestedDays =
+    getInclusiveDayCount(
+      startDate,
+      endDate
+    );
+
+  if (requestedDays <= 0) {
     throw new HttpError(
       400,
-      `Exam cannot be scheduled on ${first.date} because it is ${first.reason}.`,
+      "Invalid exam date range",
       {
         code:
-          "EXAM_DATE_BLOCKED",
-
-        blockedDates:
-          conflicts,
+          "VALIDATION_ERROR",
       }
     );
   }
+
+  /*
+   * We need enough future dates to find all required
+   * working/exam days.
+   *
+   * Using roughly twice the requested duration gives
+   * enough room for Sundays + holidays.
+   */
+  let lookupEnd =
+    addDaysUTC(
+      endDate,
+      Math.max(
+        30,
+        requestedDays
+      )
+    );
+
+  /*
+   * Never look beyond academic year unnecessarily.
+   */
+  if (
+    academicYearEndDate &&
+    lookupEnd >
+      normalizeUTCDate(
+        academicYearEndDate
+      )
+  ) {
+    lookupEnd =
+      normalizeUTCDate(
+        academicYearEndDate
+      );
+  }
+
+  let adminHolidayMap =
+    await getAdminHolidayMap({
+      tenantId,
+      academicYearId,
+      startDate:
+        normalizeUTCDate(
+          startDate
+        ),
+      endDate: lookupEnd,
+    });
+
+  let current =
+    normalizeUTCDate(
+      startDate
+    );
+
+  /*
+   * First valid exam day.
+   */
+  while (
+    getBlockedReason(
+      current,
+      adminHolidayMap
+    )
+  ) {
+    current =
+      addDaysUTC(
+        current,
+        1
+      );
+
+    if (
+      academicYearEndDate &&
+      current >
+        normalizeUTCDate(
+          academicYearEndDate
+        )
+    ) {
+      throw new HttpError(
+        400,
+        "There are not enough working days left in the academic year for this exam period.",
+        {
+          code:
+            "INSUFFICIENT_WORKING_DAYS",
+        }
+      );
+    }
+  }
+
+  const adjustedStart =
+    new Date(current);
+
+  let examDaysCompleted = 0;
+
+  let adjustedEnd =
+    new Date(current);
+
+  const skippedDates = [];
+
+  while (
+    examDaysCompleted <
+    requestedDays
+  ) {
+    const reason =
+      getBlockedReason(
+        current,
+        adminHolidayMap
+      );
+
+    if (reason) {
+      skippedDates.push({
+        date:
+          toDateKey(
+            current
+          ),
+        reason,
+      });
+
+      current =
+        addDaysUTC(
+          current,
+          1
+        );
+
+      if (
+        academicYearEndDate &&
+        current >
+          normalizeUTCDate(
+            academicYearEndDate
+          )
+      ) {
+        throw new HttpError(
+          400,
+          "There are not enough working days left in the academic year for this exam period.",
+          {
+            code:
+              "INSUFFICIENT_WORKING_DAYS",
+          }
+        );
+      }
+
+      continue;
+    }
+
+    examDaysCompleted +=
+      1;
+
+    adjustedEnd =
+      new Date(current);
+
+    if (
+      examDaysCompleted <
+      requestedDays
+    ) {
+      current =
+        addDaysUTC(
+          current,
+          1
+        );
+    }
+  }
+
+  /*
+   * Final safety check.
+   */
+  if (
+    academicYearEndDate &&
+    adjustedEnd >
+      normalizeUTCDate(
+        academicYearEndDate
+      )
+  ) {
+    throw new HttpError(
+      400,
+      "Adjusted exam dates exceed the academic year.",
+      {
+        code:
+          "VALIDATION_ERROR",
+      }
+    );
+  }
+
+  return {
+    startDate:
+      adjustedStart,
+
+    endDate:
+      adjustedEnd,
+
+    requestedDays,
+
+    skippedDates,
+  };
 };
 
 // ============================================================
@@ -382,18 +641,16 @@ const validateExamDates = async ({
 const getGradingScale =
   async (tenantId) => {
     const record =
-      await prisma.masterData.findFirst(
-        {
-          where: {
-            category:
-              "GradingScale",
+      await prisma.masterData.findFirst({
+        where: {
+          category:
+            "GradingScale",
 
-            tenantId,
+          tenantId,
 
-            isActive: true,
-          },
-        }
-      );
+          isActive: true,
+        },
+      });
 
     if (record) {
       try {
@@ -431,7 +688,7 @@ const getGradingScale =
             }
           );
         } catch (err) {
-          // Fall through to default.
+          // Use default grading scale.
         }
       }
     }
@@ -443,49 +700,42 @@ const getGradingScale =
         grade: "A1",
         gp: 10,
       },
-
       {
         min: 81,
         max: 90,
         grade: "A2",
         gp: 9,
       },
-
       {
         min: 71,
         max: 80,
         grade: "B1",
         gp: 8,
       },
-
       {
         min: 61,
         max: 70,
         grade: "B2",
         gp: 7,
       },
-
       {
         min: 51,
         max: 60,
         grade: "C1",
         gp: 6,
       },
-
       {
         min: 41,
         max: 50,
         grade: "C2",
         gp: 5,
       },
-
       {
         min: 33,
         max: 40,
         grade: "D",
         gp: 4,
       },
-
       {
         min: 0,
         max: 32.99,
@@ -529,7 +779,8 @@ const computeGradeAndGP = (
       );
 
     return {
-      grade: explicitGrade,
+      grade:
+        explicitGrade,
 
       gradePoint:
         rule
@@ -550,8 +801,12 @@ const computeGradeAndGP = (
 
   if (rule) {
     return {
-      grade: rule.grade,
-      gradePoint: rule.gp,
+      grade:
+        rule.grade,
+
+      gradePoint:
+        rule.gp,
+
       remarkAdd: "",
     };
   }
@@ -607,17 +862,14 @@ const createExam = async (
     academicYear,
     cls,
   ] = await Promise.all([
-    prisma.academicYear.findFirst(
-      {
-        where: {
-          id: parseInt(
-            academicYearId
-          ),
-
-          tenantId,
-        },
-      }
-    ),
+    prisma.academicYear.findFirst({
+      where: {
+        id: parseInt(
+          academicYearId
+        ),
+        tenantId,
+      },
+    }),
 
     prisma.class.findFirst({
       where: {
@@ -647,18 +899,18 @@ const createExam = async (
     );
   }
 
-  const start =
+  let requestedStart =
     new Date(startDate);
 
-  const end =
+  let requestedEnd =
     new Date(endDate);
 
   if (
     Number.isNaN(
-      start.getTime()
+      requestedStart.getTime()
     ) ||
     Number.isNaN(
-      end.getTime()
+      requestedEnd.getTime()
     )
   ) {
     throw new HttpError(
@@ -671,7 +923,20 @@ const createExam = async (
     );
   }
 
-  if (start > end) {
+  requestedStart =
+    normalizeUTCDate(
+      requestedStart
+    );
+
+  requestedEnd =
+    normalizeUTCDate(
+      requestedEnd
+    );
+
+  if (
+    requestedStart >
+    requestedEnd
+  ) {
     throw new HttpError(
       400,
       "startDate cannot be after endDate",
@@ -682,19 +947,33 @@ const createExam = async (
     );
   }
 
+  /*
+   * First validate the USER'S requested range against
+   * academic-year boundaries.
+   */
   if (
     academicYear.startDate &&
     academicYear.endDate
   ) {
-    if (
-      start <
-        academicYear.startDate ||
-      start >
-        academicYear.endDate ||
-      end <
-        academicYear.startDate ||
-      end >
+    const academicStart =
+      normalizeUTCDate(
+        academicYear.startDate
+      );
+
+    const academicEnd =
+      normalizeUTCDate(
         academicYear.endDate
+      );
+
+    if (
+      requestedStart <
+        academicStart ||
+      requestedStart >
+        academicEnd ||
+      requestedEnd <
+        academicStart ||
+      requestedEnd >
+        academicEnd
     ) {
       throw new HttpError(
         400,
@@ -708,19 +987,30 @@ const createExam = async (
   }
 
   // ==========================================================
-  // IMPORTANT:
-  // Prevent exams on Sundays and holidays.
+  // AUTOMATICALLY SKIP HOLIDAYS + SUNDAYS
   // ==========================================================
 
-  await validateExamDates({
-    tenantId,
+  const adjusted =
+    await adjustExamDates({
+      tenantId,
 
-    academicYearId,
+      academicYearId,
 
-    startDate: start,
+      startDate:
+        requestedStart,
 
-    endDate: end,
-  });
+      endDate:
+        requestedEnd,
+
+      academicYearEndDate:
+        academicYear.endDate,
+    });
+
+  const start =
+    adjusted.startDate;
+
+  const end =
+    adjusted.endDate;
 
   // ==========================================================
   // CREATE EXAM
@@ -752,37 +1042,47 @@ const createExam = async (
     });
 
   // ==========================================================
-  // STUDENT EXAM NOTIFICATION
+  // NOTIFICATION
   // ==========================================================
 
   try {
+    let message =
+      `${name} (${examType}) has been scheduled from ${start.toLocaleDateString(
+        "en-IN"
+      )} to ${end.toLocaleDateString(
+        "en-IN"
+      )}.`;
+
+    if (
+      adjusted.skippedDates.length >
+      0
+    ) {
+      message +=
+        ` Holidays/Sundays were automatically skipped and the exam period was adjusted to ${start.toLocaleDateString(
+          "en-IN"
+        )} - ${end.toLocaleDateString(
+          "en-IN"
+        )}.`;
+    }
+
     await createNotification({
       tenantId,
 
       title:
         "New Exam Schedule",
 
-      message:
-        `${name} (${examType}) has been scheduled from ${start.toLocaleDateString(
-          "en-IN"
-        )} to ${end.toLocaleDateString(
-          "en-IN"
-        )}.`,
+      message,
 
-      type:
-        "exam",
+      type: "exam",
 
-      priority:
-        "high",
+      priority: "high",
 
-      audience:
-        "student",
+      audience: "student",
 
       classId:
         parseInt(classId),
 
-      sectionId:
-        null,
+      sectionId: null,
 
       createdById:
         actingUser.userId ||
@@ -791,18 +1091,35 @@ const createExam = async (
   } catch (
     notificationError
   ) {
-    /*
-     * Notification failure must NOT
-     * cancel successful exam creation.
-     */
-
     console.error(
       "Failed to create student exam notification:",
       notificationError
     );
   }
 
-  return exam;
+  return {
+    ...exam,
+
+    schedulingInfo: {
+      requestedStartDate:
+        requestedStart,
+
+      requestedEndDate:
+        requestedEnd,
+
+      actualStartDate:
+        start,
+
+      actualEndDate:
+        end,
+
+      requestedExamDays:
+        adjusted.requestedDays,
+
+      skippedDates:
+        adjusted.skippedDates,
+    },
+  };
 };
 
 // ============================================================
@@ -917,8 +1234,11 @@ const getExamById = async (
   const totalStudents =
     await prisma.student.count({
       where: {
-        classId: exam.classId,
+        classId:
+          exam.classId,
+
         tenantId,
+
         isDeleted: false,
       },
     });
@@ -1008,11 +1328,21 @@ const updateExam = async (
       data.isActive;
   }
 
+  let finalStartDate =
+    new Date(
+      exam.startDate
+    );
+
+  let finalEndDate =
+    new Date(
+      exam.endDate
+    );
+
   if (
     data.startDate ||
     data.endDate
   ) {
-    const start =
+    let requestedStart =
       data.startDate
         ? new Date(
             data.startDate
@@ -1021,7 +1351,7 @@ const updateExam = async (
             exam.startDate
           );
 
-    const end =
+    let requestedEnd =
       data.endDate
         ? new Date(
             data.endDate
@@ -1032,10 +1362,10 @@ const updateExam = async (
 
     if (
       Number.isNaN(
-        start.getTime()
+        requestedStart.getTime()
       ) ||
       Number.isNaN(
-        end.getTime()
+        requestedEnd.getTime()
       )
     ) {
       throw new HttpError(
@@ -1048,7 +1378,20 @@ const updateExam = async (
       );
     }
 
-    if (start > end) {
+    requestedStart =
+      normalizeUTCDate(
+        requestedStart
+      );
+
+    requestedEnd =
+      normalizeUTCDate(
+        requestedEnd
+      );
+
+    if (
+      requestedStart >
+      requestedEnd
+    ) {
       throw new HttpError(
         400,
         "startDate cannot be after endDate",
@@ -1076,15 +1419,25 @@ const updateExam = async (
       academicYear.startDate &&
       academicYear.endDate
     ) {
-      if (
-        start <
-          academicYear.startDate ||
-        start >
-          academicYear.endDate ||
-        end <
-          academicYear.startDate ||
-        end >
+      const academicStart =
+        normalizeUTCDate(
+          academicYear.startDate
+        );
+
+      const academicEnd =
+        normalizeUTCDate(
           academicYear.endDate
+        );
+
+      if (
+        requestedStart <
+          academicStart ||
+        requestedStart >
+          academicEnd ||
+        requestedEnd <
+          academicStart ||
+        requestedEnd >
+          academicEnd
       ) {
         throw new HttpError(
           400,
@@ -1098,26 +1451,38 @@ const updateExam = async (
     }
 
     // ========================================================
-    // IMPORTANT:
-    // Validate Sundays + holidays on updates too.
+    // AUTOMATICALLY SKIP HOLIDAYS + SUNDAYS
     // ========================================================
 
-    await validateExamDates({
-      tenantId,
+    const adjusted =
+      await adjustExamDates({
+        tenantId,
 
-      academicYearId:
-        exam.academicYearId,
+        academicYearId:
+          exam.academicYearId,
 
-      startDate: start,
+        startDate:
+          requestedStart,
 
-      endDate: end,
-    });
+        endDate:
+          requestedEnd,
+
+        academicYearEndDate:
+          academicYear?.endDate ||
+          null,
+      });
+
+    finalStartDate =
+      adjusted.startDate;
+
+    finalEndDate =
+      adjusted.endDate;
 
     updateData.startDate =
-      start;
+      finalStartDate;
 
     updateData.endDate =
-      end;
+      finalEndDate;
   }
 
   const updatedExam =
@@ -1130,7 +1495,7 @@ const updateExam = async (
     });
 
   // ==========================================================
-  // STUDENT EXAM UPDATE NOTIFICATION
+  // UPDATE NOTIFICATION
   // ==========================================================
 
   try {
@@ -1141,7 +1506,7 @@ const updateExam = async (
         "Exam Schedule Updated",
 
       message:
-        `${updatedExam.name} exam schedule has been updated. New date: ${new Date(
+        `${updatedExam.name} exam schedule is ${new Date(
           updatedExam.startDate
         ).toLocaleDateString(
           "en-IN"
@@ -1149,22 +1514,18 @@ const updateExam = async (
           updatedExam.endDate
         ).toLocaleDateString(
           "en-IN"
-        )}.`,
+        )}. Sundays and holidays are automatically skipped.`,
 
-      type:
-        "exam",
+      type: "exam",
 
-      priority:
-        "high",
+      priority: "high",
 
-      audience:
-        "student",
+      audience: "student",
 
       classId:
         updatedExam.classId,
 
-      sectionId:
-        null,
+      sectionId: null,
 
       createdById:
         actingUser.userId ||
@@ -1581,18 +1942,14 @@ const getExamMarks = async (
     }
 
     const teacherTimetableCount =
-      await prisma.timetable.count(
-        {
-          where: {
-            tenantId,
-
-            staffId:
-              actingUser.staffId,
-
-            isActive: true,
-          },
-        }
-      );
+      await prisma.timetable.count({
+        where: {
+          tenantId,
+          staffId:
+            actingUser.staffId,
+          isActive: true,
+        },
+      });
 
     if (
       teacherTimetableCount >
@@ -1607,21 +1964,16 @@ const getExamMarks = async (
         );
       } else {
         const timetabled =
-          await prisma.timetable.findFirst(
-            {
-              where: {
-                tenantId,
-
-                staffId:
-                  actingUser.staffId,
-
-                classId:
-                  exam.classId,
-
-                isActive: true,
-              },
-            }
-          );
+          await prisma.timetable.findFirst({
+            where: {
+              tenantId,
+              staffId:
+                actingUser.staffId,
+              classId:
+                exam.classId,
+              isActive: true,
+            },
+          });
 
         if (!timetabled) {
           throw new HttpError(
@@ -1641,7 +1993,8 @@ const getExamMarks = async (
     where: {
       tenantId,
 
-      examId: exam.id,
+      examId:
+        exam.id,
 
       ...(subjectId && {
         subjectId:
@@ -1754,39 +2107,35 @@ const getStudentReportCard =
       }
 
       const teacherTimetableCount =
-        await prisma.timetable.count(
-          {
-            where: {
-              tenantId,
+        await prisma.timetable.count({
+          where: {
+            tenantId,
 
-              staffId:
-                actingUser.staffId,
+            staffId:
+              actingUser.staffId,
 
-              isActive: true,
-            },
-          }
-        );
+            isActive: true,
+          },
+        });
 
       if (
         teacherTimetableCount >
         0
       ) {
         const assignment =
-          await prisma.timetable.findFirst(
-            {
-              where: {
-                tenantId,
+          await prisma.timetable.findFirst({
+            where: {
+              tenantId,
 
-                staffId:
-                  actingUser.staffId,
+              staffId:
+                actingUser.staffId,
 
-                classId:
-                  student.classId,
+              classId:
+                student.classId,
 
-                isActive: true,
-              },
-            }
-          );
+              isActive: true,
+            },
+          });
 
         if (!assignment) {
           throw new HttpError(
@@ -1810,17 +2159,15 @@ const getStudentReportCard =
 
     if (!acYearId) {
       const activeAY =
-        await prisma.academicYear.findFirst(
-          {
-            where: {
-              tenantId,
+        await prisma.academicYear.findFirst({
+          where: {
+            tenantId,
 
-              isActive: true,
+            isActive: true,
 
-              isDeleted: false,
-            },
-          }
-        );
+            isDeleted: false,
+          },
+        });
 
       if (!activeAY) {
         throw new HttpError(

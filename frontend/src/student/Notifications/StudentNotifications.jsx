@@ -70,6 +70,59 @@ function extractUnreadCount(response) {
 }
 
 /* ============================================================
+   CLEAN EXAM NOTIFICATION MESSAGE
+============================================================ */
+
+/*
+  Older exam notifications may already exist in the database
+  with this sentence:
+
+  "Sundays and holidays are automatically skipped."
+
+  That information is related to the admin's exam scheduling
+  logic and should NOT be displayed to students.
+
+  New exam notifications created by the current exam service
+  already use a clean message.
+
+  This function also cleans older notifications so students
+  do not see the unwanted sentence.
+*/
+
+function cleanNotificationMessage(
+  message,
+  type
+) {
+  let cleanedMessage =
+    message || "";
+
+  if (type === "exam") {
+    cleanedMessage =
+      cleanedMessage.replace(
+        /\s*Sundays\s+and\s+holidays\s+are\s+automatically\s+skipped\.?\s*/gi,
+        " "
+      );
+
+    cleanedMessage =
+      cleanedMessage.replace(
+        /\s*Sundays\s+and\s+holidays\s+are\s+skipped\.?\s*/gi,
+        " "
+      );
+
+    cleanedMessage =
+      cleanedMessage.replace(
+        /\s{2,}/g,
+        " "
+      );
+
+    cleanedMessage =
+      cleanedMessage.trim();
+  }
+
+  return cleanedMessage;
+}
+
+/* ============================================================
    NORMALIZE NOTIFICATION
 ============================================================ */
 
@@ -78,23 +131,30 @@ function normalizeNotification(notification) {
     return null;
   }
 
+  const type =
+    notification.type ||
+    "general";
+
   return {
     ...notification,
 
-    id: notification.id ?? notification._id,
+    id:
+      notification.id ??
+      notification._id,
 
     title:
       notification.title ||
       "Notification",
 
     message:
-      notification.message ||
-      notification.body ||
-      "",
+      cleanNotificationMessage(
+        notification.message ||
+          notification.body ||
+          "",
+        type
+      ),
 
-    type:
-      notification.type ||
-      "general",
+    type,
 
     priority:
       notification.priority ||
@@ -109,7 +169,9 @@ function normalizeNotification(notification) {
     isRead:
       notification.isRead === true ||
       notification.read === true ||
-      Boolean(notification.readAt),
+      Boolean(
+        notification.readAt
+      ),
   };
 }
 
@@ -176,39 +238,54 @@ function formatNotificationTime(value) {
     return "Just now";
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return String(value);
   }
 
   const now = new Date();
 
-  const difference = Math.floor(
-    (now.getTime() - date.getTime()) / 1000
-  );
+  const difference =
+    Math.floor(
+      (
+        now.getTime() -
+        date.getTime()
+      ) / 1000
+    );
 
   if (difference < 60) {
     return "Just now";
   }
 
   if (difference < 3600) {
-    const minutes = Math.floor(
-      difference / 60
-    );
+    const minutes =
+      Math.floor(
+        difference / 60
+      );
 
     return `${minutes} minute${
-      minutes === 1 ? "" : "s"
+      minutes === 1
+        ? ""
+        : "s"
     } ago`;
   }
 
   if (difference < 86400) {
-    const hours = Math.floor(
-      difference / 3600
-    );
+    const hours =
+      Math.floor(
+        difference / 3600
+      );
 
     return `${hours} hour${
-      hours === 1 ? "" : "s"
+      hours === 1
+        ? ""
+        : "s"
     } ago`;
   }
 
@@ -280,232 +357,282 @@ export default function StudentNotifications() {
 
   /* ==========================================================
      LOAD NOTIFICATIONS
-
-     IMPORTANT:
-     Use getNotifications(), not getAllNotifications().
   ========================================================== */
 
-  const loadNotifications = useCallback(
-    async ({ silent = false } = {}) => {
-      try {
-        if (!silent) {
-          setLoading(true);
+  const loadNotifications =
+    useCallback(
+      async ({
+        silent = false,
+      } = {}) => {
+        try {
+          if (!silent) {
+            setLoading(true);
+          }
+
+          setError("");
+
+          const [
+            notificationResponse,
+            countResponse,
+          ] =
+            await Promise.all([
+              getNotifications(),
+              getUnreadNotificationCount(),
+            ]);
+
+          const list =
+            extractNotifications(
+              notificationResponse
+            )
+              .map(
+                normalizeNotification
+              )
+              .filter(Boolean);
+
+          const count =
+            extractUnreadCount(
+              countResponse
+            );
+
+          setNotifications(
+            list
+          );
+
+          setUnreadCount(
+            count
+          );
+        } catch (err) {
+          console.error(
+            "Student notification load error:",
+            err
+          );
+
+          const message =
+            err?.response
+              ?.data?.message ||
+            err?.message ||
+            "Unable to load notifications.";
+
+          setError(
+            message
+          );
+        } finally {
+          if (!silent) {
+            setLoading(false);
+          }
+
+          setRefreshing(false);
         }
-
-        setError("");
-
-        const [
-          notificationResponse,
-          countResponse,
-        ] = await Promise.all([
-          getNotifications(),
-          getUnreadNotificationCount(),
-        ]);
-
-        const list = extractNotifications(
-          notificationResponse
-        )
-          .map(normalizeNotification)
-          .filter(Boolean);
-
-        const count =
-          extractUnreadCount(countResponse);
-
-        setNotifications(list);
-        setUnreadCount(count);
-      } catch (err) {
-        console.error(
-          "Student notification load error:",
-          err
-        );
-
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load notifications.";
-
-        setError(message);
-      } finally {
-        if (!silent) {
-          setLoading(false);
-        }
-
-        setRefreshing(false);
-      }
-    },
-    []
-  );
+      },
+      []
+    );
 
   /* ==========================================================
-     INITIAL LOAD
+     INITIAL LOAD + AUTO REFRESH
   ========================================================== */
 
   useEffect(() => {
     loadNotifications();
 
-    const interval = setInterval(() => {
-      loadNotifications({
-        silent: true,
-      });
-    }, 30000);
+    const interval =
+      setInterval(() => {
+        loadNotifications({
+          silent: true,
+        });
+      }, 30000);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(
+        interval
+      );
     };
-  }, [loadNotifications]);
+  }, [
+    loadNotifications,
+  ]);
 
   /* ==========================================================
      MARK ONE AS READ
   ========================================================== */
 
-  const handleMarkAsRead = async (
-    notification
-  ) => {
-    if (!notification?.id) {
+  const handleMarkAsRead =
+    async (
+      notification
+    ) => {
+      if (!notification?.id) {
+        setSelectedNotification(
+          notification
+        );
+
+        return;
+      }
+
+      if (
+        !notification.isRead
+      ) {
+        try {
+          await markNotificationAsRead(
+            notification.id
+          );
+
+          setNotifications(
+            (previous) =>
+              previous.map(
+                (item) =>
+                  item.id ===
+                  notification.id
+                    ? {
+                        ...item,
+                        isRead: true,
+                      }
+                    : item
+              )
+          );
+
+          setUnreadCount(
+            (previous) =>
+              Math.max(
+                0,
+                previous - 1
+              )
+          );
+        } catch (err) {
+          console.error(
+            "Mark notification read error:",
+            err
+          );
+        }
+      }
+
       setSelectedNotification(
-        notification
+        {
+          ...notification,
+          isRead: true,
+        }
       );
-      return;
-    }
-
-    if (!notification.isRead) {
-      try {
-        await markNotificationAsRead(
-          notification.id
-        );
-
-        setNotifications(
-          (previous) =>
-            previous.map((item) =>
-              item.id === notification.id
-                ? {
-                    ...item,
-                    isRead: true,
-                  }
-                : item
-            )
-        );
-
-        setUnreadCount(
-          (previous) =>
-            Math.max(0, previous - 1)
-        );
-      } catch (err) {
-        console.error(
-          "Mark notification read error:",
-          err
-        );
-      }
-    }
-
-    setSelectedNotification(
-      {
-        ...notification,
-        isRead: true,
-      }
-    );
-  };
+    };
 
   /* ==========================================================
      MARK ALL AS READ
   ========================================================== */
 
-  const handleMarkAllAsRead = async () => {
-    if (unreadCount === 0) {
-      return;
-    }
+  const handleMarkAllAsRead =
+    async () => {
+      if (
+        unreadCount === 0
+      ) {
+        return;
+      }
 
-    try {
-      setRefreshing(true);
+      try {
+        setRefreshing(
+          true
+        );
 
-      await markAllNotificationsAsRead();
+        await markAllNotificationsAsRead();
 
-      setNotifications(
-        (previous) =>
-          previous.map((item) => ({
-            ...item,
-            isRead: true,
-          }))
-      );
+        setNotifications(
+          (previous) =>
+            previous.map(
+              (item) => ({
+                ...item,
+                isRead: true,
+              })
+            )
+        );
 
-      setUnreadCount(0);
-    } catch (err) {
-      console.error(
-        "Mark all notifications read error:",
-        err
-      );
-    } finally {
-      setRefreshing(false);
-    }
-  };
+        setUnreadCount(0);
+      } catch (err) {
+        console.error(
+          "Mark all notifications read error:",
+          err
+        );
+      } finally {
+        setRefreshing(
+          false
+        );
+      }
+    };
 
   /* ==========================================================
      REFRESH
   ========================================================== */
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
+  const handleRefresh =
+    async () => {
+      setRefreshing(true);
 
-    await loadNotifications({
-      silent: true,
-    });
-  };
+      await loadNotifications({
+        silent: true,
+      });
+    };
 
   /* ==========================================================
      FILTER
   ========================================================== */
 
-  const filteredNotifications = useMemo(() => {
-    const search = searchText
-      .trim()
-      .toLowerCase();
+  const filteredNotifications =
+    useMemo(() => {
+      const search =
+        searchText
+          .trim()
+          .toLowerCase();
 
-    return notifications.filter(
-      (notification) => {
-        const title =
-          String(
-            notification.title || ""
-          ).toLowerCase();
+      return notifications.filter(
+        (notification) => {
+          const title =
+            String(
+              notification.title ||
+                ""
+            ).toLowerCase();
 
-        const message =
-          String(
-            notification.message || ""
-          ).toLowerCase();
+          const message =
+            String(
+              notification.message ||
+                ""
+            ).toLowerCase();
 
-        const matchesSearch =
-          !search ||
-          title.includes(search) ||
-          message.includes(search);
+          const matchesSearch =
+            !search ||
+            title.includes(
+              search
+            ) ||
+            message.includes(
+              search
+            );
 
-        const matchesType =
-          filterType === "all" ||
-          notification.type ===
-            filterType;
+          const matchesType =
+            filterType ===
+              "all" ||
+            notification.type ===
+              filterType;
 
-        const matchesStatus =
-          filterStatus === "all" ||
-          (
-            filterStatus === "unread" &&
-            !notification.isRead
-          ) ||
-          (
-            filterStatus === "read" &&
-            notification.isRead
+          const matchesStatus =
+            filterStatus ===
+              "all" ||
+            (
+              filterStatus ===
+                "unread" &&
+              !notification.isRead
+            ) ||
+            (
+              filterStatus ===
+                "read" &&
+              notification.isRead
+            );
+
+          return (
+            matchesSearch &&
+            matchesType &&
+            matchesStatus
           );
-
-        return (
-          matchesSearch &&
-          matchesType &&
-          matchesStatus
-        );
-      }
-    );
-  }, [
-    notifications,
-    searchText,
-    filterType,
-    filterStatus,
-  ]);
+        }
+      );
+    }, [
+      notifications,
+      searchText,
+      filterType,
+      filterStatus,
+    ]);
 
   /* ==========================================================
      COUNTERS
@@ -513,19 +640,22 @@ export default function StudentNotifications() {
 
   const unreadInList =
     notifications.filter(
-      (item) => !item.isRead
+      (item) =>
+        !item.isRead
     ).length;
 
   const holidayCount =
     notifications.filter(
       (item) =>
-        item.type === "holiday"
+        item.type ===
+        "holiday"
     ).length;
 
   const examCount =
     notifications.filter(
       (item) =>
-        item.type === "exam"
+        item.type ===
+        "exam"
     ).length;
 
   /* ==========================================================
@@ -571,8 +701,12 @@ export default function StudentNotifications() {
           <button
             type="button"
             className="student-refresh-button"
-            onClick={handleRefresh}
-            disabled={refreshing}
+            onClick={
+              handleRefresh
+            }
+            disabled={
+              refreshing
+            }
             title="Refresh notifications"
           >
             <RefreshCw
@@ -623,7 +757,9 @@ export default function StudentNotifications() {
 
           <div>
             <strong>
-              {notifications.length}
+              {
+                notifications.length
+              }
             </strong>
 
             <small>
@@ -702,8 +838,12 @@ export default function StudentNotifications() {
           <input
             type="text"
             placeholder="Search notifications..."
-            value={searchText}
-            onChange={(event) =>
+            value={
+              searchText
+            }
+            onChange={(
+              event
+            ) =>
               setSearchText(
                 event.target.value
               )
@@ -717,8 +857,12 @@ export default function StudentNotifications() {
           <Filter size={15} />
 
           <select
-            value={filterType}
-            onChange={(event) =>
+            value={
+              filterType
+            }
+            onChange={(
+              event
+            ) =>
               setFilterType(
                 event.target.value
               )
@@ -757,8 +901,12 @@ export default function StudentNotifications() {
 
         <select
           className="student-notification-status-filter"
-          value={filterStatus}
-          onChange={(event) =>
+          value={
+            filterStatus
+          }
+          onChange={(
+            event
+          ) =>
             setFilterStatus(
               event.target.value
             )
@@ -786,7 +934,9 @@ export default function StudentNotifications() {
       {error && (
         <div className="student-notification-error">
 
-          <AlertCircle size={17} />
+          <AlertCircle
+            size={17}
+          />
 
           <div>
             <strong>
@@ -811,7 +961,7 @@ export default function StudentNotifications() {
       )}
 
       {/* ======================================================
-          LOADING
+          LOADING / EMPTY / LIST
       ====================================================== */}
 
       {loading ? (
@@ -829,10 +979,6 @@ export default function StudentNotifications() {
         </div>
       ) : filteredNotifications.length ===
         0 ? (
-
-        /* ====================================================
-           EMPTY
-        ==================================================== */
 
         <div className="student-notification-empty">
 
@@ -859,8 +1005,12 @@ export default function StudentNotifications() {
               type="button"
               onClick={() => {
                 setSearchText("");
-                setFilterType("all");
-                setFilterStatus("all");
+                setFilterType(
+                  "all"
+                );
+                setFilterStatus(
+                  "all"
+                );
               }}
             >
               Clear filters
@@ -871,15 +1021,10 @@ export default function StudentNotifications() {
 
       ) : (
 
-        /* ====================================================
-           NOTIFICATION LIST
-        ==================================================== */
-
         <div className="student-notification-list">
 
           {filteredNotifications.map(
             (notification) => {
-
               const Icon =
                 getNotificationIcon(
                   notification.type
@@ -888,7 +1033,9 @@ export default function StudentNotifications() {
               return (
                 <button
                   type="button"
-                  key={notification.id}
+                  key={
+                    notification.id
+                  }
                   className={`student-notification-card ${
                     notification.isRead
                       ? "read"
@@ -904,7 +1051,9 @@ export default function StudentNotifications() {
                   <div
                     className={`student-notification-card-icon type-${notification.type}`}
                   >
-                    <Icon size={19} />
+                    <Icon
+                      size={19}
+                    />
                   </div>
 
                   <div className="student-notification-card-body">
@@ -914,7 +1063,9 @@ export default function StudentNotifications() {
                       <div className="student-notification-card-title">
 
                         <h3>
-                          {notification.title}
+                          {
+                            notification.title
+                          }
                         </h3>
 
                         {!notification.isRead && (
@@ -934,7 +1085,9 @@ export default function StudentNotifications() {
                     </div>
 
                     <p className="student-notification-message">
-                      {notification.message}
+                      {
+                        notification.message
+                      }
                     </p>
 
                     <div className="student-notification-meta">
@@ -948,7 +1101,9 @@ export default function StudentNotifications() {
                       <span
                         className={`student-priority ${notification.priority}`}
                       >
-                        {notification.priority}
+                        {
+                          notification.priority
+                        }
                       </span>
 
                     </div>
@@ -999,7 +1154,9 @@ export default function StudentNotifications() {
                     );
 
                   return (
-                    <Icon size={22} />
+                    <Icon
+                      size={22}
+                    />
                   );
                 })()}
 
@@ -1028,11 +1185,15 @@ export default function StudentNotifications() {
               </span>
 
               <h2>
-                {selectedNotification.title}
+                {
+                  selectedNotification.title
+                }
               </h2>
 
               <p>
-                {selectedNotification.message}
+                {
+                  selectedNotification.message
+                }
               </p>
 
               <div className="student-notification-modal-meta">
