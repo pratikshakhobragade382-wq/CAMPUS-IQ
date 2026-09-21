@@ -1,0 +1,723 @@
+/* ============================================================
+   CAMPUS IQ - STUDENT ATTENDANCE
+   Orange theme: #ff914d accent, #ffe3d2 borders, #183b5d text
+============================================================ */
+
+.student-attendance-page {
+  min-height: 100%;
+  color: #183b5d;
+  box-sizing: border-box;
+}
+
+.student-attendance-page * {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.student-att-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.student-att-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.student-att-title-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #fff0e6;
+  color: #f07f3f;
+}
+
+.student-att-title-row h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-att-title-row p {
+  margin: 4px 0 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.student-att-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-att-refresh-btn {
+  height: 40px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #ffe3d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-att-refresh-btn:hover {
+  background: #fff7f2;
+  border-color: #ff914d;
+}
+
+.student-att-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   FILTERS
+============================================================ */
+
+.student-att-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  margin-bottom: 22px;
+}
+
+.student-att-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-att-filter-group label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9aa8b6;
+}
+
+.student-att-filter-select {
+  position: relative;
+}
+
+.student-att-filter-select select {
+  height: 42px;
+  min-width: 170px;
+  padding: 0 36px 0 13px;
+  appearance: none;
+  border: 1px solid #ffe3d2;
+  border-radius: 10px;
+  outline: none;
+  background: #ffffff;
+  color: #183b5d;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-att-filter-select select:focus {
+  border-color: #ff914d;
+  box-shadow: 0 0 0 3px rgba(255, 145, 77, 0.15);
+}
+
+.student-att-filter-arrow {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #ff914d;
+}
+
+/* ============================================================
+   SUMMARY CARDS
+============================================================ */
+
+.student-att-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.student-att-summary-card {
+  min-height: 100px;
+  padding: 18px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border-radius: 16px;
+  border: 1px solid #ffe3d2;
+  background: #ffffff;
+  box-shadow: 0 6px 22px rgba(255, 145, 77, 0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.student-att-summary-card:hover {
+  box-shadow: 0 10px 32px rgba(255, 145, 77, 0.09);
+  transform: translateY(-1px);
+}
+
+.student-att-summary-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.student-att-summary-icon.total {
+  background: #fff0e6;
+  color: #ff914d;
+}
+
+.student-att-summary-icon.present {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.student-att-summary-icon.absent {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.student-att-summary-icon.late {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.student-att-summary-icon.percentage {
+  background: #fff7f2;
+  color: #f07f3f;
+}
+
+.student-att-summary-content .student-att-summary-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9aa8b6;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.student-att-summary-content .student-att-summary-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: #183b5d;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.student-att-summary-content .student-att-summary-sub {
+  display: block;
+  font-size: 11px;
+  color: #9aa8b6;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   MAIN GRID — RING + CALENDAR
+============================================================ */
+
+.student-att-main-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(400px, 1.4fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+/* ============================================================
+   RING CARD
+============================================================ */
+
+.student-att-ring-card {
+  padding: 26px;
+  border-radius: 18px;
+  border: 1px solid #ffe3d2;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(255, 145, 77, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.student-att-ring-heading {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.student-att-ring-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-att-ring {
+  width: 190px;
+  height: 190px;
+  position: relative;
+  margin: 8px 0 18px;
+}
+
+.student-att-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.student-att-ring-track,
+.student-att-ring-progress {
+  fill: none;
+  stroke-width: 12;
+}
+
+.student-att-ring-track {
+  stroke: #ffe3d2;
+}
+
+.student-att-ring-progress {
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.7s ease;
+}
+
+.student-att-ring-progress.excellent { stroke: #16a34a; }
+.student-att-ring-progress.good { stroke: #ff914d; }
+.student-att-ring-progress.average { stroke: #d97706; }
+.student-att-ring-progress.poor { stroke: #dc2626; }
+
+.student-att-ring-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.student-att-ring-value strong {
+  font-size: 42px;
+  line-height: 1;
+  color: #183b5d;
+  letter-spacing: -0.04em;
+}
+
+.student-att-ring-value span {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9aa8b6;
+  font-weight: 700;
+}
+
+.student-att-ring-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.student-att-ring-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.student-att-ring-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* ============================================================
+   CALENDAR CARD
+============================================================ */
+
+.student-att-calendar-card {
+  padding: 26px;
+  border-radius: 18px;
+  border: 1px solid #ffe3d2;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(255, 145, 77, 0.06);
+}
+
+.student-att-calendar-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.student-att-calendar-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-att-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.student-att-cal-day-header {
+  text-align: center;
+  padding: 8px 0;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9aa8b6;
+}
+
+.student-att-cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  position: relative;
+  cursor: default;
+  transition: transform 0.15s ease;
+}
+
+.student-att-cal-day:hover {
+  transform: scale(1.08);
+}
+
+.student-att-cal-day.empty {
+  pointer-events: none;
+}
+
+.student-att-cal-day.present {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.student-att-cal-day.absent {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.student-att-cal-day.late {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.student-att-cal-day.holiday {
+  background: #fff7f2;
+  color: #9aa8b6;
+  border: 1px solid #ffe3d2;
+}
+
+.student-att-cal-day.today {
+  box-shadow: 0 0 0 2px #ff914d;
+}
+
+.student-att-cal-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  background: #183b5d;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.student-att-cal-day:hover .student-att-cal-tooltip {
+  display: block;
+}
+
+/* ============================================================
+   RECORDS TABLE
+============================================================ */
+
+.student-att-records-card {
+  padding: 26px;
+  border-radius: 18px;
+  border: 1px solid #ffe3d2;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(255, 145, 77, 0.06);
+}
+
+.student-att-records-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.student-att-records-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-att-records-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9aa8b6;
+  padding: 6px 12px;
+  background: #fff7f2;
+  border-radius: 8px;
+}
+
+.student-att-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.student-att-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9aa8b6;
+  border-bottom: 1px solid #ffe3d2;
+}
+
+.student-att-table td {
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  background: #fffaf7;
+  border-top: 1px solid #fff0e6;
+  border-bottom: 1px solid #fff0e6;
+}
+
+.student-att-table tr td:first-child {
+  border-radius: 10px 0 0 10px;
+  border-left: 1px solid #fff0e6;
+}
+
+.student-att-table tr td:last-child {
+  border-radius: 0 10px 10px 0;
+  border-right: 1px solid #fff0e6;
+}
+
+.student-att-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.student-att-status-badge.present {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.student-att-status-badge.absent {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.student-att-status-badge.late {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.student-att-no-records {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9aa8b6;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   LOADING / EMPTY / ERROR
+============================================================ */
+
+.student-att-loading,
+.student-att-empty,
+.student-att-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.student-att-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #ffe3d2;
+  border-top-color: #ff914d;
+  border-radius: 50%;
+  animation: studentAttSpin 0.8s linear infinite;
+}
+
+@keyframes studentAttSpin {
+  to { transform: rotate(360deg); }
+}
+
+.student-att-loading p {
+  margin-top: 18px;
+  font-size: 14px;
+  color: #9aa8b6;
+  font-weight: 600;
+}
+
+.student-att-empty-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0e6;
+  border-radius: 20px;
+  color: #ff914d;
+  margin-bottom: 20px;
+}
+
+.student-att-empty h3,
+.student-att-error h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-att-empty p,
+.student-att-error p {
+  margin: 0;
+  font-size: 14px;
+  color: #9aa8b6;
+  max-width: 400px;
+}
+
+.student-att-error p { margin-bottom: 18px; }
+
+.student-att-error-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef2f2;
+  border-radius: 16px;
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+.student-att-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  background: #ff914d;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.student-att-retry-btn:hover {
+  background: #f07f3f;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1024px) {
+  .student-att-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .student-att-header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .student-att-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .student-att-filter-select select {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .student-att-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .student-att-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-att-calendar-grid {
+    gap: 3px;
+  }
+
+  .student-att-cal-day {
+    font-size: 11px;
+  }
+
+  .student-att-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

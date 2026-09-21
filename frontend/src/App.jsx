@@ -45,6 +45,8 @@ import StudentNotifications from "./student/Notifications/StudentNotifications";
 import StudentTimetable from "./student/StudentTimetable";
 import StudentExams from "./student/StudentExams";
 import StudentResults from "./student/StudentResults";
+import StudentAttendance from "./student/StudentAttendance";
+import StudentAssignments from "./student/StudentAssignments";
 /*
 ============================================================
  PARENT
@@ -281,60 +283,34 @@ function AppContent() {
 
           <Route
             path="/student/attendance"
-            element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
-                <h2>Attendance</h2>
-
-                <p>
-                  Student attendance will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentAttendance />}
           />
 
           {/* STUDENT ASSIGNMENTS */}
 
           <Route
             path="/student/assignments"
-            element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
-                <h2>Assignments</h2>
-
-                <p>
-                  Student assignments will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentAssignments />}
           />
 
           {/* STUDENT TIMETABLE */}
 
-                    <Route
+          <Route
             path="/student/timetable"
             element={<StudentTimetable />}
           />
 
           {/* STUDENT EXAMS */}
-          {/* STUDENT EXAMS */}
 
           <Route
-           path="/student/exams"
-           element={<StudentExams />}
+            path="/student/exams"
+            element={<StudentExams />}
           />
 
           <Route
-           path="/student/results"
-           element={<StudentResults />}
+            path="/student/results"
+            element={<StudentResults />}
           />
-
 
           {/* STUDENT PERFORMANCE */}
 
