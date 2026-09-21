@@ -39,6 +39,8 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 import StudentLogin from "./student/Login Form/StudentLogin";
 import StudentLayout from "./student/Layout/StudentLayout";
+import StudentDashboard from "./student/dashboard/StudentDashboard";
+import StudentComplaints from "./student/complaints/StudentComplaints";
 import StudentProfile from "./student/StudentProfile";
 import StudentSettings from "./student/StudentSettings";
 import StudentNotifications from "./student/Notifications/StudentNotifications";
@@ -259,14 +261,7 @@ function AppContent() {
 
           <Route
             path="/student/dashboard"
-            element={
-              <div style={{ padding: "30px" }}>
-                <h2>Student Dashboard</h2>
-                <p>
-                  Welcome to your Student Portal.
-                </p>
-              </div>
-            }
+            element={<StudentDashboard />}
           />
 
           {/* STUDENT ATTENDANCE */}
@@ -350,14 +345,7 @@ function AppContent() {
 
           <Route
             path="/student/complaints"
-            element={
-              <div style={{ padding: "30px" }}>
-                <h2>Complaints</h2>
-                <p>
-                  Student complaints will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentComplaints />}
           />
 
           {/* STUDENT PROFILE */}
@@ -388,60 +376,84 @@ function AppContent() {
           }
         >
 
+          {/* PARENT DASHBOARD */}
+
           <Route
             path="/parent/dashboard"
             element={<ParentDashboard />}
           />
+
+          {/* CHILDREN */}
 
           <Route
             path="/parent/children"
             element={<MyChildren />}
           />
 
+          {/* CALENDAR */}
+
           <Route
             path="/parent/calendar"
             element={<ParentCalendar />}
           />
+
+          {/* ATTENDANCE */}
 
           <Route
             path="/parent/attendance"
             element={<ParentAttendance />}
           />
 
+          {/* ASSIGNMENTS */}
+
           <Route
             path="/parent/assignments"
             element={<ParentAssignments />}
           />
+
+          {/* TIMETABLE */}
 
           <Route
             path="/parent/timetable"
             element={<ParentTimetable />}
           />
 
+          {/* EXAMS */}
+
           <Route
             path="/parent/exams"
             element={<ParentExams />}
           />
+
+          {/* AI PERFORMANCE */}
 
           <Route
             path="/parent/ai-performance"
             element={<AIPerformancePredictor />}
           />
 
+          {/* PROFILE */}
+
           <Route
             path="/parent/profile"
             element={<ParentProfile />}
           />
+
+          {/* SETTINGS */}
 
           <Route
             path="/parent/settings"
             element={<ParentSettings />}
           />
 
+          {/* NOTIFICATIONS */}
+
           <Route
             path="/parent/notifications"
             element={<ParentNotifications />}
           />
+
+          {/* COMPLAINTS */}
 
           <Route
             path="/parent/complaints"
@@ -462,55 +474,77 @@ function AppContent() {
           }
         >
 
+          {/* TEACHER DASHBOARD */}
+
           <Route
             path="/teacher/dashboard"
             element={<TeacherDashboard />}
           />
+
+          {/* NOTIFICATIONS */}
 
           <Route
             path="/teacher/notifications"
             element={<TeacherNotifications />}
           />
 
+          {/* STUDENTS */}
+
           <Route
             path="/teacher/students"
             element={<TeacherStudents />}
           />
+
+          {/* PROFILE */}
 
           <Route
             path="/teacher/profile"
             element={<TeacherProfile />}
           />
 
+          {/* SETTINGS */}
+
           <Route
             path="/teacher/settings"
             element={<TeacherSettings />}
           />
+
+          {/* AI COPILOT */}
 
           <Route
             path="/teacher/ai-copilot"
             element={<AICopilot />}
           />
 
+          {/* CLASSES */}
+
           <Route
             path="/teacher/classes"
             element={<MyClasses />}
           />
+
+          {/* TIMETABLE */}
 
           <Route
             path="/teacher/timetable"
             element={<TeacherTimetable />}
           />
 
+          {/* EXAMS */}
+
           <Route
             path="/teacher/exams"
             element={<TeacherExams />}
           />
 
+          {/* ASSIGNMENTS */}
+
           <Route
             path="/teacher/assignments"
             element={<TeacherAssignments />}
           />
+
+          {/* ATTENDANCE */}
 
           <Route
             path="/teacher/attendance"

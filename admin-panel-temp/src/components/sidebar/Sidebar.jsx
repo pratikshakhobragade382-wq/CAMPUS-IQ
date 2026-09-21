@@ -58,7 +58,7 @@ export const Sidebar = () => {
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+        <nav className="h-[calc(100vh-4rem)] overflow-y-auto p-4 space-y-2">
           {SIDEBAR_MENU.map((item) => {
             const IconComponent = Icons[item.icon];
             const isActive = location.pathname === item.path;

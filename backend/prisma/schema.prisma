@@ -1022,7 +1022,7 @@ enum ComplaintAiStatus {
 model Complaint {
   id           Int  @id @default(autoincrement())
   tenantId     Int
-  parentUserId Int
+  parentUserId Int?
   studentId    Int?
 
   // What the parent wrote

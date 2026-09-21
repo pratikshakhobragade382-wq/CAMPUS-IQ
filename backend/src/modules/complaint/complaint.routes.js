@@ -5,9 +5,10 @@ const router = express.Router();
 const controller = require("./complaint.controller");
 
 const authenticate = require("../../middleware/authMiddleware");
+
 const authorize = require("../../middleware/authorize");
 
-const parentOnly = authorize("parent");
+const portalUser = authorize("parent", "student");
 
 const adminOnly = authorize(
   "admin",
@@ -18,27 +19,27 @@ const adminOnly = authorize(
 router.use(authenticate);
 
 // =====================================================
-// PARENT
+// PARENT + STUDENT
 // =====================================================
 
 // POST /api/v1/complaints
 router.post(
   "/",
-  parentOnly,
+  portalUser,
   controller.createComplaint
 );
 
 // GET /api/v1/complaints/my
 router.get(
   "/my",
-  parentOnly,
+  portalUser,
   controller.listMyComplaints
 );
 
 // GET /api/v1/complaints/my/:id
 router.get(
   "/my/:id",
-  parentOnly,
+  portalUser,
   controller.getMyComplaint
 );
 
