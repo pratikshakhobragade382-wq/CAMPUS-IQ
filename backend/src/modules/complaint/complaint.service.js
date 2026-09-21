@@ -88,12 +88,12 @@ async function loadContext(
   ];
 
   const userIds = [
-    ...new Set(
-      complaints.map(
-        (c) => c.parentUserId
-      )
-    ),
-  ];
+  ...new Set(
+    complaints
+      .map((c) => c.parentUserId)
+      .filter(Boolean)
+  ),
+];
 
   const [students, users] =
     await Promise.all([
@@ -471,6 +471,73 @@ const notifyParent = (
       complaint.parentUserId,
   });
 
+  async function notifyComplaintOwner(
+  complaint,
+  title,
+  message
+) {
+  // ===================================================
+  // PARENT COMPLAINT
+  // ===================================================
+
+  if (complaint.parentUserId) {
+    console.log(
+      `[complaint] Sending reply notification to parent userId=${complaint.parentUserId}`
+    );
+
+    await safeNotify({
+      tenantId: complaint.tenantId,
+      title,
+      message,
+      audience: "individual",
+      userId: complaint.parentUserId,
+    });
+
+    return;
+  }
+
+  // ===================================================
+  // STUDENT COMPLAINT
+  // ===================================================
+
+  if (complaint.studentId) {
+    const studentUser =
+      await prisma.user.findFirst({
+        where: {
+          tenantId: complaint.tenantId,
+          studentId: complaint.studentId,
+          identity: "student",
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          email: true,
+          studentId: true,
+        },
+      });
+
+    if (!studentUser) {
+      console.error(
+        `[complaint] Student user NOT FOUND for studentId=${complaint.studentId}`
+      );
+
+      return;
+    }
+
+    console.log(
+      `[complaint] Sending reply notification to student userId=${studentUser.id}, studentId=${studentUser.studentId}`
+    );
+
+    await safeNotify({
+      tenantId: complaint.tenantId,
+      title,
+      message,
+      audience: "individual",
+      userId: studentUser.id,
+    });
+  }
+}
+
 // =====================================================
 // AI ANALYSIS
 // =====================================================
@@ -599,133 +666,164 @@ function analyzeInBackground(
 // PARENT: CREATE
 // =====================================================
 
-async function createComplaint(
-  user,
-  body = {}
-) {
+async function createComplaint(user, body = {}) {
   const {
     userId,
     tenantId,
+    identity,
+    studentId: authenticatedStudentId,
   } = user;
 
-  const subject =
-    clean(body.subject);
-
-  const description =
-    clean(body.description);
+  const subject = clean(body.subject);
+  const description = clean(body.description);
 
   if (!subject) {
-    throw new HttpError(
-      400,
-      "Please enter a subject"
-    );
+    throw new HttpError(400, "Subject is required");
   }
 
-  if (
-    subject.length >
-    C.LIMITS.subjectMax
-  ) {
-    throw new HttpError(
-      400,
-      `Subject must be ${C.LIMITS.subjectMax} characters or fewer`
-    );
-  }
-
-  if (
-    description.length <
-    C.LIMITS.descriptionMin
-  ) {
-    throw new HttpError(
-      400,
-      "Please describe the problem in a little more detail"
-    );
-  }
-
-  if (
-    description.length >
-    C.LIMITS.descriptionMax
-  ) {
-    throw new HttpError(
-      400,
-      `Description must be ${C.LIMITS.descriptionMax} characters or fewer`
-    );
+  if (!description) {
+    throw new HttpError(400, "Description is required");
   }
 
   let studentId = null;
+  let parentUserId = null;
 
-  if (
-    body.studentId !==
-      undefined &&
-    body.studentId !== null &&
-    body.studentId !== ""
-  ) {
-    const requested =
-      parseId(
+  // ===================================================
+  // STUDENT
+  // ===================================================
+
+  if (identity === "student") {
+    if (!authenticatedStudentId) {
+      throw new HttpError(
+        400,
+        "Student account is not linked to a student record"
+      );
+    }
+
+    // IMPORTANT:
+    // Student can ONLY create complaint for themselves.
+    // Do not trust body.studentId.
+    studentId = authenticatedStudentId;
+
+    parentUserId = null;
+  }
+
+  // ===================================================
+  // PARENT
+  // ===================================================
+
+  else if (identity === "parent") {
+    parentUserId = userId;
+
+    if (
+      body.studentId !== undefined &&
+      body.studentId !== null &&
+      body.studentId !== ""
+    ) {
+      const requested = parseId(
         body.studentId,
         "student"
       );
 
-    const allowed =
-      await getStudentIdsForParent(
-        userId,
-        tenantId
-      );
+      const allowed =
+        await getStudentIdsForParent(
+          userId,
+          tenantId
+        );
 
-    if (
-      !allowed.includes(
-        requested
-      )
-    ) {
-      throw new HttpError(
-        404,
-        "Student not found"
-      );
+      if (!allowed.includes(requested)) {
+        throw new HttpError(
+          404,
+          "Student not found"
+        );
+      }
+
+      studentId = requested;
     }
-
-    studentId = requested;
   }
 
-  // Prevent excessive AI usage.
+  // ===================================================
+  // INVALID USER
+  // ===================================================
+
+  else {
+    throw new HttpError(
+      403,
+      "Only parents and students can create complaints"
+    );
+  }
+
+  // ===================================================
+  // RATE LIMIT
+  // ===================================================
+
+  const recentWhere = {
+    tenantId,
+
+    createdAt: {
+      gte: new Date(
+        Date.now() - 60 * 60 * 1000
+      ),
+    },
+  };
+
+  if (identity === "parent") {
+    recentWhere.parentUserId = userId;
+  } else {
+    recentWhere.studentId = studentId;
+  }
+
   const recent =
     await prisma.complaint.count({
-      where: {
-        tenantId,
-        parentUserId: userId,
-
-        createdAt: {
-          gte: new Date(
-            Date.now() -
-              60 * 60 * 1000
-          ),
-        },
-      },
+      where: recentWhere,
     });
 
   if (
-    recent >=
-    C.LIMITS.perParentPerHour
+    recent >= C.LIMITS.perParentPerHour
   ) {
     throw new HttpError(
       429,
-      "You have submitted several complaints recently. Please try again a little later."
+      "Too many complaints submitted. Please try again later."
     );
   }
+
+  // ===================================================
+  // CREATE COMPLAINT
+  // ===================================================
 
   const complaint =
     await prisma.complaint.create({
       data: {
         tenantId,
-        parentUserId: userId,
+        parentUserId,
         studentId,
         subject,
         description,
       },
     });
 
+  // ===================================================
+  // AI ANALYSIS
+  // ===================================================
+
   analyzeInBackground(
     complaint.id,
     tenantId
   );
+
+  // ===================================================
+  // NOTIFY ADMINS
+  // ===================================================
+
+  await notifyAdmins(
+    complaint,
+    "New complaint received",
+    `A new complaint "${subject}" has been submitted.`
+  );
+
+  // ===================================================
+  // RESPONSE
+  // ===================================================
 
   const context =
     await loadContext(
@@ -750,19 +848,43 @@ async function listMyComplaints(
   const {
     userId,
     tenantId,
+    identity,
+    studentId,
   } = user;
 
-  const where = {
+  let where = {
     tenantId,
-    parentUserId: userId,
   };
 
-  const status =
-    C.normalizeEnum(
-      query.status,
-      C.STATUSES,
-      null
+  // Parent → complaints submitted by parent
+  if (identity === "parent") {
+    where.parentUserId = userId;
+  }
+
+  // Student → complaints belonging to logged-in student
+  else if (identity === "student") {
+    if (!studentId) {
+      throw new HttpError(
+        400,
+        "Student account is not linked to a student record"
+      );
+    }
+
+    where.studentId = studentId;
+  }
+
+  else {
+    throw new HttpError(
+      403,
+      "Only parents and students can view their complaints"
     );
+  }
+
+  const status = C.normalizeEnum(
+    query.status,
+    C.STATUSES,
+    null
+  );
 
   if (status) {
     where.status = status;
@@ -802,17 +924,38 @@ async function getMyComplaint(
   user,
   id
 ) {
+  const where = {
+    id: parseId(id),
+    tenantId: user.tenantId,
+  };
+
+  // Parent → only their complaints
+  if (user.identity === "parent") {
+    where.parentUserId = user.userId;
+  }
+
+  // Student → only their own complaints
+  else if (user.identity === "student") {
+    if (!user.studentId) {
+      throw new HttpError(
+        400,
+        "Student account is not linked to a student record"
+      );
+    }
+
+    where.studentId = user.studentId;
+  }
+
+  else {
+    throw new HttpError(
+      403,
+      "Only parents and students can view their complaints"
+    );
+  }
+
   const complaint =
     await prisma.complaint.findFirst({
-      where: {
-        id: parseId(id),
-
-        tenantId:
-          user.tenantId,
-
-        parentUserId:
-          user.userId,
-      },
+      where,
     });
 
   if (!complaint) {
@@ -833,7 +976,6 @@ async function getMyComplaint(
     context
   );
 }
-
 // =====================================================
 // ADMIN: LIST
 // =====================================================
@@ -1164,7 +1306,7 @@ async function updateComplaint(
     });
 
   if (becameResolved) {
-    await notifyParent(
+     await notifyComplaintOwner(
       updated,
       `Complaint ${ticketNo(
         updated.id
@@ -1471,7 +1613,7 @@ async function sendReply(
       data,
     });
 
-  await notifyParent(
+  await notifyComplaintOwner(
     updated,
     `Reply to complaint ${ticketNo(
       updated.id
