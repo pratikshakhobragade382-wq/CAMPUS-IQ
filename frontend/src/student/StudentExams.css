@@ -1,0 +1,255 @@
+.student-exams-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+}
+
+.student-exams-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.student-exams-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.student-exams-header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.student-exams-header p {
+  margin: 7px 0 0;
+  color: #667085;
+  font-size: 14px;
+}
+
+.student-results-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 16px;
+  background: #172033;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.student-results-button:hover {
+  opacity: 0.92;
+}
+
+.student-exam-section {
+  margin-bottom: 32px;
+}
+
+.student-exam-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.student-exam-section-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 19px;
+}
+
+.student-exam-section-header p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.student-exam-section-header > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 20px;
+  background: #f2f4f7;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.student-exam-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-exam-card {
+  border: 1px solid #eaecf0;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.04);
+}
+
+.student-exam-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+
+.student-exam-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.student-exam-status {
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.student-exam-status.upcoming {
+  background: #eff8ff;
+  color: #175cd3;
+}
+
+.student-exam-status.ongoing {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.student-exam-status.completed {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.student-exam-card-content h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+}
+
+.student-exam-type {
+  margin: 5px 0 17px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.student-exam-details {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.student-exam-details div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.student-exam-details svg {
+  flex-shrink: 0;
+}
+
+.student-exams-status,
+.student-exams-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  border: 1px solid #eaecf0;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+}
+
+.student-exams-status p,
+.student-exams-empty p {
+  margin: 8px 0 0;
+  color: #667085;
+  font-size: 14px;
+}
+
+.student-exams-status h3,
+.student-exams-empty h3 {
+  margin: 14px 0 0;
+  color: #172033;
+  font-size: 17px;
+}
+
+.student-exams-status-icon,
+.student-exams-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.student-exams-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #eaecf0;
+  border-top-color: #344054;
+  border-radius: 50%;
+  animation: student-exams-spin 0.8s linear infinite;
+}
+
+.student-exams-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: #172033;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@keyframes student-exams-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 800px) {
+  .student-exams-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .student-exam-grid {
+    grid-template-columns: 1fr;
+  }
+}
