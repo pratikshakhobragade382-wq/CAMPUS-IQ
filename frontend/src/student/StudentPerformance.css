@@ -1,0 +1,790 @@
+.student-performance-page {
+  min-height: 100%;
+  padding: 34px 38px 60px;
+  background:
+    radial-gradient(
+      circle at 85% 5%,
+      rgba(79, 70, 229, 0.08),
+      transparent 28%
+    ),
+    #f8fafc;
+  color: #0f172a;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.student-performance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 26px;
+}
+
+.student-performance-eyebrow,
+.student-performance-section-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.student-performance-header h1 {
+  margin: 7px 0 7px;
+  color: #0f172a;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.student-performance-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 15px;
+}
+
+/* ============================================================
+   STUDENT CARD
+============================================================ */
+
+.student-performance-student-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 116px;
+  padding: 22px 25px;
+  margin-bottom: 25px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow:
+    0 8px 30px
+      rgba(15, 23, 42, 0.05);
+}
+
+.student-performance-student-icon {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #4f46e5;
+  background: linear-gradient(
+    145deg,
+    #eef2ff,
+    #e0f2fe
+  );
+  border-radius: 18px;
+}
+
+.student-performance-student-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-performance-student-info {
+  flex: 1;
+}
+
+.student-performance-student-info > span {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.student-performance-student-info h2 {
+  margin: 5px 0 8px;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.student-performance-student-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.student-performance-student-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ============================================================
+   STATUS
+============================================================ */
+
+.student-performance-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.student-performance-positive {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.student-performance-medium {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.student-performance-attention {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.student-performance-neutral {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+/* ============================================================
+   MAIN GRID
+============================================================ */
+
+.student-performance-main-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.35fr)
+    minmax(390px, 1fr);
+  gap: 22px;
+  margin-bottom: 25px;
+}
+
+/* ============================================================
+   SCORE CARD
+============================================================ */
+
+.student-performance-score-card {
+  padding: 27px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow:
+    0 8px 30px
+      rgba(15, 23, 42, 0.05);
+}
+
+.student-performance-score-card h2 {
+  margin: 7px 0 22px;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.student-performance-score-layout {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+
+.student-performance-score-ring-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.student-performance-score-ring {
+  width: 185px;
+  height: 185px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transform: rotate(-90deg);
+}
+
+.student-performance-score-inner {
+  width: 145px;
+  height: 145px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 50%;
+  transform: rotate(90deg);
+  box-shadow:
+    inset 0 0 0 1px #eef2f7;
+}
+
+.student-performance-score-inner strong {
+  color: #0f172a;
+  font-size: 42px;
+  line-height: 1;
+}
+
+.student-performance-score-inner span {
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.student-performance-score-text {
+  flex: 1;
+}
+
+.student-performance-score-text p {
+  max-width: 480px;
+  margin: 15px 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.student-performance-confidence {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 15px;
+  border-top: 1px solid #eef2f7;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.student-performance-confidence strong {
+  color: #334155;
+}
+
+/* ============================================================
+   KPI GRID
+============================================================ */
+
+.student-performance-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-performance-metric {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px;
+  min-height: 122px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 17px;
+  box-shadow:
+    0 8px 25px
+      rgba(15, 23, 42, 0.04);
+}
+
+.student-performance-metric-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+}
+
+.student-performance-metric-icon.blue {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.student-performance-metric-icon.green {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.student-performance-metric-icon.purple {
+  color: #7c3aed;
+  background: #f5f3ff;
+}
+
+.student-performance-metric-icon.orange {
+  color: #ea580c;
+  background: #fff7ed;
+}
+
+.student-performance-metric-title {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-performance-metric strong {
+  display: block;
+  color: #0f172a;
+  font-size: 27px;
+  line-height: 1.15;
+}
+
+.student-performance-metric small {
+  display: block;
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+/* ============================================================
+   COMMON CARD
+============================================================ */
+
+.student-performance-card {
+  margin-bottom: 25px;
+  padding: 27px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow:
+    0 8px 30px
+      rgba(15, 23, 42, 0.05);
+}
+
+.student-performance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.student-performance-card-header h2 {
+  margin: 7px 0 6px;
+  color: #0f172a;
+  font-size: 23px;
+}
+
+.student-performance-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.student-performance-card-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  background: #f8fafc;
+  border-radius: 13px;
+}
+
+/* ============================================================
+   CHART
+============================================================ */
+
+.student-performance-chart {
+  width: 100%;
+  min-height: 330px;
+}
+
+/* ============================================================
+   SNAPSHOT
+============================================================ */
+
+.student-performance-snapshot-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-performance-snapshot {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  border-radius: 15px;
+}
+
+.student-performance-snapshot-icon {
+  width: 43px;
+  height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.student-performance-snapshot-icon.blue {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.student-performance-snapshot-icon.green {
+  color: #059669;
+  background: #d1fae5;
+}
+
+.student-performance-snapshot-icon.purple {
+  color: #7c3aed;
+  background: #ede9fe;
+}
+
+.student-performance-snapshot-icon.orange {
+  color: #ea580c;
+  background: #ffedd5;
+}
+
+.student-performance-snapshot span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.student-performance-snapshot strong {
+  display: block;
+  margin-top: 3px;
+  color: #0f172a;
+  font-size: 21px;
+}
+
+/* ============================================================
+   INSIGHTS
+============================================================ */
+
+.student-performance-insight-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.student-performance-insight-card {
+  min-height: 270px;
+}
+
+.student-performance-insight-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.student-performance-insight-title > svg {
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  border-radius: 12px;
+}
+
+.student-performance-insight-title.positive {
+  color: #059669;
+}
+
+.student-performance-insight-title.positive > svg {
+  background: #ecfdf5;
+}
+
+.student-performance-insight-title.focus {
+  color: #7c3aed;
+}
+
+.student-performance-insight-title.focus > svg {
+  background: #f5f3ff;
+}
+
+.student-performance-insight-title span {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.student-performance-insight-title h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.student-performance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.student-performance-list-item {
+  display: flex;
+  gap: 10px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.student-performance-list-item svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.student-performance-insight-title.positive
+  + .student-performance-list
+  .student-performance-list-item
+  svg {
+  color: #10b981;
+}
+
+.student-performance-insight-title.focus
+  + .student-performance-list
+  .student-performance-list-item
+  svg {
+  color: #8b5cf6;
+}
+
+/* ============================================================
+   RECOMMENDATIONS
+============================================================ */
+
+.student-performance-recommendations {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.student-performance-recommendation {
+  display: flex;
+  gap: 15px;
+  padding: 18px;
+  background: linear-gradient(
+    135deg,
+    #f8fafc,
+    #ffffff
+  );
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+}
+
+.student-performance-recommendation-number {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    #4f46e5,
+    #06b6d4
+  );
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-performance-recommendation h3 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.student-performance-recommendation p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ============================================================
+   EMPTY CHART
+============================================================ */
+
+.student-performance-empty-chart {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  text-align: center;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fafc,
+      #ffffff
+    );
+  border: 1px dashed #cbd5e1;
+  border-radius: 15px;
+}
+
+.student-performance-empty-chart p {
+  max-width: 430px;
+  margin: 12px auto 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.student-performance-footer-note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* ============================================================
+   LOADING
+============================================================ */
+
+.student-performance-loading {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.student-performance-loading h2 {
+  margin: 16px 0 6px;
+  color: #0f172a;
+}
+
+.student-performance-loading p {
+  margin: 0;
+  color: #64748b;
+}
+
+.student-performance-spinner {
+  color: #4f46e5;
+  animation:
+    studentPerformanceSpin
+    1s linear infinite;
+}
+
+@keyframes studentPerformanceSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   ERROR
+============================================================ */
+
+.student-performance-error {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.student-performance-error-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: 18px;
+}
+
+.student-performance-error h2 {
+  margin: 18px 0 7px;
+  color: #0f172a;
+}
+
+.student-performance-error p {
+  max-width: 500px;
+  margin: 0 0 20px;
+  color: #64748b;
+}
+
+.student-performance-error button {
+  padding: 11px 20px;
+  color: #ffffff;
+  background: #4f46e5;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1100px) {
+  .student-performance-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-performance-snapshot-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .student-performance-page {
+    padding: 22px 16px 45px;
+  }
+
+  .student-performance-student-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .student-performance-student-info {
+    min-width: 200px;
+  }
+
+  .student-performance-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-performance-insight-grid,
+  .student-performance-recommendations {
+    grid-template-columns: 1fr;
+  }
+
+  .student-performance-score-layout {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-performance-score-ring-wrapper {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .student-performance-header h1 {
+    font-size: 27px;
+  }
+
+  .student-performance-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-performance-card,
+  .student-performance-score-card {
+    padding: 20px;
+  }
+}

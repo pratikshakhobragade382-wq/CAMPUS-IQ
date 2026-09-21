@@ -41,6 +41,7 @@ import StudentLogin from "./student/Login Form/StudentLogin";
 import StudentLayout from "./student/Layout/StudentLayout";
 import StudentProfile from "./student/StudentProfile";
 import StudentSettings from "./student/StudentSettings";
+import StudentNotifications from "./student/Notifications/StudentNotifications";
 
 /*
 ============================================================
@@ -154,7 +155,7 @@ function AppContent() {
 
   /*
   ============================================================
-   HIDE CHATBOT ON LOGIN / PUBLIC PORTAL PAGES
+  HIDE CHATBOT ON LOGIN / PUBLIC PORTAL PAGES
   ============================================================
   */
 
@@ -203,7 +204,6 @@ function AppContent() {
           element={<PortalLogin />}
         />
 
-        {/* Backward-compatible portal URL */}
         <Route
           path="/portal"
           element={<PortalLogin />}
@@ -238,7 +238,6 @@ function AppContent() {
           element={<StudentLogin />}
         />
 
-        {/* Backward-compatible student login URL */}
         <Route
           path="/student/login"
           element={<StudentLogin />}
@@ -261,13 +260,8 @@ function AppContent() {
           <Route
             path="/student/dashboard"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Student Dashboard</h2>
-
                 <p>
                   Welcome to your Student Portal.
                 </p>
@@ -280,13 +274,8 @@ function AppContent() {
           <Route
             path="/student/attendance"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Attendance</h2>
-
                 <p>
                   Student attendance will appear here.
                 </p>
@@ -299,13 +288,8 @@ function AppContent() {
           <Route
             path="/student/assignments"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Assignments</h2>
-
                 <p>
                   Student assignments will appear here.
                 </p>
@@ -318,13 +302,8 @@ function AppContent() {
           <Route
             path="/student/timetable"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Timetable</h2>
-
                 <p>
                   Student timetable will appear here.
                 </p>
@@ -337,13 +316,8 @@ function AppContent() {
           <Route
             path="/student/exams"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Exams & Results</h2>
-
                 <p>
                   Student exams and results will appear here.
                 </p>
@@ -356,13 +330,8 @@ function AppContent() {
           <Route
             path="/student/performance"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Performance</h2>
-
                 <p>
                   Student performance will appear here.
                 </p>
@@ -374,19 +343,7 @@ function AppContent() {
 
           <Route
             path="/student/notifications"
-            element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
-                <h2>Notifications</h2>
-
-                <p>
-                  Student notifications will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentNotifications />}
           />
 
           {/* STUDENT COMPLAINTS */}
@@ -394,13 +351,8 @@ function AppContent() {
           <Route
             path="/student/complaints"
             element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
+              <div style={{ padding: "30px" }}>
                 <h2>Complaints</h2>
-
                 <p>
                   Student complaints will appear here.
                 </p>
@@ -436,84 +388,60 @@ function AppContent() {
           }
         >
 
-          {/* PARENT DASHBOARD */}
-
           <Route
             path="/parent/dashboard"
             element={<ParentDashboard />}
           />
-
-          {/* MY CHILDREN */}
 
           <Route
             path="/parent/children"
             element={<MyChildren />}
           />
 
-          {/* CALENDAR */}
-
           <Route
             path="/parent/calendar"
             element={<ParentCalendar />}
           />
-
-          {/* ATTENDANCE */}
 
           <Route
             path="/parent/attendance"
             element={<ParentAttendance />}
           />
 
-          {/* ASSIGNMENTS */}
-
           <Route
             path="/parent/assignments"
             element={<ParentAssignments />}
           />
-
-          {/* TIMETABLE */}
 
           <Route
             path="/parent/timetable"
             element={<ParentTimetable />}
           />
 
-          {/* EXAMS */}
-
           <Route
             path="/parent/exams"
             element={<ParentExams />}
           />
-
-          {/* AI PERFORMANCE */}
 
           <Route
             path="/parent/ai-performance"
             element={<AIPerformancePredictor />}
           />
 
-          {/* PROFILE */}
-
           <Route
             path="/parent/profile"
             element={<ParentProfile />}
           />
-
-          {/* SETTINGS */}
 
           <Route
             path="/parent/settings"
             element={<ParentSettings />}
           />
 
-          {/* NOTIFICATIONS */}
-
           <Route
             path="/parent/notifications"
             element={<ParentNotifications />}
           />
-
-          {/* COMPLAINTS */}
 
           <Route
             path="/parent/complaints"
@@ -603,15 +531,21 @@ function AppContent() {
           }
         >
 
+          {/* ADMIN DASHBOARD */}
+
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
 
+          {/* ACADEMIC YEAR */}
+
           <Route
             path="/academic-year"
             element={<AcademicYear />}
           />
+
+          {/* MASTER */}
 
           <Route
             path="/master"
@@ -623,15 +557,21 @@ function AppContent() {
             element={<MasterData />}
           />
 
+          {/* DEPARTMENT */}
+
           <Route
             path="/department"
             element={<Department />}
           />
 
+          {/* CLASS */}
+
           <Route
             path="/class"
             element={<ClassPage />}
           />
+
+          {/* SECTION */}
 
           <Route
             path="/section"
@@ -653,54 +593,72 @@ function AppContent() {
           />
 
           <Route
+            path="/student/:id/edit"
+            element={<StudentForm />}
+          />
+
+          <Route
             path="/student/:id"
             element={<StudentView />}
           />
 
-          <Route
-            path="/student/:id/edit"
-            element={<StudentForm />}
-          />
+          {/* ATTENDANCE */}
 
           <Route
             path="/attendance"
             element={<Attendance />}
           />
 
+          {/* EXAM */}
+
           <Route
             path="/exam"
             element={<Exam />}
           />
+
+          {/* FEE */}
 
           <Route
             path="/fee"
             element={<Fee />}
           />
 
+          {/* HOLIDAY */}
+
           <Route
             path="/holiday"
             element={<Holiday />}
           />
+
+          {/* TIMETABLE */}
 
           <Route
             path="/timetable"
             element={<Timetable />}
           />
 
+          {/* CUSTOM FIELDS */}
+
           <Route
             path="/custom-fields"
             element={<CustomFields />}
           />
+
+          {/* SETTINGS */}
 
           <Route
             path="/settings"
             element={<Settings />}
           />
 
+          {/* ADMIN NOTIFICATIONS */}
+
           <Route
             path="/notifications"
             element={<Notifications />}
           />
+
+          {/* ADMIN PROFILE */}
 
           <Route
             path="/profile"

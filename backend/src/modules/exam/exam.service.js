@@ -1,9 +1,14 @@
 // src/modules/exam/exam.service.js
 
 const prisma = require("../../prisma/prismaClient");
+
 const {
   HttpError,
 } = require("../../utils/httpError");
+
+const {
+  createNotification,
+} = require("../notification/notification.service");
 
 // ============================================================
 // AUTHORIZATION HELPERS
@@ -278,6 +283,7 @@ const getBlockedExamDates = async (
     await prisma.holiday.findMany({
       where: {
         tenantId,
+
         academicYearId:
           parseInt(
             academicYearId,
@@ -716,29 +722,87 @@ const createExam = async (
     endDate: end,
   });
 
-  return prisma.exam.create({
-    data: {
+  // ==========================================================
+  // CREATE EXAM
+  // ==========================================================
+
+  const exam =
+    await prisma.exam.create({
+      data: {
+        tenantId,
+
+        academicYearId:
+          parseInt(
+            academicYearId
+          ),
+
+        name,
+
+        examType,
+
+        classId:
+          parseInt(classId),
+
+        startDate: start,
+
+        endDate: end,
+
+        isActive: true,
+      },
+    });
+
+  // ==========================================================
+  // STUDENT EXAM NOTIFICATION
+  // ==========================================================
+
+  try {
+    await createNotification({
       tenantId,
 
-      academicYearId:
-        parseInt(
-          academicYearId
-        ),
+      title:
+        "New Exam Schedule",
 
-      name,
+      message:
+        `${name} (${examType}) has been scheduled from ${start.toLocaleDateString(
+          "en-IN"
+        )} to ${end.toLocaleDateString(
+          "en-IN"
+        )}.`,
 
-      examType,
+      type:
+        "exam",
+
+      priority:
+        "high",
+
+      audience:
+        "student",
 
       classId:
         parseInt(classId),
 
-      startDate: start,
+      sectionId:
+        null,
 
-      endDate: end,
+      createdById:
+        actingUser.userId ||
+        null,
+    });
+  } catch (
+    notificationError
+  ) {
+    /*
+     * Notification failure must NOT
+     * cancel successful exam creation.
+     */
 
-      isActive: true,
-    },
-  });
+    console.error(
+      "Failed to create student exam notification:",
+      notificationError
+    );
+  }
+
+  return exam;
 };
 
 // ============================================================
@@ -1056,13 +1120,66 @@ const updateExam = async (
       end;
   }
 
-  return prisma.exam.update({
-    where: {
-      id: parseInt(id),
-    },
+  const updatedExam =
+    await prisma.exam.update({
+      where: {
+        id: parseInt(id),
+      },
 
-    data: updateData,
-  });
+      data: updateData,
+    });
+
+  // ==========================================================
+  // STUDENT EXAM UPDATE NOTIFICATION
+  // ==========================================================
+
+  try {
+    await createNotification({
+      tenantId,
+
+      title:
+        "Exam Schedule Updated",
+
+      message:
+        `${updatedExam.name} exam schedule has been updated. New date: ${new Date(
+          updatedExam.startDate
+        ).toLocaleDateString(
+          "en-IN"
+        )} to ${new Date(
+          updatedExam.endDate
+        ).toLocaleDateString(
+          "en-IN"
+        )}.`,
+
+      type:
+        "exam",
+
+      priority:
+        "high",
+
+      audience:
+        "student",
+
+      classId:
+        updatedExam.classId,
+
+      sectionId:
+        null,
+
+      createdById:
+        actingUser.userId ||
+        null,
+    });
+  } catch (
+    notificationError
+  ) {
+    console.error(
+      "Failed to create student exam update notification:",
+      notificationError
+    );
+  }
+
+  return updatedExam;
 };
 
 // ============================================================

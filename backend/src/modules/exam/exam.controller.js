@@ -1,12 +1,255 @@
 // src/modules/exam/exam.controller.js
 
 const examService =
-  require('./exam.service');
+  require("./exam.service");
+
+const prisma =
+  require("../../prisma/prismaClient");
 
 const {
   notifyTeachersForClass,
 } =
-  require('../notification/teacherNotification');
+  require("../notification/teacherNotification");
+
+const {
+  createNotification,
+} =
+  require("../notification/notification.service");
+
+// ============================================================
+// HELPER
+// NOTIFY STUDENTS WHEN MARKS ARE ADDED
+// ============================================================
+
+const notifyStudentsForMarks = async ({
+  examId,
+  subjectId,
+  records,
+  tenantId,
+}) => {
+  try {
+    if (
+      !Array.isArray(records) ||
+      records.length === 0
+    ) {
+      return;
+    }
+
+    const studentIds = [
+      ...new Set(
+        records
+          .map((record) =>
+            parseInt(
+              record.studentId,
+              10
+            )
+          )
+          .filter(
+            (id) =>
+              !Number.isNaN(id)
+          )
+      ),
+    ];
+
+    if (studentIds.length === 0) {
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // Get exam
+    // ----------------------------------------------------------
+
+    const exam =
+      await prisma.exam.findFirst({
+        where: {
+          id: parseInt(
+            examId,
+            10
+          ),
+
+          tenantId,
+        },
+
+        select: {
+          id: true,
+          name: true,
+          examType: true,
+          classId: true,
+        },
+      });
+
+    if (!exam) {
+      console.error(
+        "MARK NOTIFICATION: Exam not found"
+      );
+
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // Get subject
+    // ----------------------------------------------------------
+
+    const subject =
+      await prisma.subject.findFirst({
+        where: {
+          id: parseInt(
+            subjectId,
+            10
+          ),
+
+          tenantId,
+
+          isDeleted: false,
+        },
+
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      });
+
+    if (!subject) {
+      console.error(
+        "MARK NOTIFICATION: Subject not found"
+      );
+
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // Get student users
+    //
+    // Student login users are connected through:
+    //
+    // User.studentId -> Student.id
+    // ----------------------------------------------------------
+
+    const studentUsers =
+      await prisma.user.findMany({
+        where: {
+          tenantId,
+
+          identity: "student",
+
+          isDeleted: false,
+
+          studentId: {
+            in: studentIds,
+          },
+        },
+
+        select: {
+          id: true,
+          studentId: true,
+          name: true,
+          email: true,
+        },
+      });
+
+    if (
+      studentUsers.length === 0
+    ) {
+      console.log(
+        "MARK NOTIFICATION: No student login users found"
+      );
+
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // Create one notification per student
+    // ----------------------------------------------------------
+
+    const notifications =
+      studentUsers.map(
+        (studentUser) => {
+          const studentRecord =
+            records.find(
+              (record) =>
+                parseInt(
+                  record.studentId,
+                  10
+                ) ===
+                studentUser.studentId
+            );
+
+          let marksText =
+            "Your marks have been added.";
+
+          if (
+            studentRecord
+          ) {
+            if (
+              studentRecord.isAbsent
+            ) {
+              marksText =
+                "You were marked absent for this subject.";
+            } else if (
+              studentRecord.marksObtained !==
+                undefined &&
+              studentRecord.marksObtained !==
+                null
+            ) {
+              marksText =
+                `You received ${studentRecord.marksObtained} marks.`;
+            }
+          }
+
+          return createNotification({
+            tenantId,
+
+            title:
+              "Marks Added",
+
+            message:
+              `Your marks for ${subject.name} in ${exam.name} have been added. ${marksText} Open Exams & Results to view the details.`,
+
+            type:
+              "marks",
+
+            priority:
+              "normal",
+
+            // --------------------------------------------------
+            // IMPORTANT
+            //
+            // Individual notification means ONLY this
+            // particular student can see it.
+            // --------------------------------------------------
+
+            audience:
+              "individual",
+
+            userId:
+              studentUser.id,
+
+            createdById:
+              null,
+          });
+        }
+      );
+
+    await Promise.all(
+      notifications
+    );
+
+    console.log(
+      `MARK NOTIFICATION: Created ${studentUsers.length} notification(s)`
+    );
+  } catch (error) {
+    // ----------------------------------------------------------
+    // Notification failure must NOT break marks entry.
+    // Marks have already been saved successfully.
+    // ----------------------------------------------------------
+
+    console.error(
+      "MARK NOTIFICATION ERROR:",
+      error
+    );
+  }
+};
 
 
 /* ============================================================
@@ -28,7 +271,6 @@ const createExam = async (
         req.user
       );
 
-
     /* ========================================================
        NOTIFY TEACHERS TEACHING THIS CLASS
     ======================================================== */
@@ -41,24 +283,23 @@ const createExam = async (
         data.classId,
 
       title:
-        'Exam Created',
+        "Exam Created",
 
       message:
         `A new exam "${data.name}" has been created for your class.`,
 
       type:
-        'exam',
+        "exam",
 
       priority:
-        'normal',
+        "normal",
     });
-
 
     return res.status(201).json({
       success: true,
 
       message:
-        'Exam created successfully',
+        "Exam created successfully",
 
       data,
     });
@@ -85,7 +326,6 @@ const getAllExams = async (
       includeInactive,
     } = req.query;
 
-
     const data =
       await examService.getAllExams(
         req.user.tenantId,
@@ -99,16 +339,15 @@ const getAllExams = async (
 
           includeInactive:
             includeInactive ===
-            'true',
+            "true",
         }
       );
-
 
     return res.status(200).json({
       success: true,
 
       message:
-        'Exams fetched successfully',
+        "Exams fetched successfully",
 
       data,
     });
@@ -135,15 +374,14 @@ const getExamById = async (
         req.user.tenantId,
 
         req.query.includeInactive ===
-          'true'
+          "true"
       );
-
 
     return res.status(200).json({
       success: true,
 
       message:
-        'Exam details fetched successfully',
+        "Exam details fetched successfully",
 
       data,
     });
@@ -174,7 +412,6 @@ const updateExam = async (
         req.user
       );
 
-
     /* ========================================================
        NOTIFY TEACHERS
     ======================================================== */
@@ -187,24 +424,23 @@ const updateExam = async (
         data.classId,
 
       title:
-        'Exam Updated',
+        "Exam Updated",
 
       message:
         `The exam "${data.name}" has been updated.`,
 
       type:
-        'exam',
+        "exam",
 
       priority:
-        'normal',
+        "normal",
     });
-
 
     return res.status(200).json({
       success: true,
 
       message:
-        'Exam updated successfully',
+        "Exam updated successfully",
 
       data,
     });
@@ -237,7 +473,6 @@ const deleteExam = async (
         true
       );
 
-
     const result =
       await examService.deleteExam(
         req.params.id,
@@ -246,7 +481,6 @@ const deleteExam = async (
 
         req.user
       );
-
 
     /*
      * If the exam was actually removed/deactivated,
@@ -261,18 +495,17 @@ const deleteExam = async (
         existing.exam.classId,
 
       title:
-        'Exam Removed',
+        "Exam Removed",
 
       message:
         `The exam "${existing.exam.name}" has been removed or deactivated.`,
 
       type:
-        'exam',
+        "exam",
 
       priority:
-        'normal',
+        "normal",
     });
-
 
     return res.status(200).json({
       success: true,
@@ -306,6 +539,26 @@ const bulkEnterMarks = async (
         req.user
       );
 
+    // ========================================================
+    // NEW:
+    // Notify every affected student after marks are saved.
+    //
+    // Notification failure will NOT affect the marks.
+    // ========================================================
+
+    await notifyStudentsForMarks({
+      examId:
+        req.params.examId,
+
+      subjectId:
+        req.body.subjectId,
+
+      records:
+        req.body.records,
+
+      tenantId:
+        req.user.tenantId,
+    });
 
     return res.status(200).json({
       success: true,
@@ -335,7 +588,6 @@ const getExamMarks = async (
       subjectId,
     } = req.query;
 
-
     const data =
       await examService.getExamMarks(
         req.params.examId,
@@ -347,12 +599,11 @@ const getExamMarks = async (
         req.user
       );
 
-
     return res.status(200).json({
       success: true,
 
       message:
-        'Exam marks fetched successfully',
+        "Exam marks fetched successfully",
 
       data,
     });
@@ -377,7 +628,6 @@ const getStudentReportCard =
         academicYearId,
       } = req.query;
 
-
       const data =
         await examService.getStudentReportCard(
           req.user.tenantId,
@@ -389,12 +639,11 @@ const getStudentReportCard =
           req.user
         );
 
-
       return res.status(200).json({
         success: true,
 
         message:
-          'Student report card fetched successfully',
+          "Student report card fetched successfully",
 
         data,
       });
