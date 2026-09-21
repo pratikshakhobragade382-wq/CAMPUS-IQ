@@ -1,0 +1,654 @@
+/* ============================================================
+   CAMPUS IQ - STUDENT ASSIGNMENTS
+   Orange theme: #ff914d accent, #ffe3d2 borders, #183b5d text
+============================================================ */
+
+.student-assignments-page {
+  min-height: 100%;
+  color: #183b5d;
+  box-sizing: border-box;
+}
+
+.student-assignments-page * {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.student-asgn-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.student-asgn-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.student-asgn-title-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #fff0e6;
+  color: #f07f3f;
+}
+
+.student-asgn-title-row h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-asgn-title-row p {
+  margin: 4px 0 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.student-asgn-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-asgn-refresh-btn {
+  height: 40px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #ffe3d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-asgn-refresh-btn:hover {
+  background: #fff7f2;
+  border-color: #ff914d;
+}
+
+.student-asgn-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   SUMMARY CARDS
+============================================================ */
+
+.student-asgn-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.student-asgn-stat {
+  min-height: 86px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #ffe3d2;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(255, 145, 77, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.student-asgn-stat:hover {
+  box-shadow: 0 8px 28px rgba(255, 145, 77, 0.09);
+  transform: translateY(-1px);
+}
+
+.student-asgn-stat-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+}
+
+.student-asgn-stat-icon.total   { background: #fff0e6; color: #ff914d; }
+.student-asgn-stat-icon.pending { background: #fffbeb; color: #d97706; }
+.student-asgn-stat-icon.done    { background: #f0fdf4; color: #16a34a; }
+.student-asgn-stat-icon.graded  { background: #eff6ff; color: #2563eb; }
+
+.student-asgn-stat strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-asgn-stat small {
+  color: #9aa8b6;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   TOOLBAR
+============================================================ */
+
+.student-asgn-toolbar {
+  min-height: 52px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #ffe3d2;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.student-asgn-search {
+  min-width: 220px;
+  flex: 1;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: #fffaf7;
+  border: 1px solid #fff0e6;
+  border-radius: 8px;
+  color: #9aa8b6;
+}
+
+.student-asgn-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #334155;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.student-asgn-search input::placeholder {
+  color: #bdc7d2;
+}
+
+.student-asgn-status-filter {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #fff0e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.student-asgn-status-filter:focus {
+  border-color: #ff914d;
+  box-shadow: 0 0 0 3px rgba(255, 145, 77, 0.12);
+}
+
+/* ============================================================
+   ASSIGNMENT CARDS LIST
+============================================================ */
+
+.student-asgn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.student-asgn-card {
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #ffe3d2;
+  border-radius: 16px;
+  box-shadow: 0 6px 22px rgba(255, 145, 77, 0.05);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.student-asgn-card:hover {
+  box-shadow: 0 10px 32px rgba(255, 145, 77, 0.1);
+  transform: translateY(-1px);
+}
+
+.student-asgn-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.student-asgn-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-asgn-card-desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #718096;
+  line-height: 1.6;
+}
+
+.student-asgn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.student-asgn-badge.pending {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.student-asgn-badge.submitted {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.student-asgn-badge.graded {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.student-asgn-badge.late {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.student-asgn-badge.overdue {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.student-asgn-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #fff0e6;
+}
+
+.student-asgn-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
+}
+
+.student-asgn-meta-item svg {
+  color: #ff914d;
+}
+
+/* ============================================================
+   SUBMISSION SECTION (inside card)
+============================================================ */
+
+.student-asgn-submission {
+  margin-top: 14px;
+  padding: 16px;
+  background: #fffaf7;
+  border: 1px solid #fff0e6;
+  border-radius: 12px;
+}
+
+.student-asgn-submission-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.student-asgn-submission-header strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-asgn-grade-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.student-asgn-submission p {
+  margin: 0;
+  font-size: 13px;
+  color: #718096;
+  line-height: 1.6;
+}
+
+.student-asgn-submission .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9aa8b6;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+/* ============================================================
+   SUBMIT FORM (inline)
+============================================================ */
+
+.student-asgn-submit-form {
+  margin-top: 14px;
+  padding: 16px;
+  background: #fffaf7;
+  border: 1px solid #fff0e6;
+  border-radius: 12px;
+}
+
+.student-asgn-submit-form h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-asgn-submit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.student-asgn-submit-field label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9aa8b6;
+}
+
+.student-asgn-submit-field textarea,
+.student-asgn-submit-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ffe3d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #183b5d;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  resize: vertical;
+}
+
+.student-asgn-submit-field textarea {
+  min-height: 80px;
+}
+
+.student-asgn-submit-field textarea:focus,
+.student-asgn-submit-field input:focus {
+  border-color: #ff914d;
+  box-shadow: 0 0 0 3px rgba(255, 145, 77, 0.15);
+}
+
+.student-asgn-submit-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.student-asgn-submit-btn {
+  height: 38px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-radius: 10px;
+  background: #ff914d;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.student-asgn-submit-btn:hover {
+  background: #f07f3f;
+}
+
+.student-asgn-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.student-asgn-cancel-btn {
+  height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #ffe3d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #718096;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.student-asgn-cancel-btn:hover {
+  background: #fff7f2;
+}
+
+.student-asgn-open-submit-btn {
+  height: 34px;
+  padding: 0 14px;
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed #ff914d;
+  border-radius: 9px;
+  background: #fff7f2;
+  color: #f07f3f;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-asgn-open-submit-btn:hover {
+  background: #fff0e6;
+  border-style: solid;
+}
+
+/* ============================================================
+   SUCCESS BANNER
+============================================================ */
+
+.student-asgn-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   LOADING / EMPTY / ERROR
+============================================================ */
+
+.student-asgn-loading,
+.student-asgn-empty,
+.student-asgn-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.student-asgn-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #ffe3d2;
+  border-top-color: #ff914d;
+  border-radius: 50%;
+  animation: studentAsgnSpin 0.8s linear infinite;
+}
+
+@keyframes studentAsgnSpin {
+  to { transform: rotate(360deg); }
+}
+
+.student-asgn-loading p {
+  margin-top: 18px;
+  font-size: 14px;
+  color: #9aa8b6;
+  font-weight: 600;
+}
+
+.student-asgn-empty-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0e6;
+  border-radius: 20px;
+  color: #ff914d;
+  margin-bottom: 20px;
+}
+
+.student-asgn-empty h3,
+.student-asgn-error h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #183b5d;
+}
+
+.student-asgn-empty p,
+.student-asgn-error p {
+  margin: 0;
+  font-size: 14px;
+  color: #9aa8b6;
+  max-width: 400px;
+}
+
+.student-asgn-error p { margin-bottom: 18px; }
+
+.student-asgn-error-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef2f2;
+  border-radius: 16px;
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+.student-asgn-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  background: #ff914d;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.student-asgn-retry-btn:hover {
+  background: #f07f3f;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 900px) {
+  .student-asgn-header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .student-asgn-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .student-asgn-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .student-asgn-search {
+    min-width: unset;
+  }
+}
+
+@media (max-width: 600px) {
+  .student-asgn-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .student-asgn-card-top {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .student-asgn-card-meta {
+    gap: 10px;
+  }
+}

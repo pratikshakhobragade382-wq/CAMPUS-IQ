@@ -44,6 +44,8 @@ import StudentComplaints from "./student/complaints/StudentComplaints";
 import StudentProfile from "./student/StudentProfile";
 import StudentSettings from "./student/StudentSettings";
 import StudentNotifications from "./student/Notifications/StudentNotifications";
+import StudentAttendance from "./student/StudentAttendance";
+import StudentAssignments from "./student/StudentAssignments";
 
 /*
 ============================================================
@@ -268,28 +270,14 @@ function AppContent() {
 
           <Route
             path="/student/attendance"
-            element={
-              <div style={{ padding: "30px" }}>
-                <h2>Attendance</h2>
-                <p>
-                  Student attendance will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentAttendance />}
           />
 
           {/* STUDENT ASSIGNMENTS */}
 
           <Route
             path="/student/assignments"
-            element={
-              <div style={{ padding: "30px" }}>
-                <h2>Assignments</h2>
-                <p>
-                  Student assignments will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentAssignments />}
           />
 
           {/* STUDENT TIMETABLE */}
