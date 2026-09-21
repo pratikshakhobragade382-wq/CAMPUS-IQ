@@ -39,6 +39,8 @@ import PortalLogin from "./pages/PortalLogin/PortalLogin";
 
 import StudentLogin from "./student/Login Form/StudentLogin";
 import StudentLayout from "./student/Layout/StudentLayout";
+import StudentProfile from "./student/StudentProfile";
+import StudentSettings from "./student/StudentSettings";
 
 /*
 ============================================================
@@ -410,38 +412,14 @@ function AppContent() {
 
           <Route
             path="/student/profile"
-            element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
-                <h2>My Profile</h2>
-
-                <p>
-                  Student profile will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentProfile />}
           />
 
           {/* STUDENT SETTINGS */}
 
           <Route
             path="/student/settings"
-            element={
-              <div
-                style={{
-                  padding: "30px",
-                }}
-              >
-                <h2>Settings</h2>
-
-                <p>
-                  Student settings will appear here.
-                </p>
-              </div>
-            }
+            element={<StudentSettings />}
           />
 
         </Route>

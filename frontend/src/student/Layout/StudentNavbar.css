@@ -139,6 +139,11 @@
   text-align: left;
 }
 
+.student-navbar-icon *,
+.student-navbar-user * {
+  cursor: pointer;
+}
+
 .student-navbar-avatar {
   width: 51px;
   height: 41px;
