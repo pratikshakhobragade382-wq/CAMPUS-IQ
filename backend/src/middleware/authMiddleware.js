@@ -1,13 +1,20 @@
 const jwt = require("jsonwebtoken");
+
 const prisma = require("../prisma/prismaClient");
+
 const { HttpError } = require("../utils/httpError");
 
 const unauthorized = () =>
-  new HttpError(401, "Unauthorized", { code: "UNAUTHORIZED" });
+  new HttpError(401, "Unauthorized", {
+    code: "UNAUTHORIZED",
+  });
 
 module.exports = async (req, res, next) => {
   let decoded;
 
+  // ---------------------------------------------------------
+  // JWT verification
+  // ---------------------------------------------------------
   try {
     const authHeader = req.headers.authorization;
 
@@ -15,38 +22,52 @@ module.exports = async (req, res, next) => {
       return next(unauthorized());
     }
 
-    decoded = jwt.verify(authHeader.split(" ")[1], process.env.JWT_SECRET, {
+    const token = authHeader.split(" ")[1];
+
+    decoded = jwt.verify(token, process.env.JWT_SECRET, {
       algorithms: ["HS256"],
     });
   } catch (error) {
     return next(unauthorized());
   }
 
-  // Revocation check: deleted users and tokens issued before a password
-  // reset/change are rejected immediately.
+  // ---------------------------------------------------------
+  // User validation
+  // ---------------------------------------------------------
   try {
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { isDeleted: true, tokenVersion: true },
+      where: {
+        id: decoded.userId,
+      },
+      select: {
+        isDeleted: true,
+      },
     });
 
-    if (
-      !user ||
-      user.isDeleted ||
-      user.tokenVersion !== (decoded.tokenVersion || 0)
-    ) {
+    if (!user || user.isDeleted) {
       return next(unauthorized());
     }
   } catch (error) {
     return next(error);
   }
 
+  // ---------------------------------------------------------
+  // Attach authenticated user to request
+  // ---------------------------------------------------------
   req.user = decoded;
 
+  // ---------------------------------------------------------
+  // Force password change when required
+  // ---------------------------------------------------------
   if (decoded.mustChangePassword) {
-    const path = (req.originalUrl || "").split("?")[0].replace(/\/+$/, "");
+    const path = (req.originalUrl || "")
+      .split("?")[0]
+      .replace(/\/+$/, "");
+
     const allowed =
-      req.method === "POST" && path.endsWith("/auth/change-password");
+      req.method === "POST" &&
+      path.endsWith("/auth/change-password");
+
     if (!allowed) {
       return next(
         new HttpError(403, "Password change required", {

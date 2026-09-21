@@ -4,7 +4,7 @@
    ========================================================= */
 
 .student-navbar {
-  min-height: 73px;
+  min-height: 93px;
   box-sizing: border-box;
 
   padding: 0 20px 0 23px;
@@ -35,7 +35,7 @@
 
   color: #f07f3f;
 
-  font-size: 17px;
+  font-size: 27px;
   line-height: 1.2;
   font-weight: 800;
   letter-spacing: -0.2px;
@@ -44,9 +44,9 @@
 .student-navbar-heading p {
   margin: 3px 0 0;
 
-  color: #8d9baa;
+  color: rgba(0, 0, 0, 0.601);
 
-  font-size: 9px;
+  font-size: 15px;
   line-height: 1.3;
 }
 
@@ -57,7 +57,7 @@
 .student-navbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .student-navbar-icon {
@@ -140,8 +140,8 @@
 }
 
 .student-navbar-avatar {
-  width: 31px;
-  height: 31px;
+  width: 51px;
+  height: 41px;
   flex: 0 0 31px;
 
   display: flex;
@@ -152,7 +152,7 @@
   background: #fff0e6;
   border-radius: 50%;
 
-  font-size: 10px;
+  font-size: 20px;
   font-weight: 800;
 }
 
@@ -164,24 +164,24 @@
 }
 
 .student-navbar-user-info strong {
-  max-width: 90px;
+  max-width: 190px;
 
   overflow: hidden;
 
   color: #183b5d;
 
-  font-size: 9px;
-  line-height: 1.25;
-  font-weight: 750;
+  font-size: 15px;
+  line-height: 1.85;
+  font-weight: 950;
 
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .student-navbar-user-info small {
-  color: #a18e82;
+  color: #183b5d;
 
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.25;
 }
 
