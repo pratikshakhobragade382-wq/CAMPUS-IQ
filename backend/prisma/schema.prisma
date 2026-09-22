@@ -139,21 +139,27 @@ model Class {
 }
 
 model Section {
-  id                 Int                 @id @default(autoincrement())
-  name               String
-  classId            Int
-  tenantId           Int
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  isDeleted          Boolean             @default(false)
-  class              Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())
+  name           String
+  classId        Int
+  tenantId       Int
+  classTeacherId Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isDeleted      Boolean  @default(false)
+
+  class  Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  classTeacher Staff? @relation("SectionClassTeacher", fields: [classTeacherId], references: [id], onDelete: SetNull)
+
   students           Student[]
   studentAttendances StudentAttendance[]
   timetables         Timetable[]
 
   @@unique([name, classId, tenantId])
   @@index([tenantId])
+  @@index([classTeacherId])
 }
 
 model Subject {
@@ -174,77 +180,84 @@ model Subject {
 }
 
 model Staff {
-  substitutionsAsOriginal   Substitution[]      @relation("OriginalStaffSubstitutions")
-  substitutionsAsSubstitute Substitution[]      @relation("SubstituteStaffSubstitutions")
-  id                        Int                 @id @default(autoincrement())
-  employeeId                String
-  name                      String
-  email                     String
-  phone                     String?
-  dateOfJoining             DateTime?
-  salary                    Decimal?            @db.Decimal(10, 2)
-  photoUrl                  String?
-  departmentId              Int?
-  tenantId                  Int
-  isDeleted                 Boolean             @default(false)
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  role                      StaffRole?
-  gender                    Gender?
-  aadharNo                  String?
-  bloodGroup                String?
-  busUser                   Boolean             @default(false)
-  caste                     String?
-  cbseTid                   String?
-  ctetExamQualified         String?
-  dateOfBirth               DateTime?
-  emergencyContactNo        String?
-  emergencyContactPerson    String?
-  employeeLedger            String?
-  employeePresentDuty       String?
-  employeeUniqueId          String?
-  experience                String?
-  fatherName                String?
-  fileNo                    String?
-  highQualification         String?
-  identificationMark        String?
-  isReviewer                Boolean             @default(false)
-  leaveCategory             String?
-  maritalStatus             String?
-  mobileNo                  String?
-  motherName                String?
-  motherTongue              String?
-  nationality               String?
-  noticePeriod              Boolean             @default(false)
-  officialEmail             String?
-  panNo                     String?
-  placeOfBirth              String?
-  priorityNo                String?
-  qualificationForPrinting  String?
-  relationWithEmployee      String?
-  religion                  String?
-  reportPerson              String?
-  rfidNo                    String?
-  signatureUrl              String?
-  socialCategory            String?
-  staffCategory             String?
-  staffDirectory            String?
-  title                     String?
-  uanNo                     String?
-  examMarksEntered          ExamMark[]
-  feeCollections            FeeCollection[]
-  resultPublications        ResultPublication[]
-  department                Department?         @relation(fields: [departmentId], references: [id])
-  tenant                    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  address                   StaffAddress?
-  staffAttendances          StaffAttendance[]
-  children                  StaffChild[]
-  otherDetails              StaffOtherDetails?
-  spouse                    StaffSpouse?
-  subjects                  StaffSubject[]
-  studentAttendancesMarked  StudentAttendance[]
-  timetables                Timetable[]
-  user                      User?
+  substitutionsAsOriginal   Substitution[] @relation("OriginalStaffSubstitutions")
+  substitutionsAsSubstitute Substitution[] @relation("SubstituteStaffSubstitutions")
+
+  id                       Int        @id @default(autoincrement())
+  employeeId               String
+  name                     String
+  email                    String
+  phone                    String?
+  dateOfJoining            DateTime?
+  salary                   Decimal?   @db.Decimal(10, 2)
+  photoUrl                 String?
+  departmentId             Int?
+  tenantId                 Int
+  isDeleted                Boolean    @default(false)
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+  role                     StaffRole?
+  gender                   Gender?
+  aadharNo                 String?
+  bloodGroup               String?
+  busUser                  Boolean    @default(false)
+  caste                    String?
+  cbseTid                  String?
+  ctetExamQualified        String?
+  dateOfBirth              DateTime?
+  emergencyContactNo       String?
+  emergencyContactPerson   String?
+  employeeLedger           String?
+  employeePresentDuty      String?
+  employeeUniqueId         String?
+  experience               String?
+  fatherName               String?
+  fileNo                   String?
+  highQualification        String?
+  identificationMark       String?
+  isReviewer               Boolean    @default(false)
+  leaveCategory            String?
+  maritalStatus            String?
+  mobileNo                 String?
+  motherName               String?
+  motherTongue             String?
+  nationality              String?
+  noticePeriod             Boolean    @default(false)
+  officialEmail            String?
+  panNo                    String?
+  placeOfBirth             String?
+  priorityNo               String?
+  qualificationForPrinting String?
+  relationWithEmployee     String?
+  religion                 String?
+  reportPerson             String?
+  rfidNo                   String?
+  signatureUrl             String?
+  socialCategory           String?
+  staffCategory            String?
+  staffDirectory           String?
+  title                    String?
+  uanNo                    String?
+
+  examMarksEntered   ExamMark[]
+  feeCollections     FeeCollection[]
+  resultPublications ResultPublication[]
+
+  department Department? @relation(fields: [departmentId], references: [id])
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  address          StaffAddress?
+  staffAttendances StaffAttendance[]
+  children         StaffChild[]
+  otherDetails     StaffOtherDetails?
+  spouse           StaffSpouse?
+  subjects         StaffSubject[]
+
+  sectionsAsClassTeacher Section[] @relation("SectionClassTeacher")
+
+  studentAttendancesMarked StudentAttendance[]
+  timetables               Timetable[]
+  user                     User?
 
   @@unique([employeeId, tenantId])
   @@unique([email, tenantId])
@@ -956,8 +969,6 @@ enum NotificationPriority {
 
 // =====================================================
 // AI COMPLAINT MANAGEMENT
-// Append everything below to prisma/schema.prisma, then run:
-//   npx prisma migrate dev --name add_complaint_management
 // =====================================================
 
 enum ComplaintCategory {
@@ -973,7 +984,6 @@ enum ComplaintCategory {
   OTHER
 }
 
-// Declared low -> high so orderBy priority desc puts CRITICAL first.
 enum ComplaintPriority {
   LOW
   MEDIUM
@@ -1010,9 +1020,6 @@ enum ComplaintSuggestionStatus {
   REJECTED
 }
 
-// PENDING  = analysis still running
-// COMPLETED = analysed by Gemini
-// FALLBACK = Gemini unavailable, basic keyword rules were used
 enum ComplaintAiStatus {
   PENDING
   COMPLETED
@@ -1025,11 +1032,9 @@ model Complaint {
   parentUserId Int?
   studentId    Int?
 
-  // What the parent wrote
   subject     String
   description String
 
-  // AI analysis (admin can override category / priority / department)
   category              ComplaintCategory  @default(OTHER)
   priority              ComplaintPriority  @default(MEDIUM)
   priorityReason        String?
@@ -1041,7 +1046,6 @@ model Complaint {
   aiStatus              ComplaintAiStatus  @default(PENDING)
   aiAnalyzedAt          DateTime?
 
-  // Admin workflow
   department       String                    @default("Administration")
   status           ComplaintStatus           @default(PENDING)
   suggestionStatus ComplaintSuggestionStatus @default(PENDING)

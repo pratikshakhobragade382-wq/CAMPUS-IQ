@@ -4,11 +4,20 @@ async function getOwnStudentRecord(studentId, tenantId) {
   if (!studentId) throw new Error("Student not found");
 
   const student = await prisma.student.findFirst({
-    where: { id: studentId, tenantId, isDeleted: false },
-    select: { id: true, classId: true, sectionId: true },
+    where: {
+      id: studentId,
+      tenantId,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      classId: true,
+      sectionId: true,
+    },
   });
 
   if (!student) throw new Error("Student not found");
+
   return student;
 }
 
@@ -16,10 +25,34 @@ const getMyProfile = async (studentId, tenantId) => {
   await getOwnStudentRecord(studentId, tenantId);
 
   const student = await prisma.student.findFirst({
-    where: { id: studentId, tenantId, isDeleted: false },
+    where: {
+      id: studentId,
+      tenantId,
+      isDeleted: false,
+    },
     include: {
-      class: { select: { id: true, name: true } },
-      section: { select: { id: true, name: true } },
+      class: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+
+      section: {
+        select: {
+          id: true,
+          name: true,
+
+          classTeacher: {
+            select: {
+              id: true,
+              name: true,
+              employeeId: true,
+            },
+          },
+        },
+      },
+
       parents: {
         select: {
           id: true,
@@ -37,14 +70,27 @@ const getMyProfile = async (studentId, tenantId) => {
 
 const getMyAttendance = async (studentId, tenantId, query = {}) => {
   await getOwnStudentRecord(studentId, tenantId);
+
   const { month, year, academicYearId } = query;
 
-  const where = { studentId, tenantId };
+  const where = {
+    studentId,
+    tenantId,
+  };
 
   if (month && year) {
-    const start = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, 1));
-    const end = new Date(Date.UTC(parseInt(year), parseInt(month), 1));
-    where.date = { gte: start, lt: end };
+    const start = new Date(
+      Date.UTC(parseInt(year), parseInt(month) - 1, 1)
+    );
+
+    const end = new Date(
+      Date.UTC(parseInt(year), parseInt(month), 1)
+    );
+
+    where.date = {
+      gte: start,
+      lt: end,
+    };
   }
 
   if (academicYearId) {
@@ -53,8 +99,15 @@ const getMyAttendance = async (studentId, tenantId, query = {}) => {
 
   const records = await prisma.studentAttendance.findMany({
     where,
-    orderBy: { date: "desc" },
-    select: { id: true, date: true, status: true, remark: true },
+    orderBy: {
+      date: "desc",
+    },
+    select: {
+      id: true,
+      date: true,
+      status: true,
+      remark: true,
+    },
   });
 
   const summary = records.reduce(
@@ -66,23 +119,52 @@ const getMyAttendance = async (studentId, tenantId, query = {}) => {
     { total: 0 }
   );
 
-  return { records, summary };
+  return {
+    records,
+    summary,
+  };
 };
 
 const getMyExamMarks = async (studentId, tenantId, query = {}) => {
   const student = await getOwnStudentRecord(studentId, tenantId);
+
   const { examId } = query;
 
-  const where = { studentId, tenantId };
-  if (examId) where.examId = parseInt(examId);
+  const where = {
+    studentId,
+    tenantId,
+  };
+
+  if (examId) {
+    where.examId = parseInt(examId);
+  }
 
   const marks = await prisma.examMark.findMany({
     where,
     include: {
-      exam: { select: { id: true, name: true, examType: true, startDate: true } },
-      subject: { select: { id: true, name: true, code: true } },
+      exam: {
+        select: {
+          id: true,
+          name: true,
+          examType: true,
+          startDate: true,
+        },
+      },
+
+      subject: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
     },
-    orderBy: { exam: { startDate: "desc" } },
+
+    orderBy: {
+      exam: {
+        startDate: "desc",
+      },
+    },
   });
 
   const publishedExamIds = new Set(
@@ -92,15 +174,24 @@ const getMyExamMarks = async (studentId, tenantId, query = {}) => {
           tenantId,
           classId: student.classId,
           isPublished: true,
-          examId: { not: null },
+          examId: {
+            not: null,
+          },
         },
-        select: { examId: true },
+
+        select: {
+          examId: true,
+        },
       })
     ).map((r) => r.examId)
   );
 
   return marks.filter((m) => publishedExamIds.has(m.examId));
 };
+
+/* =====================================================
+   STUDENT TIMETABLE
+   ===================================================== */
 
 const getMyTimetable = async (studentId, tenantId) => {
   const student = await getOwnStudentRecord(studentId, tenantId);
@@ -110,16 +201,71 @@ const getMyTimetable = async (studentId, tenantId) => {
       tenantId,
       classId: student.classId,
       isActive: true,
-      OR: [{ sectionId: student.sectionId }, { sectionId: null }],
+
+      OR: [
+        {
+          sectionId: student.sectionId,
+        },
+        {
+          sectionId: null,
+        },
+      ],
     },
+
     include: {
-      subject: { select: { id: true, name: true } },
-      staff: { select: { id: true, name: true } },
+      subject: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+
+      staff: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+
       periodSlot: {
-        select: { slotNo: true, label: true, startTime: true, endTime: true },
+        select: {
+          slotNo: true,
+          label: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+
+      /* ============================================
+         CLASS SECTION + CLASS INCHARGE
+         ============================================ */
+
+      section: {
+        select: {
+          id: true,
+          name: true,
+
+          classTeacher: {
+            select: {
+              id: true,
+              name: true,
+              employeeId: true,
+            },
+          },
+        },
       },
     },
-    orderBy: [{ dayOfWeek: "asc" }, { periodSlot: { slotNo: "asc" } }],
+
+    orderBy: [
+      {
+        dayOfWeek: "asc",
+      },
+      {
+        periodSlot: {
+          slotNo: "asc",
+        },
+      },
+    ],
   });
 
   return timetable;
@@ -129,22 +275,53 @@ const getMyFees = async (studentId, tenantId) => {
   const student = await getOwnStudentRecord(studentId, tenantId);
 
   const collections = await prisma.feeCollection.findMany({
-    where: { studentId, tenantId },
+    where: {
+      studentId,
+      tenantId,
+    },
+
     include: {
       feeStructure: {
-        include: { feeCategory: { select: { name: true } } },
+        include: {
+          feeCategory: {
+            select: {
+              name: true,
+            },
+          },
+        },
       },
     },
-    orderBy: { paymentDate: "desc" },
+
+    orderBy: {
+      paymentDate: "desc",
+    },
   });
 
   const structures = await prisma.feeStructure.findMany({
-    where: { tenantId, classId: student.classId, isActive: true },
-    include: { feeCategory: { select: { name: true } } },
+    where: {
+      tenantId,
+      classId: student.classId,
+      isActive: true,
+    },
+
+    include: {
+      feeCategory: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 
-  const totalDue = structures.reduce((sum, s) => sum + Number(s.amount), 0);
-  const totalPaid = collections.reduce((sum, c) => sum + Number(c.netAmount), 0);
+  const totalDue = structures.reduce(
+    (sum, s) => sum + Number(s.amount),
+    0
+  );
+
+  const totalPaid = collections.reduce(
+    (sum, c) => sum + Number(c.netAmount),
+    0
+  );
 
   return {
     totalDue,
@@ -163,11 +340,23 @@ const getMyAssignments = async (studentId, tenantId) => {
       tenantId,
       classId: student.classId,
       isActive: true,
-      OR: [{ sectionId: student.sectionId }, { sectionId: null }],
+
+      OR: [
+        {
+          sectionId: student.sectionId,
+        },
+        {
+          sectionId: null,
+        },
+      ],
     },
+
     include: {
       AssignmentSubmission: {
-        where: { studentId },
+        where: {
+          studentId,
+        },
+
         select: {
           id: true,
           status: true,
@@ -179,7 +368,10 @@ const getMyAssignments = async (studentId, tenantId) => {
         },
       },
     },
-    orderBy: { dueDate: "desc" },
+
+    orderBy: {
+      dueDate: "desc",
+    },
   });
 
   return assignments.map((a) => ({
@@ -193,7 +385,12 @@ const getMyAssignments = async (studentId, tenantId) => {
   }));
 };
 
-const submitAssignment = async (studentId, tenantId, assignmentId, data) => {
+const submitAssignment = async (
+  studentId,
+  tenantId,
+  assignmentId,
+  data
+) => {
   const student = await getOwnStudentRecord(studentId, tenantId);
 
   const assignment = await prisma.assignment.findFirst({
@@ -202,67 +399,136 @@ const submitAssignment = async (studentId, tenantId, assignmentId, data) => {
       tenantId,
       classId: student.classId,
       isActive: true,
-      OR: [{ sectionId: student.sectionId }, { sectionId: null }],
+
+      OR: [
+        {
+          sectionId: student.sectionId,
+        },
+        {
+          sectionId: null,
+        },
+      ],
     },
   });
 
-  if (!assignment) throw new Error("Assignment not found");
+  if (!assignment) {
+    throw new Error("Assignment not found");
+  }
 
-  const { content, attachmentUrl } = data;
+  const {
+    content,
+    attachmentUrl,
+  } = data;
+
   const now = new Date();
-  const status = now > new Date(assignment.dueDate) ? "late" : "submitted";
 
-  const submission = await prisma.assignmentSubmission.upsert({
-    where: {
-      tenantId_assignmentId_studentId: {
+  const status =
+    now > new Date(assignment.dueDate)
+      ? "late"
+      : "submitted";
+
+  const submission =
+    await prisma.assignmentSubmission.upsert({
+      where: {
+        tenantId_assignmentId_studentId: {
+          tenantId,
+          assignmentId: assignment.id,
+          studentId,
+        },
+      },
+
+      update: {
+        content,
+        attachmentUrl,
+        status,
+        submittedAt: now,
+      },
+
+      create: {
         tenantId,
         assignmentId: assignment.id,
         studentId,
+        content,
+        attachmentUrl,
+        status,
+        submittedAt: now,
       },
-    },
-    update: {
-      content,
-      attachmentUrl,
-      status,
-      submittedAt: now,
-    },
-    create: {
-      tenantId,
-      assignmentId: assignment.id,
-      studentId,
-      content,
-      attachmentUrl,
-      status,
-      submittedAt: now,
-    },
-  });
+    });
 
   return submission;
 };
 
+const getMyCalendar = async (
+  studentId,
+  tenantId,
+  query = {}
+) => {
+  const student = await getOwnStudentRecord(
+    studentId,
+    tenantId
+  );
 
-const getMyCalendar = async (studentId, tenantId, query = {}) => {
-  const student = await getOwnStudentRecord(studentId, tenantId);
   const { month, year } = query;
 
   let rangeStart;
   let rangeEnd;
+
   if (month && year) {
-    rangeStart = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, 1));
-    rangeEnd = new Date(Date.UTC(parseInt(year), parseInt(month), 1));
+    rangeStart = new Date(
+      Date.UTC(
+        parseInt(year),
+        parseInt(month) - 1,
+        1
+      )
+    );
+
+    rangeEnd = new Date(
+      Date.UTC(
+        parseInt(year),
+        parseInt(month),
+        1
+      )
+    );
   } else {
     const now = new Date();
-    rangeStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-    rangeEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+
+    rangeStart = new Date(
+      Date.UTC(
+        now.getFullYear(),
+        now.getMonth(),
+        1
+      )
+    );
+
+    rangeEnd = new Date(
+      Date.UTC(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        1
+      )
+    );
   }
 
-  const [holidays, exams, assignments] = await Promise.all([
+  const [
+    holidays,
+    exams,
+    assignments,
+  ] = await Promise.all([
     prisma.holiday.findMany({
       where: {
         tenantId,
-        date: { gte: rangeStart, lt: rangeEnd },
+        date: {
+          gte: rangeStart,
+          lt: rangeEnd,
+        },
       },
-      select: { id: true, name: true, date: true, holidayType: true },
+
+      select: {
+        id: true,
+        name: true,
+        date: true,
+        holidayType: true,
+      },
     }),
 
     prisma.exam.findMany({
@@ -270,8 +536,12 @@ const getMyCalendar = async (studentId, tenantId, query = {}) => {
         tenantId,
         isActive: true,
         classId: student.classId,
-        startDate: { gte: rangeStart, lt: rangeEnd },
+        startDate: {
+          gte: rangeStart,
+          lt: rangeEnd,
+        },
       },
+
       select: {
         id: true,
         name: true,
@@ -286,10 +556,27 @@ const getMyCalendar = async (studentId, tenantId, query = {}) => {
         tenantId,
         classId: student.classId,
         isActive: true,
-        OR: [{ sectionId: student.sectionId }, { sectionId: null }],
-        dueDate: { gte: rangeStart, lt: rangeEnd },
+
+        OR: [
+          {
+            sectionId: student.sectionId,
+          },
+          {
+            sectionId: null,
+          },
+        ],
+
+        dueDate: {
+          gte: rangeStart,
+          lt: rangeEnd,
+        },
       },
-      select: { id: true, title: true, dueDate: true },
+
+      select: {
+        id: true,
+        title: true,
+        dueDate: true,
+      },
     }),
   ]);
 
@@ -299,16 +586,22 @@ const getMyCalendar = async (studentId, tenantId, query = {}) => {
       type: "holiday",
       title: h.name,
       date: h.date,
-      meta: { holidayType: h.holidayType },
+      meta: {
+        holidayType: h.holidayType,
+      },
     })),
+
     ...exams.map((e) => ({
       id: `exam-${e.id}`,
       type: "exam",
       title: e.name,
       date: e.startDate,
       endDate: e.endDate,
-      meta: { examType: e.examType },
+      meta: {
+        examType: e.examType,
+      },
     })),
+
     ...assignments.map((a) => ({
       id: `assignment-${a.id}`,
       type: "assignment",
@@ -316,9 +609,16 @@ const getMyCalendar = async (studentId, tenantId, query = {}) => {
       date: a.dueDate,
       meta: {},
     })),
-  ].sort((a, b) => new Date(a.date) - new Date(b.date));
+  ].sort(
+    (a, b) =>
+      new Date(a.date) - new Date(b.date)
+  );
 
-  return { rangeStart, rangeEnd, events };
+  return {
+    rangeStart,
+    rangeEnd,
+    events,
+  };
 };
 
 module.exports = {

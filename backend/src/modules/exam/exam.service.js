@@ -1046,24 +1046,12 @@ const createExam = async (
   // ==========================================================
 
   try {
-    let message =
+    const message =
       `${name} (${examType}) has been scheduled from ${start.toLocaleDateString(
         "en-IN"
       )} to ${end.toLocaleDateString(
         "en-IN"
       )}.`;
-
-    if (
-      adjusted.skippedDates.length >
-      0
-    ) {
-      message +=
-        ` Holidays/Sundays were automatically skipped and the exam period was adjusted to ${start.toLocaleDateString(
-          "en-IN"
-        )} - ${end.toLocaleDateString(
-          "en-IN"
-        )}.`;
-    }
 
     await createNotification({
       tenantId,
@@ -1514,7 +1502,7 @@ const updateExam = async (
           updatedExam.endDate
         ).toLocaleDateString(
           "en-IN"
-        )}. Sundays and holidays are automatically skipped.`,
+        )}.`,
 
       type: "exam",
 

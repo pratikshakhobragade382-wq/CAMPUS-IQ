@@ -13,6 +13,9 @@ import {
   X,
   Save,
   AlertCircle,
+  Download,
+  UserCheck,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -57,8 +60,18 @@ const SLOT_TYPES = [
    HELPERS
 ============================================================ */
 
+function getId(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value);
+}
+
 function formatTime(value) {
-  if (!value) return "—";
+  if (!value) {
+    return "—";
+  }
 
   const text = String(value).slice(0, 5);
   const parts = text.split(":");
@@ -74,30 +87,112 @@ function formatTime(value) {
     return text;
   }
 
-  const period = hour >= 12 ? "PM" : "AM";
+  const suffix = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 || 12;
 
   return `${displayHour}:${String(minute).padStart(
     2,
     "0"
-  )} ${period}`;
+  )} ${suffix}`;
 }
 
-/* ============================================================
-   ID HELPER
-============================================================ */
+function getClassName(entry) {
+  return (
+    entry?.class?.name ||
+    entry?.className ||
+    entry?.class?.className ||
+    ""
+  );
+}
 
-function getId(value) {
-  if (value === null || value === undefined) {
-    return "";
+function getSectionName(entry) {
+  return (
+    entry?.section?.name ||
+    entry?.sectionName ||
+    entry?.section?.sectionName ||
+    ""
+  );
+}
+
+function getSubjectName(entry) {
+  return (
+    entry?.subject?.name ||
+    entry?.subjectName ||
+    entry?.subject?.subjectName ||
+    "Subject"
+  );
+}
+
+function getTeacherName(entry) {
+  return (
+    entry?.staff?.name ||
+    entry?.teacher?.name ||
+    entry?.teacherName ||
+    "Teacher not assigned"
+  );
+}
+
+function getInchargeName(section) {
+  return (
+    section?.classTeacher?.name ||
+    section?.classTeacherName ||
+    section?.classIncharge?.name ||
+    section?.classInchargeName ||
+    ""
+  );
+}
+
+function normalizeDay(value) {
+  if (
+    value === 1 ||
+    String(value).toLowerCase() === "1" ||
+    String(value).toLowerCase() === "monday"
+  ) {
+    return "Monday";
   }
 
-  return String(value);
-}
+  if (
+    value === 2 ||
+    String(value).toLowerCase() === "2" ||
+    String(value).toLowerCase() === "tuesday"
+  ) {
+    return "Tuesday";
+  }
 
-/* ============================================================
-   FLATTEN TIMETABLE RESPONSE
-============================================================ */
+  if (
+    value === 3 ||
+    String(value).toLowerCase() === "3" ||
+    String(value).toLowerCase() === "wednesday"
+  ) {
+    return "Wednesday";
+  }
+
+  if (
+    value === 4 ||
+    String(value).toLowerCase() === "4" ||
+    String(value).toLowerCase() === "thursday"
+  ) {
+    return "Thursday";
+  }
+
+  if (
+    value === 5 ||
+    String(value).toLowerCase() === "5" ||
+    String(value).toLowerCase() === "friday"
+  ) {
+    return "Friday";
+  }
+
+  if (
+    value === 6 ||
+    String(value).toLowerCase() === "6" ||
+    String(value).toLowerCase() === "saturday"
+  ) {
+    return "Saturday";
+  }
+
+  return String(value || "");
+}
 
 function flattenGrouped(data) {
   if (Array.isArray(data)) {
@@ -106,6 +201,18 @@ function flattenGrouped(data) {
 
   if (!data || typeof data !== "object") {
     return [];
+  }
+
+  if (Array.isArray(data.timetable)) {
+    return data.timetable;
+  }
+
+  if (Array.isArray(data.items)) {
+    return data.items;
+  }
+
+  if (Array.isArray(data.entries)) {
+    return data.entries;
   }
 
   return Object.entries(data).flatMap(([day, items]) => {
@@ -118,14 +225,11 @@ function flattenGrouped(data) {
       dayName:
         item.dayName ||
         item.day ||
+        item.dayOfWeek ||
         day,
     }));
   });
 }
-
-/* ============================================================
-   EXTRACT ARRAY
-============================================================ */
 
 function extractArray(data) {
   if (Array.isArray(data)) {
@@ -140,6 +244,10 @@ function extractArray(data) {
     return data.teachers;
   }
 
+  if (Array.isArray(data?.sections)) {
+    return data.sections;
+  }
+
   if (Array.isArray(data?.data)) {
     return data.data;
   }
@@ -148,16 +256,8 @@ function extractArray(data) {
     return data.results;
   }
 
-  if (Array.isArray(data?.users)) {
-    return data.users;
-  }
-
   return [];
 }
-
-/* ============================================================
-   NORMALIZE TEACHER
-============================================================ */
 
 function normalizeTeacher(teacher) {
   if (!teacher || typeof teacher !== "object") {
@@ -201,6 +301,29 @@ function normalizeTeacher(teacher) {
     id,
     name,
   };
+}
+
+function getAcademicYearName(year) {
+  return (
+    year?.name ||
+    year?.label ||
+    year?.academicYear ||
+    year?.year ||
+    ""
+  );
+}
+
+/* ============================================================
+   HTML ESCAPE FOR PRINT WINDOW
+============================================================ */
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 /* ============================================================
@@ -268,7 +391,7 @@ function Field({
 }
 
 /* ============================================================
-   EMPTY STATE
+   EMPTY
 ============================================================ */
 
 function EmptyState({ message }) {
@@ -289,27 +412,20 @@ export default function Timetable() {
   ========================================================== */
 
   const [slots, setSlots] = useState([]);
-
   const [entries, setEntries] = useState([]);
 
   const [academicYears, setAcademicYears] =
     useState([]);
 
-  const [classes, setClasses] =
-    useState([]);
-
-  const [sections, setSections] =
-    useState([]);
-
-  const [teachers, setTeachers] =
-    useState([]);
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [teachers, setTeachers] = useState([]);
 
   /* ==========================================================
      FILTERS
   ========================================================== */
 
-  const [mode, setMode] =
-    useState("class");
+  const [mode, setMode] = useState("class");
 
   const [
     academicYearId,
@@ -331,6 +447,9 @@ export default function Timetable() {
   const [activeDay, setActiveDay] =
     useState("All");
 
+  const [viewMode, setViewMode] =
+    useState("weekly");
+
   /* ==========================================================
      LOADING
   ========================================================== */
@@ -347,6 +466,12 @@ export default function Timetable() {
   const [teacherLoading, setTeacherLoading] =
     useState(false);
 
+  const [sectionLoading, setSectionLoading] =
+    useState(false);
+
+  const [inchargeSaving, setInchargeSaving] =
+    useState(false);
+
   /* ==========================================================
      MESSAGES
   ========================================================== */
@@ -361,25 +486,20 @@ export default function Timetable() {
      MODALS
   ========================================================== */
 
-  const [
-    showEntryForm,
-    setShowEntryForm,
-  ] = useState(false);
+  const [showEntryForm, setShowEntryForm] =
+    useState(false);
 
-  const [
-    showSlotForm,
-    setShowSlotForm,
-  ] = useState(false);
+  const [showSlotForm, setShowSlotForm] =
+    useState(false);
 
-  const [
-    editingEntry,
-    setEditingEntry,
-  ] = useState(null);
+  const [showInchargeForm, setShowInchargeForm] =
+    useState(false);
 
-  const [
-    editingSlot,
-    setEditingSlot,
-  ] = useState(null);
+  const [editingEntry, setEditingEntry] =
+    useState(null);
+
+  const [editingSlot, setEditingSlot] =
+    useState(null);
 
   /* ==========================================================
      ENTRY FORM
@@ -408,6 +528,13 @@ export default function Timetable() {
       startTime: "",
       endTime: "",
     });
+
+  /* ==========================================================
+     INCHARGE FORM
+  ========================================================== */
+
+  const [inchargeTeacherId, setInchargeTeacherId] =
+    useState("");
 
   /* ==========================================================
      LOAD ACADEMIC YEARS
@@ -481,6 +608,8 @@ export default function Timetable() {
         return;
       }
 
+      setSectionLoading(true);
+
       try {
         const response =
           await axiosClient.get(
@@ -511,39 +640,19 @@ export default function Timetable() {
         );
 
         setSections([]);
+      } finally {
+        setSectionLoading(false);
       }
     };
 
   /* ==========================================================
      LOAD TEACHERS
-     
-     IMPORTANT:
-     
-     Your backend returns:
-     
-     {
-       success: true,
-       data: {
-         staff: [...],
-         pagination: {...}
-       }
-     }
-     
-     Your backend also supports:
-     
-     GET /staff?role=teacher
-     
-     Therefore we request ONLY teachers.
   ========================================================== */
 
   const loadTeachers = async () => {
     setTeacherLoading(true);
 
     try {
-      console.log(
-        "Loading teachers from /staff..."
-      );
-
       const response =
         await axiosClient.get(
           "/staff",
@@ -556,40 +665,20 @@ export default function Timetable() {
           }
         );
 
-      console.log(
-        "Staff API response:",
-        response.data
-      );
-
-      /*
-       * CORRECT BACKEND RESPONSE:
-       *
-       * response.data.data.staff
-       */
-
       const staffList =
         extractArray(
           response.data?.data
         );
 
-      console.log(
-        "Teachers returned by backend:",
-        staffList
-      );
-
-      const normalizedTeachers =
+      const normalized =
         staffList
           .map(normalizeTeacher)
           .filter(Boolean);
 
-      /*
-       * Remove duplicate teachers
-       */
-
       const uniqueTeachers =
         Array.from(
           new Map(
-            normalizedTeachers.map(
+            normalized.map(
               (teacher) => [
                 String(teacher.id),
                 teacher,
@@ -598,13 +687,11 @@ export default function Timetable() {
           ).values()
         );
 
-      /*
-       * Sort teachers alphabetically
-       */
-
       uniqueTeachers.sort(
         (a, b) =>
-          String(a.name).localeCompare(
+          String(
+            a.name
+          ).localeCompare(
             String(b.name)
           )
       );
@@ -612,59 +699,10 @@ export default function Timetable() {
       setTeachers(
         uniqueTeachers
       );
-
-      console.log(
-        "FINAL TEACHER LIST:",
-        uniqueTeachers
-      );
-
-      /*
-       * If the currently selected teacher
-       * no longer exists, clear it.
-       */
-
-      if (
-        staffId &&
-        !uniqueTeachers.some(
-          (teacher) =>
-            String(teacher.id) ===
-            String(staffId)
-        )
-      ) {
-        setStaffId("");
-      }
-
-      /*
-       * If editing an existing timetable,
-       * make sure the selected teacher
-       * remains available in the dropdown.
-       */
-
-      if (
-        entryForm.staffId &&
-        !uniqueTeachers.some(
-          (teacher) =>
-            String(teacher.id) ===
-            String(entryForm.staffId)
-        )
-      ) {
-        setEntryForm(
-          (previous) => ({
-            ...previous,
-            staffId: "",
-          })
-        );
-      }
-
     } catch (err) {
       console.error(
         "Failed to load teachers:",
         err
-      );
-
-      console.error(
-        "Teacher API error:",
-        err.response?.data
       );
 
       setTeachers([]);
@@ -751,7 +789,7 @@ export default function Timetable() {
   }, []);
 
   /* ==========================================================
-     LOAD SECTIONS WHEN CLASS CHANGES
+     CLASS CHANGE
   ========================================================== */
 
   useEffect(() => {
@@ -761,6 +799,40 @@ export default function Timetable() {
       setSections([]);
     }
   }, [classId]);
+
+  /* ==========================================================
+     SELECTED SECTION
+  ========================================================== */
+
+  const selectedSection =
+    useMemo(() => {
+      return sections.find(
+        (section) =>
+          String(section.id) ===
+          String(sectionId)
+      );
+    }, [sections, sectionId]);
+
+  const selectedClass =
+    useMemo(() => {
+      return classes.find(
+        (item) =>
+          String(item.id) ===
+          String(classId)
+      );
+    }, [classes, classId]);
+
+  const selectedAcademicYear =
+    useMemo(() => {
+      return academicYears.find(
+        (year) =>
+          String(year.id) ===
+          String(academicYearId)
+      );
+    }, [
+      academicYears,
+      academicYearId,
+    ]);
 
   /* ==========================================================
      LOAD TIMETABLE
@@ -775,13 +847,7 @@ export default function Timetable() {
       try {
         let response;
 
-        /* ====================================================
-           TEACHER VIEW
-        ==================================================== */
-
-        if (
-          mode === "teacher"
-        ) {
+        if (mode === "teacher") {
           if (!staffId) {
             setEntries([]);
             setLoading(false);
@@ -802,13 +868,7 @@ export default function Timetable() {
                 },
               }
             );
-        }
-
-        /* ====================================================
-           CLASS VIEW
-        ==================================================== */
-
-        else {
+        } else {
           if (!classId) {
             setEntries([]);
             setLoading(false);
@@ -846,7 +906,6 @@ export default function Timetable() {
         setEntries(
           flattenGrouped(data)
         );
-
       } catch (err) {
         console.error(
           "Failed to load timetable:",
@@ -866,7 +925,7 @@ export default function Timetable() {
     };
 
   /* ==========================================================
-     FILTER ENTRIES
+     VISIBLE ENTRIES
   ========================================================== */
 
   const visibleEntries =
@@ -878,12 +937,17 @@ export default function Timetable() {
 
       return entries.filter(
         (entry) => {
-          const matchesDay =
-            activeDay === "All" ||
-            entry.dayName ===
-              activeDay;
+          const entryDay =
+            normalizeDay(
+              entry.dayName ||
+                entry.day ||
+                entry.dayOfWeek
+            );
 
-          if (!matchesDay) {
+          if (
+            activeDay !== "All" &&
+            entryDay !== activeDay
+          ) {
             return false;
           }
 
@@ -892,12 +956,10 @@ export default function Timetable() {
           }
 
           return [
-            entry.subject?.name,
-            entry.subjectName,
-            entry.staff?.name,
-            entry.teacher?.name,
-            entry.class?.name,
-            entry.section?.name,
+            getSubjectName(entry),
+            getTeacherName(entry),
+            getClassName(entry),
+            getSectionName(entry),
             entry.dayName,
             entry.periodSlot?.label,
           ]
@@ -914,7 +976,38 @@ export default function Timetable() {
     ]);
 
   /* ==========================================================
-     OPEN CREATE TIMETABLE
+     WEEKLY ENTRY LOOKUP
+  ========================================================== */
+
+  const getEntriesForSlotDay =
+    (slot, dayLabel) => {
+      return visibleEntries.filter(
+        (entry) => {
+          const entryDay =
+            normalizeDay(
+              entry.dayName ||
+                entry.day ||
+                entry.dayOfWeek
+            );
+
+          const entrySlotId =
+            entry.periodSlotId ??
+            entry.periodSlot?.id;
+
+          return (
+            entryDay ===
+              dayLabel &&
+            String(
+              entrySlotId
+            ) ===
+              String(slot.id)
+          );
+        }
+      );
+    };
+
+  /* ==========================================================
+     OPEN CREATE ENTRY
   ========================================================== */
 
   const openCreateEntry =
@@ -944,22 +1037,13 @@ export default function Timetable() {
       setError("");
       setNotice("");
 
-      /*
-       * IMPORTANT:
-       * Reload teachers when modal opens.
-       *
-       * This means if you add a teacher
-       * from Staff page, you don't have to
-       * restart the application.
-       */
-
       await loadTeachers();
 
       setShowEntryForm(true);
     };
 
   /* ==========================================================
-     EDIT TIMETABLE
+     EDIT ENTRY
   ========================================================== */
 
   const editEntry = (
@@ -994,9 +1078,10 @@ export default function Timetable() {
         ),
 
       subjectName:
-        entry.subject?.name ||
-        entry.subjectName ||
-        "",
+        getSubjectName(entry) ===
+        "Subject"
+          ? ""
+          : getSubjectName(entry),
 
       staffId:
         getId(
@@ -1032,7 +1117,7 @@ export default function Timetable() {
   };
 
   /* ==========================================================
-     SAVE TIMETABLE
+     SAVE ENTRY
   ========================================================== */
 
   const saveEntry =
@@ -1051,18 +1136,14 @@ export default function Timetable() {
         return;
       }
 
-      if (
-        !entryForm.classId
-      ) {
+      if (!entryForm.classId) {
         setError(
           "Please select a class."
         );
         return;
       }
 
-      if (
-        !entryForm.sectionId
-      ) {
+      if (!entryForm.sectionId) {
         setError(
           "Please select a section."
         );
@@ -1078,9 +1159,7 @@ export default function Timetable() {
         return;
       }
 
-      if (
-        !entryForm.staffId
-      ) {
+      if (!entryForm.staffId) {
         setError(
           "Please select a teacher."
         );
@@ -1097,24 +1176,6 @@ export default function Timetable() {
       }
 
       try {
-        const selectedSlot =
-          slots.find(
-            (slot) =>
-              String(
-                slot.id
-              ) ===
-              String(
-                entryForm.periodSlotId
-              )
-          );
-
-        if (!selectedSlot) {
-          setError(
-            "The selected time slot is not available. Please refresh the page."
-          );
-          return;
-        }
-
         const payload = {
           academicYearId:
             Number(
@@ -1150,10 +1211,6 @@ export default function Timetable() {
             ),
         };
 
-        /* ====================================================
-           UPDATE
-        ==================================================== */
-
         if (editingEntry) {
           await axiosClient.put(
             `/timetable/${editingEntry.id}`,
@@ -1175,13 +1232,7 @@ export default function Timetable() {
           setNotice(
             "Timetable updated successfully."
           );
-        }
-
-        /* ====================================================
-           CREATE
-        ==================================================== */
-
-        else {
+        } else {
           await axiosClient.post(
             "/timetable",
             payload
@@ -1193,11 +1244,9 @@ export default function Timetable() {
         }
 
         setShowEntryForm(false);
-
         setEditingEntry(null);
 
         await loadTimetable();
-
       } catch (err) {
         console.error(
           "Timetable save error:",
@@ -1213,7 +1262,7 @@ export default function Timetable() {
     };
 
   /* ==========================================================
-     DELETE TIMETABLE ENTRY
+     DELETE ENTRY
   ========================================================== */
 
   const deleteEntry =
@@ -1238,7 +1287,6 @@ export default function Timetable() {
         );
 
         await loadTimetable();
-
       } catch (err) {
         console.error(
           "Delete timetable error:",
@@ -1351,7 +1399,9 @@ export default function Timetable() {
         return;
       }
 
-      if (!slotForm.label.trim()) {
+      if (
+        !slotForm.label.trim()
+      ) {
         setError(
           "Please enter a slot name."
         );
@@ -1435,11 +1485,9 @@ export default function Timetable() {
         }
 
         setShowSlotForm(false);
-
         setEditingSlot(null);
 
         await loadSlots();
-
       } catch (err) {
         console.error(
           "Slot save error:",
@@ -1480,7 +1528,6 @@ export default function Timetable() {
         );
 
         await loadSlots();
-
       } catch (err) {
         console.error(
           "Delete slot error:",
@@ -1496,6 +1543,94 @@ export default function Timetable() {
     };
 
   /* ==========================================================
+     OPEN INCHARGE MODAL
+  ========================================================== */
+
+  const openInchargeModal =
+    () => {
+      if (!sectionId) {
+        setError(
+          "Please select a section first."
+        );
+        return;
+      }
+
+      setInchargeTeacherId(
+        getId(
+          selectedSection?.classTeacher?.id
+        ) ||
+          getId(
+            selectedSection?.classTeacherId
+          ) ||
+          ""
+      );
+
+      setError("");
+      setNotice("");
+
+      setShowInchargeForm(true);
+    };
+
+  /* ==========================================================
+     SAVE CLASS INCHARGE
+  ========================================================== */
+
+  const saveClassIncharge =
+    async (event) => {
+      event.preventDefault();
+
+      if (!sectionId) {
+        setError(
+          "Please select a section."
+        );
+        return;
+      }
+
+      setInchargeSaving(true);
+      setError("");
+      setNotice("");
+
+      try {
+        await axiosClient.put(
+          `/sections/${sectionId}`,
+          {
+            classTeacherId:
+              inchargeTeacherId
+                ? Number(
+                    inchargeTeacherId
+                  )
+                : null,
+          }
+        );
+
+        setNotice(
+          "Class incharge updated successfully."
+        );
+
+        setShowInchargeForm(false);
+
+        await loadSections(
+          classId
+        );
+
+        await loadTimetable();
+      } catch (err) {
+        console.error(
+          "Class incharge error:",
+          err
+        );
+
+        setError(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Unable to update class incharge."
+        );
+      } finally {
+        setInchargeSaving(false);
+      }
+    };
+
+  /* ==========================================================
      SWITCH MODE
   ========================================================== */
 
@@ -1505,8 +1640,8 @@ export default function Timetable() {
     setMode(nextMode);
 
     setEntries([]);
-
     setError("");
+    setNotice("");
 
     if (
       nextMode === "class"
@@ -1515,8 +1650,756 @@ export default function Timetable() {
     } else {
       setClassId("");
       setSectionId("");
+      setSections([]);
     }
   };
+
+  /* ==========================================================
+     PDF - DEDICATED PRINT WINDOW
+     
+     IMPORTANT:
+     We DO NOT use window.print() on the
+     Admin portal.
+     
+     A completely new document is created
+     containing ONLY timetable content.
+  ========================================================== */
+
+  const downloadTimetablePDF =
+    () => {
+      if (mode === "class") {
+        if (!classId) {
+          setError(
+            "Please select a class first."
+          );
+          return;
+        }
+
+        if (!sectionId) {
+          setError(
+            "Please select a section before downloading the PDF."
+          );
+          return;
+        }
+      }
+
+      if (
+        visibleEntries.length === 0
+      ) {
+        setError(
+          "There is no timetable data to download. Click Load Timetable first."
+        );
+        return;
+      }
+
+      const printWindow =
+        window.open(
+          "",
+          "_blank",
+          "width=1400,height=950"
+        );
+
+      if (!printWindow) {
+        setError(
+          "The PDF window was blocked by your browser. Please allow pop-ups for this site and try again."
+        );
+        return;
+      }
+
+      const className =
+        selectedClass?.name ||
+        selectedClass?.className ||
+        selectedClass?.class ||
+        selectedClass?.grade ||
+        getClassName(
+          visibleEntries[0]
+        ) ||
+        "Class";
+
+      const sectionName =
+        selectedSection?.name ||
+        getSectionName(
+          visibleEntries[0]
+        ) ||
+        "Section";
+
+      const academicYearName =
+        getAcademicYearName(
+          selectedAcademicYear
+        ) ||
+        "Academic Year";
+
+      const inchargeName =
+        getInchargeName(
+          selectedSection
+        ) ||
+        visibleEntries[0]
+          ?.section
+          ?.classTeacher
+          ?.name ||
+        "Not assigned";
+
+      const teacherName =
+        teachers.find(
+          (teacher) =>
+            String(teacher.id) ===
+            String(staffId)
+        )?.name ||
+        "Teacher";
+
+      const title =
+        mode === "teacher"
+          ? `${teacherName} - Weekly Timetable`
+          : `${className} ${sectionName} - Weekly Timetable`;
+
+      /* ------------------------------------------------------
+         BUILD ONLY TIMETABLE ROWS
+      ------------------------------------------------------ */
+
+      const rows = slots
+        .map((slot) => {
+          const cells =
+            DAYS.map(
+              (day) => {
+                const matches =
+                  getEntriesForSlotDay(
+                    slot,
+                    day.label
+                  );
+
+                if (
+                  matches.length === 0
+                ) {
+                  return `
+                    <td class="empty-cell">
+                      <span>—</span>
+                    </td>
+                  `;
+                }
+
+                const content =
+                  matches
+                    .map(
+                      (entry) => {
+                        const subject =
+                          escapeHtml(
+                            getSubjectName(
+                              entry
+                            )
+                          );
+
+                        const teacher =
+                          escapeHtml(
+                            getTeacherName(
+                              entry
+                            )
+                          );
+
+                        const entryClass =
+                          escapeHtml(
+                            getClassName(
+                              entry
+                            )
+                          );
+
+                        const entrySection =
+                          escapeHtml(
+                            getSectionName(
+                              entry
+                            )
+                          );
+
+                        const sectionLine =
+                          mode ===
+                            "teacher" &&
+                          entryClass
+                            ? `
+                              <div class="cell-class">
+                                ${entryClass}${
+                                  entrySection
+                                    ? ` • ${entrySection}`
+                                    : ""
+                                }
+                              </div>
+                            `
+                            : "";
+
+                        return `
+                          <div class="subject-card">
+                            <div class="subject">
+                              ${subject}
+                            </div>
+                            ${sectionLine}
+                            <div class="teacher">
+                              ${teacher}
+                            </div>
+                          </div>
+                        `;
+                      }
+                    )
+                    .join("");
+
+                return `
+                  <td>
+                    ${content}
+                  </td>
+                `;
+              }
+            ).join("");
+
+          const slotType =
+            String(
+              slot.slotType || ""
+            ).toLowerCase();
+
+          const isBreak =
+            slotType ===
+              "recess" ||
+            slotType ===
+              "lunch";
+
+          if (isBreak) {
+            return `
+              <tr class="break-row">
+                <td class="time-cell">
+                  <strong>
+                    ${escapeHtml(
+                      slot.label ||
+                        "Break"
+                    )}
+                  </strong>
+                  <span>
+                    ${escapeHtml(
+                      formatTime(
+                        slot.startTime
+                      )
+                    )}
+                    -
+                    ${escapeHtml(
+                      formatTime(
+                        slot.endTime
+                      )
+                    )}
+                  </span>
+                </td>
+
+                <td
+                  colspan="6"
+                  class="break-cell"
+                >
+                  ${escapeHtml(
+                    slot.label ||
+                      "Break"
+                  )}
+                </td>
+              </tr>
+            `;
+          }
+
+          return `
+            <tr>
+              <td class="time-cell">
+                <strong>
+                  ${escapeHtml(
+                    slot.label ||
+                      `Period ${
+                        slot.slotNo || ""
+                      }`
+                  )}
+                </strong>
+
+                <span>
+                  ${escapeHtml(
+                    formatTime(
+                      slot.startTime
+                    )
+                  )}
+                  -
+                  ${escapeHtml(
+                    formatTime(
+                      slot.endTime
+                    )
+                  )}
+                </span>
+              </td>
+
+              ${cells}
+            </tr>
+          `;
+        })
+        .join("");
+
+      /* ------------------------------------------------------
+         PRINT DOCUMENT
+      ------------------------------------------------------ */
+
+      printWindow.document.open();
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+
+        <html>
+          <head>
+            <meta charset="UTF-8" />
+
+            <title>
+              ${escapeHtml(title)}
+            </title>
+
+            <style>
+
+              @page {
+                size: A4 landscape;
+                margin: 9mm;
+              }
+
+              * {
+                box-sizing: border-box;
+              }
+
+              html,
+              body {
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                color: #172033;
+                font-family:
+                  Arial,
+                  Helvetica,
+                  sans-serif;
+              }
+
+              body {
+                padding: 0;
+              }
+
+              .print-page {
+                width: 100%;
+              }
+
+              .top-line {
+                height: 6px;
+                width: 100%;
+                background: #2563eb;
+                border-radius: 6px 6px 0 0;
+                margin-bottom: 18px;
+              }
+
+              .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 20px;
+                margin-bottom: 14px;
+              }
+
+              .brand {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+              }
+
+              .brand-mark {
+                width: 42px;
+                height: 42px;
+                border-radius: 10px;
+                background: #eff6ff;
+                color: #2563eb;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                font-weight: 800;
+              }
+
+              h1 {
+                margin: 0;
+                font-size: 24px;
+                line-height: 1.2;
+                color: #111827;
+              }
+
+              .subtitle {
+                margin-top: 4px;
+                color: #64748b;
+                font-size: 11px;
+              }
+
+              .generated {
+                text-align: right;
+                color: #64748b;
+                font-size: 9px;
+                line-height: 1.5;
+              }
+
+              .summary {
+                display: grid;
+                grid-template-columns:
+                  repeat(4, 1fr);
+                gap: 8px;
+                margin-bottom: 14px;
+              }
+
+              .summary-item {
+                border: 1px solid #dbe4f0;
+                border-radius: 8px;
+                padding: 8px 10px;
+                background: #f8fafc;
+                min-height: 46px;
+              }
+
+              .summary-label {
+                display: block;
+                text-transform: uppercase;
+                font-size: 7px;
+                letter-spacing: 0.08em;
+                font-weight: 700;
+                color: #64748b;
+                margin-bottom: 3px;
+              }
+
+              .summary-value {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                color: #172033;
+              }
+
+              .table-wrap {
+                width: 100%;
+                overflow: hidden;
+              }
+
+              table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                table-layout: fixed;
+                border: 1px solid #cbd5e1;
+                border-radius: 9px;
+                overflow: hidden;
+              }
+
+              thead th {
+                background: #1e3a8a;
+                color: #ffffff;
+                font-size: 9px;
+                font-weight: 800;
+                padding: 8px 5px;
+                text-align: center;
+                border-right: 1px solid
+                  rgba(255,255,255,0.18);
+              }
+
+              thead th:first-child {
+                width: 105px;
+              }
+
+              tbody td {
+                border-right: 1px solid #dbe4f0;
+                border-bottom: 1px solid #dbe4f0;
+                vertical-align: middle;
+                height: 66px;
+                padding: 5px;
+                background: #ffffff;
+              }
+
+              tbody tr:last-child td {
+                border-bottom: none;
+              }
+
+              tbody td:last-child {
+                border-right: none;
+              }
+
+              .time-cell {
+                background: #f8fafc !important;
+                text-align: center;
+                padding: 6px !important;
+              }
+
+              .time-cell strong {
+                display: block;
+                color: #172033;
+                font-size: 9px;
+                margin-bottom: 4px;
+              }
+
+              .time-cell span {
+                display: block;
+                color: #64748b;
+                font-size: 7px;
+                line-height: 1.35;
+              }
+
+              .subject-card {
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+                border-radius: 6px;
+                padding: 6px;
+                margin: 1px;
+                min-height: 45px;
+                page-break-inside: avoid;
+              }
+
+              .subject {
+                font-size: 9px;
+                font-weight: 800;
+                color: #1e3a8a;
+                line-height: 1.25;
+              }
+
+              .cell-class {
+                margin-top: 2px;
+                font-size: 7px;
+                font-weight: 700;
+                color: #475569;
+              }
+
+              .teacher {
+                margin-top: 4px;
+                font-size: 7px;
+                color: #475569;
+                line-height: 1.2;
+              }
+
+              .empty-cell {
+                text-align: center;
+                color: #cbd5e1;
+                font-size: 12px;
+              }
+
+              .break-row td {
+                height: 30px;
+              }
+
+              .break-cell {
+                background: #f1f5f9 !important;
+                color: #475569;
+                text-align: center;
+                font-size: 8px;
+                font-weight: 800;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+              }
+
+              .footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 10px;
+                padding-top: 7px;
+                border-top: 1px solid #e2e8f0;
+                color: #64748b;
+                font-size: 7px;
+              }
+
+              .footer strong {
+                color: #334155;
+              }
+
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+              }
+
+            </style>
+          </head>
+
+          <body>
+
+            <div class="print-page">
+
+              <div class="top-line"></div>
+
+              <div class="header">
+
+                <div class="brand">
+
+                  <div class="brand-mark">
+                    CI
+                  </div>
+
+                  <div>
+                    <h1>
+                      ${escapeHtml(
+                        title
+                      )}
+                    </h1>
+
+                    <div class="subtitle">
+                      CAMPUS-IQ • Weekly Academic Timetable
+                    </div>
+                  </div>
+
+                </div>
+
+                <div class="generated">
+                  Generated on<br />
+                  ${escapeHtml(
+                    new Date().toLocaleDateString(
+                      "en-IN",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      }
+                    )
+                  )}
+                </div>
+
+              </div>
+
+              <div class="summary">
+
+                ${
+                  mode ===
+                  "class"
+                    ? `
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Class
+                        </span>
+                        <span class="summary-value">
+                          ${escapeHtml(
+                            className
+                          )}
+                        </span>
+                      </div>
+
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Section
+                        </span>
+                        <span class="summary-value">
+                          ${escapeHtml(
+                            sectionName
+                          )}
+                        </span>
+                      </div>
+
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Academic Year
+                        </span>
+                        <span class="summary-value">
+                          ${escapeHtml(
+                            academicYearName
+                          )}
+                        </span>
+                      </div>
+
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Class Incharge
+                        </span>
+                        <span class="summary-value">
+                          ${escapeHtml(
+                            inchargeName
+                          )}
+                        </span>
+                      </div>
+                    `
+                    : `
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Teacher
+                        </span>
+                        <span class="summary-value">
+                          ${escapeHtml(
+                            teacherName
+                          )}
+                        </span>
+                      </div>
+
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Academic Year
+                        </span>
+                        <span class="summary-value">
+                          ${escapeHtml(
+                            academicYearName
+                          )}
+                        </span>
+                      </div>
+
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Timetable
+                        </span>
+                        <span class="summary-value">
+                          Weekly Schedule
+                        </span>
+                      </div>
+
+                      <div class="summary-item">
+                        <span class="summary-label">
+                          Total Entries
+                        </span>
+                        <span class="summary-value">
+                          ${visibleEntries.length}
+                        </span>
+                      </div>
+                    `
+                }
+
+              </div>
+
+              <div class="table-wrap">
+
+                <table>
+
+                  <thead>
+                    <tr>
+                      <th>Time / Period</th>
+                      ${DAYS.map(
+                        (day) =>
+                          `<th>${escapeHtml(
+                            day.label
+                          )}</th>`
+                      ).join("")}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    ${rows}
+                  </tbody>
+
+                </table>
+
+              </div>
+
+              <div class="footer">
+                <span>
+                  <strong>CAMPUS-IQ</strong>
+                  &nbsp; Academic Management System
+                </span>
+
+                <span>
+                  Timetable document
+                </span>
+              </div>
+
+            </div>
+
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+
+        setTimeout(() => {
+          printWindow.close();
+        }, 800);
+      }, 500);
+    };
 
   /* ==========================================================
      RENDER
@@ -1526,7 +2409,7 @@ export default function Timetable() {
     <div className="timetable-page">
 
       {/* ======================================================
-          PAGE HEADER
+          HEADER
       ====================================================== */}
 
       <div className="tt-page-header">
@@ -1543,9 +2426,8 @@ export default function Timetable() {
           </h1>
 
           <p>
-            Create and manage the
-            weekly timetable for
-            classes and teachers.
+            Create, manage and download
+            professional weekly timetables.
           </p>
 
         </div>
@@ -1555,11 +2437,33 @@ export default function Timetable() {
           <Button
             variant="outline"
             size="md"
+            onClick={
+              downloadTimetablePDF
+            }
+            disabled={
+              visibleEntries.length ===
+              0
+            }
+          >
+            <Download size={16} />
+
+            Download PDF
+          </Button>
+
+          <Button
+            variant="outline"
+            size="md"
             onClick={() => {
               loadSlots();
               loadAcademicYears();
               loadClasses();
               loadTeachers();
+
+              if (classId) {
+                loadSections(
+                  classId
+                );
+              }
             }}
             disabled={
               slotLoading ||
@@ -1578,7 +2482,6 @@ export default function Timetable() {
             />
 
             Refresh
-
           </Button>
 
           <Button
@@ -1588,11 +2491,9 @@ export default function Timetable() {
               openCreateSlot
             }
           >
-
             <Clock3 size={16} />
 
             Add Time Slot
-
           </Button>
 
           <Button
@@ -1602,11 +2503,9 @@ export default function Timetable() {
               openCreateEntry
             }
           >
-
             <Plus size={16} />
 
             Create Timetable
-
           </Button>
 
         </div>
@@ -1614,7 +2513,7 @@ export default function Timetable() {
       </div>
 
       {/* ======================================================
-          ALERTS
+          ALERT
       ====================================================== */}
 
       {(error || notice) && (
@@ -1648,7 +2547,7 @@ export default function Timetable() {
       )}
 
       {/* ======================================================
-          TIMETABLE CARD
+          MAIN TIMETABLE CARD
       ====================================================== */}
 
       <Card>
@@ -1657,9 +2556,17 @@ export default function Timetable() {
 
           <div className="tt-card-header">
 
-            <CardTitle>
-              Timetable
-            </CardTitle>
+            <div>
+              <CardTitle>
+                Weekly Timetable
+              </CardTitle>
+
+              <p className="tt-card-description">
+                Select a class and section
+                to view, manage or download
+                its timetable.
+              </p>
+            </div>
 
             <div className="tt-mode-switch">
 
@@ -1676,11 +2583,9 @@ export default function Timetable() {
                   )
                 }
               >
-
                 <Users size={16} />
 
                 Class View
-
               </button>
 
               <button
@@ -1696,13 +2601,11 @@ export default function Timetable() {
                   )
                 }
               >
-
                 <BookOpen
                   size={16}
                 />
 
                 Teacher View
-
               </button>
 
             </div>
@@ -1730,13 +2633,13 @@ export default function Timetable() {
                     className="tt-select"
                     value={classId}
                     onChange={(event) => {
-
                       setClassId(
                         event.target.value
                       );
 
                       setSectionId("");
 
+                      setEntries([]);
                     }}
                   >
 
@@ -1766,7 +2669,10 @@ export default function Timetable() {
 
                 </Field>
 
-                <Field label="Section">
+                <Field
+                  label="Section"
+                  required
+                >
 
                   <select
                     className="tt-select"
@@ -1779,12 +2685,17 @@ export default function Timetable() {
                       )
                     }
                     disabled={
-                      !classId
+                      !classId ||
+                      sectionLoading
                     }
                   >
 
                     <option value="">
-                      All Sections
+                      {!classId
+                        ? "Select class first"
+                        : sectionLoading
+                        ? "Loading sections..."
+                        : "Select Section"}
                     </option>
 
                     {sections.map(
@@ -1807,12 +2718,29 @@ export default function Timetable() {
                   </select>
 
                 </Field>
+
+                <div className="tt-incharge-action">
+
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onClick={
+                      openInchargeModal
+                    }
+                    disabled={
+                      !sectionId
+                    }
+                  >
+                    <UserCheck
+                      size={16}
+                    />
+
+                    Set Class Incharge
+                  </Button>
+
+                </div>
               </>
             ) : (
-
-              /* =================================================
-                 TEACHER FILTER
-              ================================================= */
 
               <Field
                 label="Teacher"
@@ -1885,10 +2813,9 @@ export default function Timetable() {
                         year.id
                       }
                     >
-                      {year.name ||
-                        year.label ||
-                        year.academicYear ||
-                        year.year}
+                      {getAcademicYearName(
+                        year
+                      )}
                     </option>
                   )
                 )}
@@ -1912,7 +2839,7 @@ export default function Timetable() {
                       event.target.value
                     )
                   }
-                  placeholder="Subject, teacher, class..."
+                  placeholder="Subject, teacher..."
                 />
 
               </div>
@@ -1941,7 +2868,115 @@ export default function Timetable() {
           </div>
 
           {/* ==================================================
-              DAYS
+              SELECTED SECTION SUMMARY
+          ================================================== */}
+
+          {mode === "class" &&
+            sectionId && (
+              <div className="tt-section-summary">
+
+                <div className="tt-summary-icon">
+                  <Users size={19} />
+                </div>
+
+                <div className="tt-summary-main">
+
+                  <div className="tt-summary-title">
+                    {selectedClass?.name ||
+                      selectedClass?.className ||
+                      "Class"}{" "}
+                    •{" "}
+                    {selectedSection?.name ||
+                      "Section"}
+                  </div>
+
+                  <div className="tt-summary-meta">
+
+                    <span>
+                      Academic Year:{" "}
+                      {getAcademicYearName(
+                        selectedAcademicYear
+                      ) ||
+                        "Not selected"}
+                    </span>
+
+                    <span>
+                      Class Incharge:{" "}
+                      <strong>
+                        {getInchargeName(
+                          selectedSection
+                        ) ||
+                          "Not assigned"}
+                      </strong>
+                    </span>
+
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="tt-summary-edit"
+                  onClick={
+                    openInchargeModal
+                  }
+                >
+                  <Pencil size={14} />
+
+                  Change
+                </button>
+
+              </div>
+            )}
+
+          {/* ==================================================
+              VIEW SWITCH
+          ================================================== */}
+
+          <div className="tt-view-switch">
+
+            <button
+              type="button"
+              className={
+                viewMode === "weekly"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setViewMode(
+                  "weekly"
+                )
+              }
+            >
+              <CalendarDays
+                size={16}
+              />
+
+              Weekly View
+            </button>
+
+            <button
+              type="button"
+              className={
+                viewMode === "list"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setViewMode(
+                  "list"
+                )
+              }
+            >
+              <FileText size={16} />
+
+              Management View
+            </button>
+
+          </div>
+
+          {/* ==================================================
+              DAY FILTER
           ================================================== */}
 
           <div className="tt-days">
@@ -1952,248 +2987,399 @@ export default function Timetable() {
                 (day) =>
                   day.label
               ),
-            ].map((day) => (
-
-              <button
-                type="button"
-                key={day}
-                className={
-                  activeDay === day
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setActiveDay(
+            ].map(
+              (day) => (
+                <button
+                  type="button"
+                  key={day}
+                  className={
+                    activeDay ===
                     day
-                  )
-                }
-              >
-                {day}
-              </button>
-
-            ))}
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setActiveDay(
+                      day
+                    )
+                  }
+                >
+                  {day}
+                </button>
+              )
+            )}
 
           </div>
 
           {/* ==================================================
-              TABLE
+              WEEKLY VIEW
           ================================================== */}
 
-          <div className="tt-table-wrapper">
+          {viewMode ===
+            "weekly" && (
+            <div className="tt-weekly-wrapper">
 
-            <table className="tt-table">
+              <div className="tt-weekly-grid">
 
-              <thead>
+                <div className="tt-weekly-header tt-time-header">
+                  Time / Period
+                </div>
 
-                <tr>
-
-                  <th>
-                    Day
-                  </th>
-
-                  <th>
-                    Time
-                  </th>
-
-                  <th>
-                    Class
-                  </th>
-
-                  <th>
-                    Section
-                  </th>
-
-                  <th>
-                    Subject
-                  </th>
-
-                  <th>
-                    Teacher
-                  </th>
-
-                  <th>
-                    Actions
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {visibleEntries.map(
-                  (entry) => (
-
-                    <tr
+                {DAYS.map(
+                  (day) => (
+                    <div
+                      className="tt-weekly-header"
                       key={
-                        entry.id
+                        day.value
                       }
                     >
-
-                      <td>
-
-                        <strong>
-                          {entry.dayName ||
-                            "—"}
-                        </strong>
-
-                      </td>
-
-                      <td>
-
-                        <div className="tt-time-cell">
-
-                          <strong>
-                            {formatTime(
-                              entry
-                                .periodSlot
-                                ?.startTime
-                            )}
-                          </strong>
-
-                          <span>
-                            to
-                          </span>
-
-                          <strong>
-                            {formatTime(
-                              entry
-                                .periodSlot
-                                ?.endTime
-                            )}
-                          </strong>
-
-                        </div>
-
-                        <small>
-                          {entry
-                            .periodSlot
-                            ?.label ||
-                            ""}
-                        </small>
-
-                      </td>
-
-                      <td>
-
-                        {entry
-                          .class
-                          ?.name ||
-                          entry.className ||
-                          "—"}
-
-                      </td>
-
-                      <td>
-
-                        {entry
-                          .section
-                          ?.name ||
-                          entry.sectionName ||
-                          "—"}
-
-                      </td>
-
-                      <td>
-
-                        <strong>
-                          {entry
-                            .subject
-                            ?.name ||
-                            entry.subjectName ||
-                            "—"}
-                        </strong>
-
-                      </td>
-
-                      <td>
-
-                        {entry
-                          .staff
-                          ?.name ||
-                          entry
-                            .teacher
-                            ?.name ||
-                          "—"}
-
-                      </td>
-
-                      <td>
-
-                        <div className="tt-action-buttons">
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              editEntry(
-                                entry
-                              )
-                            }
-                          >
-
-                            <Pencil
-                              size={14}
-                            />
-
-                            Edit
-
-                          </Button>
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              deleteEntry(
-                                entry
-                              )
-                            }
-                          >
-
-                            <Trash2
-                              size={14}
-                            />
-
-                            Delete
-
-                          </Button>
-
-                        </div>
-
-                      </td>
-
-                    </tr>
-
+                      {day.label}
+                    </div>
                   )
                 )}
 
-              </tbody>
+                {slots.length ===
+                0 ? (
+                  <div className="tt-weekly-empty">
+                    No time slots found.
+                    Create a time slot first.
+                  </div>
+                ) : (
+                  slots.map(
+                    (slot) => {
+                      const slotType =
+                        String(
+                          slot.slotType ||
+                            ""
+                        ).toLowerCase();
 
-            </table>
+                      const isBreak =
+                        slotType ===
+                          "recess" ||
+                        slotType ===
+                          "lunch";
 
-            {!loading &&
-              visibleEntries.length ===
-                0 && (
+                      return (
+                        <React.Fragment
+                          key={
+                            slot.id
+                          }
+                        >
 
-                <EmptyState
-                  message={
-                    mode ===
-                    "class"
-                      ? classId
+                          <div
+                            className={`tt-weekly-time ${
+                              isBreak
+                                ? "break-time"
+                                : ""
+                            }`}
+                          >
+                            <strong>
+                              {slot.label ||
+                                `Period ${
+                                  slot.slotNo ||
+                                  ""
+                                }`}
+                            </strong>
+
+                            <span>
+                              {formatTime(
+                                slot.startTime
+                              )}
+                              {" - "}
+                              {formatTime(
+                                slot.endTime
+                              )}
+                            </span>
+                          </div>
+
+                          {DAYS.map(
+                            (day) => {
+                              const dayEntries =
+                                getEntriesForSlotDay(
+                                  slot,
+                                  day.label
+                                );
+
+                              if (
+                                isBreak
+                              ) {
+                                return (
+                                  <div
+                                    key={`${slot.id}-${day.value}`}
+                                    className="tt-weekly-cell break-cell"
+                                  >
+                                    <span>
+                                      {slot.label ||
+                                        "Break"}
+                                    </span>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div
+                                  key={`${slot.id}-${day.value}`}
+                                  className="tt-weekly-cell"
+                                >
+
+                                  {dayEntries.length ===
+                                  0 ? (
+                                    <span className="tt-no-class">
+                                      —
+                                    </span>
+                                  ) : (
+                                    dayEntries.map(
+                                      (
+                                        entry
+                                      ) => (
+                                        <div
+                                          className="tt-subject-card"
+                                          key={
+                                            entry.id
+                                          }
+                                        >
+
+                                          <strong>
+                                            {getSubjectName(
+                                              entry
+                                            )}
+                                          </strong>
+
+                                          <span>
+                                            {getTeacherName(
+                                              entry
+                                            )}
+                                          </span>
+
+                                          {mode ===
+                                            "teacher" && (
+                                            <small>
+                                              {getClassName(
+                                                entry
+                                              )}{" "}
+                                              •{" "}
+                                              {getSectionName(
+                                                entry
+                                              )}
+                                            </small>
+                                          )}
+
+                                        </div>
+                                      )
+                                    )
+                                  )}
+
+                                </div>
+                              );
+                            }
+                          )}
+
+                        </React.Fragment>
+                      );
+                    }
+                  )
+                )}
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ==================================================
+              MANAGEMENT LIST
+          ================================================== */}
+
+          {viewMode ===
+            "list" && (
+            <div className="tt-table-wrapper">
+
+              <table className="tt-table">
+
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Section</th>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {visibleEntries.map(
+                    (entry) => (
+                      <tr
+                        key={
+                          entry.id
+                        }
+                      >
+
+                        <td>
+                          <strong>
+                            {normalizeDay(
+                              entry.dayName ||
+                                entry.day ||
+                                entry.dayOfWeek
+                            )}
+                          </strong>
+                        </td>
+
+                        <td>
+
+                          <div className="tt-time-cell">
+
+                            <strong>
+                              {formatTime(
+                                entry
+                                  .periodSlot
+                                  ?.startTime
+                              )}
+                            </strong>
+
+                            <span>
+                              to
+                            </span>
+
+                            <strong>
+                              {formatTime(
+                                entry
+                                  .periodSlot
+                                  ?.endTime
+                              )}
+                            </strong>
+
+                          </div>
+
+                          <small>
+                            {entry
+                              .periodSlot
+                              ?.label ||
+                              ""}
+                          </small>
+
+                        </td>
+
+                        <td>
+                          {getClassName(
+                            entry
+                          )}{" "}
+                          •{" "}
+                          {getSectionName(
+                            entry
+                          )}
+                        </td>
+
+                        <td>
+                          <strong>
+                            {getSubjectName(
+                              entry
+                            )}
+                          </strong>
+                        </td>
+
+                        <td>
+                          {getTeacherName(
+                            entry
+                          )}
+                        </td>
+
+                        <td>
+
+                          <div className="tt-action-buttons">
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                editEntry(
+                                  entry
+                                )
+                              }
+                            >
+                              <Pencil
+                                size={14}
+                              />
+
+                              Edit
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                deleteEntry(
+                                  entry
+                                )
+                              }
+                            >
+                              <Trash2
+                                size={14}
+                              />
+
+                              Delete
+                            </Button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    )
+                  )}
+
+                </tbody>
+
+              </table>
+
+              {!loading &&
+                visibleEntries.length ===
+                  0 && (
+                  <EmptyState
+                    message={
+                      mode ===
+                      "class"
+                        ? classId
+                          ? "No timetable entries found."
+                          : "Select a class and click Load Timetable."
+                        : staffId
                         ? "No timetable entries found."
-                        : "Select a class and click Load Timetable."
-                      : staffId
-                      ? "No timetable entries found."
-                      : "Select a teacher and click Load Timetable."
-                  }
-                />
+                        : "Select a teacher and click Load Timetable."
+                    }
+                  />
+                )}
 
-              )}
+            </div>
+          )}
+
+          {/* ==================================================
+              PDF HELP
+          ================================================== */}
+
+          <div className="tt-pdf-help">
+
+            <div>
+              <Download size={18} />
+            </div>
+
+            <div>
+              <strong>
+                Download section timetable
+              </strong>
+
+              <span>
+                Select Class + Section,
+                load the timetable, then
+                click Download PDF. The
+                PDF contains only the
+                timetable.
+              </span>
+            </div>
 
           </div>
 
         </CardContent>
-
       </Card>
 
       {/* ======================================================
@@ -2213,9 +3399,8 @@ export default function Timetable() {
               </CardTitle>
 
               <p className="tt-card-description">
-                Create the actual
-                school timings used
-                by the timetable.
+                School timings used by
+                the timetable.
               </p>
 
             </div>
@@ -2227,11 +3412,9 @@ export default function Timetable() {
                 openCreateSlot
               }
             >
-
               <Plus size={15} />
 
               Add Time Slot
-
             </Button>
 
           </div>
@@ -2242,18 +3425,14 @@ export default function Timetable() {
 
           {slots.length ===
           0 ? (
-
             <EmptyState
-              message="No time slots found. Click Add Time Slot to create the first school timing."
+              message="No time slots found. Click Add Time Slot to create one."
             />
-
           ) : (
-
             <div className="tt-slot-grid">
 
               {slots.map(
                 (slot) => (
-
                   <div
                     className="tt-slot-card"
                     key={
@@ -2262,17 +3441,13 @@ export default function Timetable() {
                   >
 
                     <div className="tt-slot-number">
-                      {
-                        slot.slotNo
-                      }
+                      {slot.slotNo}
                     </div>
 
                     <div className="tt-slot-content">
 
                       <strong>
-                        {
-                          slot.label
-                        }
+                        {slot.label}
                       </strong>
 
                       <div className="tt-slot-time">
@@ -2296,9 +3471,7 @@ export default function Timetable() {
                       </div>
 
                       <span className="tt-slot-type">
-                        {
-                          slot.slotType
-                        }
+                        {slot.slotType}
                       </span>
 
                     </div>
@@ -2314,11 +3487,9 @@ export default function Timetable() {
                         }
                         title="Edit time slot"
                       >
-
                         <Pencil
                           size={16}
                         />
-
                       </button>
 
                       <button
@@ -2330,22 +3501,18 @@ export default function Timetable() {
                         }
                         title="Delete time slot"
                       >
-
                         <Trash2
                           size={16}
                         />
-
                       </button>
 
                     </div>
 
                   </div>
-
                 )
               )}
 
             </div>
-
           )}
 
         </CardContent>
@@ -2357,7 +3524,6 @@ export default function Timetable() {
       ====================================================== */}
 
       {showEntryForm && (
-
         <Modal
           title={
             editingEntry
@@ -2378,10 +3544,6 @@ export default function Timetable() {
               saveEntry
             }
           >
-
-            {/* ==================================================
-                ACADEMIC YEAR
-            ================================================== */}
 
             <Field
               label="Academic Year"
@@ -2409,7 +3571,6 @@ export default function Timetable() {
 
                 {academicYears.map(
                   (year) => (
-
                     <option
                       key={
                         year.id
@@ -2418,24 +3579,16 @@ export default function Timetable() {
                         year.id
                       }
                     >
-
-                      {year.name ||
-                        year.label ||
-                        year.academicYear ||
-                        year.year}
-
+                      {getAcademicYearName(
+                        year
+                      )}
                     </option>
-
                   )
                 )}
 
               </select>
 
             </Field>
-
-            {/* ==================================================
-                CLASS
-            ================================================== */}
 
             <Field
               label="Class"
@@ -2451,7 +3604,8 @@ export default function Timetable() {
                 onChange={(event) => {
 
                   const newClassId =
-                    event.target.value;
+                    event.target
+                      .value;
 
                   setEntryForm({
                     ...entryForm,
@@ -2464,7 +3618,6 @@ export default function Timetable() {
                   loadSections(
                     newClassId
                   );
-
                 }}
               >
 
@@ -2474,7 +3627,6 @@ export default function Timetable() {
 
                 {classes.map(
                   (item) => (
-
                     <option
                       key={
                         item.id
@@ -2483,24 +3635,17 @@ export default function Timetable() {
                         item.id
                       }
                     >
-
                       {item.name ||
                         item.className ||
                         item.class ||
                         item.grade}
-
                     </option>
-
                   )
                 )}
 
               </select>
 
             </Field>
-
-            {/* ==================================================
-                SECTION
-            ================================================== */}
 
             <Field
               label="Section"
@@ -2517,7 +3662,8 @@ export default function Timetable() {
                   setEntryForm({
                     ...entryForm,
                     sectionId:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
                 disabled={
@@ -2533,7 +3679,6 @@ export default function Timetable() {
 
                 {sections.map(
                   (section) => (
-
                     <option
                       key={
                         section.id
@@ -2542,23 +3687,16 @@ export default function Timetable() {
                         section.id
                       }
                     >
-
                       {section.name ||
                         section.sectionName ||
                         section.code}
-
                     </option>
-
                   )
                 )}
 
               </select>
 
             </Field>
-
-            {/* ==================================================
-                SUBJECT
-            ================================================== */}
 
             <Field
               label="Subject"
@@ -2574,7 +3712,8 @@ export default function Timetable() {
                   setEntryForm({
                     ...entryForm,
                     subjectName:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
                 placeholder="Enter subject name"
@@ -2582,12 +3721,8 @@ export default function Timetable() {
 
             </Field>
 
-            {/* ==================================================
-                TEACHER NAME
-            ================================================== */}
-
             <Field
-              label="Teacher Name"
+              label="Teacher"
               required
             >
 
@@ -2601,7 +3736,8 @@ export default function Timetable() {
                   setEntryForm({
                     ...entryForm,
                     staffId:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               >
@@ -2614,7 +3750,6 @@ export default function Timetable() {
 
                 {teachers.map(
                   (teacher) => (
-
                     <option
                       key={String(
                         teacher.id
@@ -2623,64 +3758,14 @@ export default function Timetable() {
                         teacher.id
                       )}
                     >
-
                       {teacher.name}
-
                     </option>
-
                   )
                 )}
 
               </select>
 
-              {/* ==================================================
-                  TEACHER STATUS
-              ================================================== */}
-
-              {teacherLoading && (
-                <small
-                  style={{
-                    display:
-                      "block",
-                    marginTop:
-                      "6px",
-                    color:
-                      "#64748b",
-                  }}
-                >
-                  Loading teachers...
-                </small>
-              )}
-
-              {!teacherLoading &&
-                teachers.length ===
-                  0 && (
-
-                  <small
-                    style={{
-                      display:
-                        "block",
-                      marginTop:
-                        "6px",
-                      color:
-                        "#dc2626",
-                    }}
-                  >
-                    No teachers found.
-                    Please add a
-                    staff member with
-                    the Role set to
-                    "Teacher", then
-                    click Refresh.
-                  </small>
-
-                )}
-
             </Field>
-
-            {/* ==================================================
-                TIME
-            ================================================== */}
 
             <Field
               label="Time"
@@ -2697,7 +3782,8 @@ export default function Timetable() {
                   setEntryForm({
                     ...entryForm,
                     periodSlotId:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               >
@@ -2708,7 +3794,6 @@ export default function Timetable() {
 
                 {slots.map(
                   (slot) => (
-
                     <option
                       key={
                         slot.id
@@ -2717,61 +3802,23 @@ export default function Timetable() {
                         slot.id
                       }
                     >
-
                       {formatTime(
                         slot.startTime
                       )}
-
                       {" - "}
-
                       {formatTime(
                         slot.endTime
                       )}
-
                       {" ("}
-
-                      {
-                        slot.label
-                      }
-
+                      {slot.label}
                       {")"}
-
                     </option>
-
                   )
                 )}
 
               </select>
 
-              <div className="tt-time-help">
-
-                <Clock3
-                  size={14}
-                />
-
-                <span>
-
-                  Don't see the
-                  required time?
-                  Close this
-                  window and
-                  click{" "}
-
-                  <strong>
-                    Add Time Slot
-                  </strong>
-
-                  .
-
-                </span>
-
-              </div>
-
             </Field>
-
-            {/* ==================================================
-                DAY
-            ================================================== */}
 
             <Field
               label="Day"
@@ -2788,14 +3835,14 @@ export default function Timetable() {
                   setEntryForm({
                     ...entryForm,
                     dayOfWeek:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               >
 
                 {DAYS.map(
                   (day) => (
-
                     <option
                       key={
                         day.value
@@ -2804,21 +3851,14 @@ export default function Timetable() {
                         day.value
                       }
                     >
-                      {
-                        day.label
-                      }
+                      {day.label}
                     </option>
-
                   )
                 )}
 
               </select>
 
             </Field>
-
-            {/* ==================================================
-                FORM BUTTONS
-            ================================================== */}
 
             <div className="tt-form-actions">
 
@@ -2831,29 +3871,18 @@ export default function Timetable() {
                   )
                 }
               >
-
                 Cancel
-
               </Button>
 
               <Button
                 type="submit"
                 variant="primary"
-                disabled={
-                  teacherLoading ||
-                  teachers.length ===
-                    0
-                }
               >
-
-                <Save
-                  size={16}
-                />
+                <Save size={16} />
 
                 {editingEntry
                   ? "Update Timetable"
                   : "Create Timetable"}
-
               </Button>
 
             </div>
@@ -2861,15 +3890,138 @@ export default function Timetable() {
           </form>
 
         </Modal>
-
       )}
 
       {/* ======================================================
-          ADD / EDIT TIME SLOT MODAL
+          CLASS INCHARGE MODAL
+      ====================================================== */}
+
+      {showInchargeForm && (
+        <Modal
+          title="Set Class Incharge"
+          onClose={() =>
+            setShowInchargeForm(
+              false
+            )
+          }
+        >
+
+          <form
+            className="tt-form"
+            onSubmit={
+              saveClassIncharge
+            }
+          >
+
+            <div className="tt-incharge-modal-info">
+
+              <div className="tt-incharge-modal-icon">
+                <UserCheck size={24} />
+              </div>
+
+              <div>
+
+                <strong>
+                  {selectedClass?.name ||
+                    selectedClass?.className ||
+                    "Class"}{" "}
+                  •{" "}
+                  {selectedSection?.name ||
+                    "Section"}
+                </strong>
+
+                <span>
+                  Choose the teacher who
+                  will be the class incharge
+                  for this section.
+                </span>
+
+              </div>
+
+            </div>
+
+            <Field
+              label="Class Incharge"
+              required
+            >
+
+              <select
+                className="tt-select"
+                required
+                value={
+                  inchargeTeacherId
+                }
+                onChange={(event) =>
+                  setInchargeTeacherId(
+                    event.target
+                      .value
+                  )
+                }
+              >
+
+                <option value="">
+                  Select Teacher
+                </option>
+
+                {teachers.map(
+                  (teacher) => (
+                    <option
+                      key={
+                        teacher.id
+                      }
+                      value={
+                        teacher.id
+                      }
+                    >
+                      {teacher.name}
+                    </option>
+                  )
+                )}
+
+              </select>
+
+            </Field>
+
+            <div className="tt-form-actions">
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setShowInchargeForm(
+                    false
+                  )
+                }
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={
+                  inchargeSaving
+                }
+              >
+                <Save size={16} />
+
+                {inchargeSaving
+                  ? "Saving..."
+                  : "Save Incharge"}
+              </Button>
+
+            </div>
+
+          </form>
+
+        </Modal>
+      )}
+
+      {/* ======================================================
+          ADD / EDIT SLOT MODAL
       ====================================================== */}
 
       {showSlotForm && (
-
         <Modal
           title={
             editingSlot
@@ -2890,8 +4042,6 @@ export default function Timetable() {
             }
           >
 
-            {/* SLOT NUMBER */}
-
             <Field
               label="Slot Number"
               required
@@ -2911,14 +4061,13 @@ export default function Timetable() {
                   setSlotForm({
                     ...slotForm,
                     slotNo:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               />
 
             </Field>
-
-            {/* SLOT NAME */}
 
             <Field
               label="Slot Name"
@@ -2934,15 +4083,14 @@ export default function Timetable() {
                   setSlotForm({
                     ...slotForm,
                     label:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
                 placeholder="Period 1"
               />
 
             </Field>
-
-            {/* START TIME */}
 
             <Field
               label="Start Time"
@@ -2959,14 +4107,13 @@ export default function Timetable() {
                   setSlotForm({
                     ...slotForm,
                     startTime:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               />
 
             </Field>
-
-            {/* END TIME */}
 
             <Field
               label="End Time"
@@ -2983,14 +4130,13 @@ export default function Timetable() {
                   setSlotForm({
                     ...slotForm,
                     endTime:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               />
 
             </Field>
-
-            {/* TYPE */}
 
             <Field
               label="Type"
@@ -3007,14 +4153,14 @@ export default function Timetable() {
                   setSlotForm({
                     ...slotForm,
                     slotType:
-                      event.target.value,
+                      event.target
+                        .value,
                   })
                 }
               >
 
                 {SLOT_TYPES.map(
                   (type) => (
-
                     <option
                       key={
                         type.value
@@ -3023,11 +4169,8 @@ export default function Timetable() {
                         type.value
                       }
                     >
-                      {
-                        type.label
-                      }
+                      {type.label}
                     </option>
-
                   )
                 )}
 
@@ -3035,13 +4178,9 @@ export default function Timetable() {
 
             </Field>
 
-            {/* PREVIEW */}
-
             <div className="tt-slot-preview">
 
-              <Clock3
-                size={18}
-              />
+              <Clock3 size={18} />
 
               <div>
 
@@ -3050,7 +4189,6 @@ export default function Timetable() {
                 </strong>
 
                 <span>
-
                   {slotForm.startTime
                     ? formatTime(
                         slotForm.startTime
@@ -3064,14 +4202,11 @@ export default function Timetable() {
                         slotForm.endTime
                       )
                     : "--:--"}
-
                 </span>
 
               </div>
 
             </div>
-
-            {/* BUTTONS */}
 
             <div className="tt-form-actions">
 
@@ -3084,24 +4219,18 @@ export default function Timetable() {
                   )
                 }
               >
-
                 Cancel
-
               </Button>
 
               <Button
                 type="submit"
                 variant="primary"
               >
-
-                <Save
-                  size={16}
-                />
+                <Save size={16} />
 
                 {editingSlot
                   ? "Update Time Slot"
                   : "Create Time Slot"}
-
               </Button>
 
             </div>
@@ -3109,7 +4238,6 @@ export default function Timetable() {
           </form>
 
         </Modal>
-
       )}
 
     </div>

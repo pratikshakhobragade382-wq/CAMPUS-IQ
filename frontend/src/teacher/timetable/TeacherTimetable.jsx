@@ -1,404 +1,1118 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import TeacherTopbar from '../components/TeacherTopbar';
-import { getTeacherTimetable, getPeriodSlots } from '../../api/timetable.api';
-import { getAllStaff } from '../../api/staff.api';
-import './TeacherTimetable.css';
-import SubstitutePickerModal from './SubstitutePickerModal';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  Download,
+  RefreshCw,
+  CalendarDays,
+  Clock3,
+  UserRound,
+  GraduationCap,
+  Crown,
+  Coffee,
+} from "lucide-react";
+
+import { useAuth } from "../../context/AuthContext";
+import TeacherTopbar from "../components/TeacherTopbar";
+
+import {
+  getTeacherTimetable,
+  getPeriodSlots,
+} from "../../api/timetable.api";
+
+import { getAllSections } from "../../api/section.api";
+
+import "./TeacherTimetable.css";
+
+import SubstitutePickerModal from "./SubstitutePickerModal";
 
 const DAYS = [
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
+  {
+    value: 1,
+    label: "Monday",
+  },
+  {
+    value: 2,
+    label: "Tuesday",
+  },
+  {
+    value: 3,
+    label: "Wednesday",
+  },
+  {
+    value: 4,
+    label: "Thursday",
+  },
+  {
+    value: 5,
+    label: "Friday",
+  },
+  {
+    value: 6,
+    label: "Saturday",
+  },
 ];
+
+const SLOT_TYPES = [
+  "period",
+  "sports",
+];
+
+function formatTime(value) {
+  if (!value) return "";
+
+  const match =
+    String(value).match(
+      /^(\d{1,2}):(\d{2})/
+    );
+
+  if (!match) return String(value);
+
+  let hours = Number(match[1]);
+  const minutes = match[2];
+
+  const suffix =
+    hours >= 12 ? "PM" : "AM";
+
+  hours = hours % 12 || 12;
+
+  return `${hours}:${minutes} ${suffix}`;
+}
+
+function formatRange(slot) {
+  return [
+    formatTime(slot?.startTime),
+    formatTime(slot?.endTime),
+  ]
+    .filter(Boolean)
+    .join(" – ");
+}
+
+function isBreak(slot) {
+  return !SLOT_TYPES.includes(
+    slot?.slotType
+  );
+}
+
+function getDateForDay(dayOfWeek) {
+  const today = new Date();
+
+  const todayDay =
+    today.getDay() === 0
+      ? 7
+      : today.getDay();
+
+  const target = new Date(today);
+
+  target.setDate(
+    today.getDate() +
+      (dayOfWeek - todayDay)
+  );
+
+  return target
+    .toISOString()
+    .split("T")[0];
+}
 
 export default function TeacherTimetable() {
   const { user } = useAuth();
-  const loggedInStaffId = user?.staff?.id || user?.staffId || user?.id;
 
-  const [selectedDay, setSelectedDay] = useState(new Date().getDay() === 0 ? 1 : new Date().getDay());
-  const [timetableData, setTimetableData] = useState([]);
-  const [periodSlots, setPeriodSlots] = useState([]);
-  const [teachersList, setTeachersList] = useState([]);
-  const [selectedStaffId, setSelectedStaffId] = useState(loggedInStaffId ? String(loggedInStaffId) : '');
-  const [loading, setLoading] = useState(true);
-  const [loadingTeachers, setLoadingTeachers] = useState(false);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [substituteContext, setSubstituteContext] = useState(null);
+  const loggedInStaffId =
+    user?.staff?.id ||
+    user?.staffId ||
+    user?.id;
 
-  // Convert a day-of-week number (1=Mon..6=Sat) into an actual date within the current week
-  const getDateForDayOfWeek = (dayOfWeek) => {
-    const today = new Date();
-    const todayDow = today.getDay() === 0 ? 7 : today.getDay(); // 1=Mon..7=Sun
-    const diff = dayOfWeek - todayDow;
-    const target = new Date(today);
-    target.setDate(today.getDate() + diff);
-    return target.toISOString().split('T')[0]; // YYYY-MM-DD
-  };
+  const loggedInTeacherName =
+    user?.staff?.name ||
+    user?.name ||
+    user?.fullName ||
+    "Teacher";
 
-  // Fetch all staff / teachers
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      setLoadingTeachers(true);
+  const [
+    timetableData,
+    setTimetableData,
+  ] = useState([]);
+
+  const [
+    periodSlots,
+    setPeriodSlots,
+  ] = useState([]);
+
+  const [
+    assignedSections,
+    setAssignedSections,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    sectionsLoading,
+    setSectionsLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    selectedDay,
+    setSelectedDay,
+  ] = useState(() => {
+    const day =
+      new Date().getDay();
+
+    return day >= 1 && day <= 6
+      ? day
+      : 1;
+  });
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+
+  const [
+    substituteContext,
+    setSubstituteContext,
+  ] = useState(null);
+
+  /* ==========================================================
+     LOAD TEACHER TIMETABLE
+  ========================================================== */
+
+  const loadTimetable =
+    useCallback(async () => {
+      if (!loggedInStaffId) {
+        setError(
+          "Teacher account information could not be found."
+        );
+
+        setLoading(false);
+
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
       try {
-        const res = await getAllStaff({ limit: 100 });
-        const rawStaff = res?.data?.staff || res?.data || res?.staff || res;
-        const list = Array.isArray(rawStaff) ? rawStaff : [];
-        setTeachersList(list);
+        const [
+          slotsResponse,
+          timetableResponse,
+        ] = await Promise.all([
+          getPeriodSlots().catch(
+            () => ({ data: [] })
+          ),
 
-        // If no teacher selected yet, default to logged in staff or first teacher in list
-        if (!selectedStaffId) {
-          if (loggedInStaffId) {
-            setSelectedStaffId(String(loggedInStaffId));
-          } else if (list.length > 0) {
-            setSelectedStaffId(String(list[0].id));
-          }
+          getTeacherTimetable({
+            staffId:
+              loggedInStaffId,
+          }),
+        ]);
+
+        const slots =
+          Array.isArray(
+            slotsResponse?.data
+          )
+            ? slotsResponse.data
+            : Array.isArray(
+                slotsResponse
+              )
+            ? slotsResponse
+            : [];
+
+        const raw =
+          timetableResponse?.data ||
+          timetableResponse;
+
+        let entries = [];
+
+        if (Array.isArray(raw)) {
+          entries = raw;
+        } else if (
+          raw &&
+          typeof raw === "object"
+        ) {
+          entries =
+            Object.values(raw).flat();
         }
+
+        setPeriodSlots(slots);
+        setTimetableData(entries);
       } catch (err) {
-        console.error('Failed to load teachers list:', err);
+        console.error(
+          "Teacher timetable error:",
+          err
+        );
+
+        setError(
+          err?.response?.data
+            ?.message ||
+            err?.response?.data
+              ?.error ||
+            err?.message ||
+            "Could not load your timetable."
+        );
       } finally {
-        setLoadingTeachers(false);
+        setLoading(false);
       }
-    };
+    }, [loggedInStaffId]);
 
-    fetchTeachers();
-  }, [loggedInStaffId]);
+  /* ==========================================================
+     LOAD CLASS INCHARGE SECTIONS
+  ========================================================== */
 
-  // Load timetable for currently selected teacher
-  const loadTimetable = useCallback(async (staffIdToFetch) => {
-    const targetStaffId = staffIdToFetch || selectedStaffId || loggedInStaffId;
-    if (!targetStaffId) return;
-
-    setLoading(true);
-    setError('');
-    try {
-      const [slotsRes, ttRes] = await Promise.all([
-        getPeriodSlots().catch(() => ({ data: [] })),
-        getTeacherTimetable({ staffId: targetStaffId }).catch(() => ({ data: [] })),
-      ]);
-
-      const slots = Array.isArray(slotsRes?.data) ? slotsRes.data : Array.isArray(slotsRes) ? slotsRes : [];
-      
-      const rawTT = ttRes?.data || ttRes;
-      let tt = [];
-      if (Array.isArray(rawTT)) {
-        tt = rawTT;
-      } else if (rawTT && typeof rawTT === 'object') {
-        tt = Object.values(rawTT).flat();
+  const loadAssignedSections =
+    useCallback(async () => {
+      if (!loggedInStaffId) {
+        setAssignedSections([]);
+        setSectionsLoading(false);
+        return;
       }
 
-      setPeriodSlots(slots);
-      setTimetableData(tt);
-    } catch (err) {
-      console.error('Failed to load timetable:', err);
-      setError('Could not load timetable. Please refresh the page.');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedStaffId, loggedInStaffId]);
+      setSectionsLoading(true);
+
+      try {
+        const response =
+          await getAllSections();
+
+        const sections =
+          Array.isArray(
+            response?.data
+          )
+            ? response.data
+            : Array.isArray(response)
+            ? response
+            : [];
+
+        const mine =
+          sections.filter(
+            (section) => {
+              const teacherId =
+                section
+                  ?.classTeacher
+                  ?.id ??
+                section?.classTeacherId;
+
+              return (
+                String(
+                  teacherId
+                ) ===
+                String(
+                  loggedInStaffId
+                )
+              );
+            }
+          );
+
+        setAssignedSections(
+          mine
+        );
+      } catch (err) {
+        console.error(
+          "Could not load class incharge sections:",
+          err
+        );
+
+        setAssignedSections([]);
+      } finally {
+        setSectionsLoading(false);
+      }
+    }, [loggedInStaffId]);
 
   useEffect(() => {
-    if (selectedStaffId) {
-      loadTimetable(selectedStaffId);
-    }
-  }, [selectedStaffId, loadTimetable]);
+    loadTimetable();
+    loadAssignedSections();
+  }, [
+    loadTimetable,
+    loadAssignedSections,
+  ]);
 
-  const handleTeacherChange = (e) => {
-    const newStaffId = e.target.value;
-    setSelectedStaffId(newStaffId);
+  /* ==========================================================
+     BUILD WEEK
+  ========================================================== */
+
+  const slots = useMemo(() => {
+    const map = new Map();
+
+    periodSlots.forEach(
+      (slot) => {
+        map.set(slot.id, slot);
+      }
+    );
+
+    timetableData.forEach(
+      (entry) => {
+        if (
+          entry.periodSlot &&
+          !map.has(
+            entry.periodSlot.id
+          )
+        ) {
+          map.set(
+            entry.periodSlot.id,
+            entry.periodSlot
+          );
+        }
+      }
+    );
+
+    return Array.from(
+      map.values()
+    ).sort(
+      (a, b) =>
+        (a.slotNo || 0) -
+        (b.slotNo || 0)
+    );
+  }, [
+    periodSlots,
+    timetableData,
+  ]);
+
+  const cellMap = useMemo(() => {
+    const map = {};
+
+    timetableData.forEach(
+      (entry) => {
+        const key = `${entry.dayOfWeek}-${entry.periodSlotId}`;
+
+        if (!map[key]) {
+          map[key] = [];
+        }
+
+        map[key].push(entry);
+      }
+    );
+
+    return map;
+  }, [timetableData]);
+
+  const filteredEntries =
+    useMemo(() => {
+      const query =
+        searchQuery
+          .trim()
+          .toLowerCase();
+
+      if (!query) {
+        return timetableData;
+      }
+
+      return timetableData.filter(
+        (entry) =>
+          entry.subject?.name
+            ?.toLowerCase()
+            .includes(query) ||
+          entry.class?.name
+            ?.toLowerCase()
+            .includes(query) ||
+          entry.section?.name
+            ?.toLowerCase()
+            .includes(query)
+      );
+    }, [
+      timetableData,
+      searchQuery,
+    ]);
+
+  const filteredCellMap =
+    useMemo(() => {
+      const map = {};
+
+      filteredEntries.forEach(
+        (entry) => {
+          const key = `${entry.dayOfWeek}-${entry.periodSlotId}`;
+
+          if (!map[key]) {
+            map[key] = [];
+          }
+
+          map[key].push(entry);
+        }
+      );
+
+      return map;
+    }, [filteredEntries]);
+
+  const todayLectures =
+    timetableData.filter(
+      (entry) =>
+        Number(entry.dayOfWeek) ===
+        Number(selectedDay)
+    ).length;
+
+  /* ==========================================================
+     DOWNLOAD
+  ========================================================== */
+
+  const downloadPdf = () => {
+    const oldTitle =
+      document.title;
+
+    document.title =
+      `CAMPUS-IQ - ${loggedInTeacherName} - Timetable`;
+
+    window.print();
+
+    setTimeout(() => {
+      document.title =
+        oldTitle;
+    }, 700);
   };
 
-  const selectedTeacher = teachersList.find((t) => String(t.id) === String(selectedStaffId));
-  const isViewingSelf = loggedInStaffId && String(loggedInStaffId) === String(selectedStaffId);
+  /* ==========================================================
+     SUBSTITUTE
+  ========================================================== */
 
-  // Current day periods
-  const daySchedule = useMemo(() => {
-    const entriesForDay = timetableData.filter((item) => Number(item.dayOfWeek) === Number(selectedDay));
-    
-    // Merge with period slots if available, or use direct entries
-    if (periodSlots.length > 0) {
-      return periodSlots
-        .slice()
-        .sort((a, b) => (a.slotNo || 0) - (b.slotNo || 0))
-        .map((slot) => {
-          const matchedEntry = entriesForDay.find((e) => Number(e.periodSlotId) === Number(slot.id));
-          return {
-            slot,
-            entry: matchedEntry,
-          };
-        });
-    }
+  const openSubstitute =
+    (entry) => {
+      setSubstituteContext({
+        timetableId: entry.id,
 
-    // If slots are not seeded, show direct entries
-    return entriesForDay.map((entry) => ({
-      slot: entry.periodSlot || {
-        label: `Period ${entry.periodSlotId || 1}`,
-        startTime: '08:00',
-        endTime: '08:45',
-        slotType: 'period',
-      },
-      entry,
-    }));
-  }, [timetableData, periodSlots, selectedDay]);
+        date: getDateForDay(
+          entry.dayOfWeek
+        ),
 
-  // Quick stats
-  const totalLecturesToday = daySchedule.filter((item) => item.entry).length;
-  const weeklyTotalLectures = timetableData.length;
+        subjectName:
+          entry.subject?.name ||
+          "Subject",
+
+        className:
+          entry.class?.name ||
+          "Class",
+      });
+    };
 
   return (
     <div className="teacher-timetable-page">
+
       <TeacherTopbar
-        searchPlaceholder="Search timetable, subjects, classes..."
+        searchPlaceholder="Search subject, class or section..."
         searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={
+          setSearchQuery
+        }
       />
 
       <div className="timetable-content-container">
+
+        {/* ==================================================
+            HEADER
+        ================================================== */}
+
         <div className="timetable-header-section">
+
           <div className="timetable-title-area">
+
+            <span className="teacher-timetable-eyebrow">
+              TEACHER PORTAL
+            </span>
+
             <h1>
-              {isViewingSelf
-                ? 'My Weekly Timetable'
-                : selectedTeacher
-                ? `${selectedTeacher.name}'s Timetable`
-                : 'Teacher Timetable'}
+              My Weekly Timetable
             </h1>
+
             <p>
-              {selectedTeacher
-                ? `Viewing schedule for ${selectedTeacher.name} ${
-                    selectedTeacher.department?.name ? `(${selectedTeacher.department.name})` : ''
-                  }`
-                : 'View scheduled lectures, class timings, and period slots'}
+              Welcome,{" "}
+              <strong>
+                {loggedInTeacherName}
+              </strong>
+              . View your classes,
+              sections and weekly
+              schedule.
             </p>
+
           </div>
 
           <div className="timetable-header-actions">
-            {/* Teacher Selector Dropdown */}
-            <div className="teacher-select-wrapper">
-              <div className="teacher-select-icon-badge">
-                <i className="fa-solid fa-user-tie"></i>
-              </div>
-              <select
-                className="teacher-select-dropdown"
-                value={selectedStaffId}
-                onChange={handleTeacherChange}
-                disabled={loadingTeachers}
-                aria-label="Select Teacher Timetable"
-              >
-                {teachersList.length === 0 ? (
-                  <option value="">{loadingTeachers ? 'Loading teachers...' : 'No teachers found'}</option>
-                ) : (
-                  teachersList.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.name} {String(teacher.id) === String(loggedInStaffId) ? '(You)' : ''}
-                    </option>
-                  ))
-                )}
-              </select>
-              <i className="fa-solid fa-chevron-down teacher-select-chevron"></i>
-            </div>
+
+            <button
+              type="button"
+              className="btn-timetable-download"
+              onClick={
+                downloadPdf
+              }
+              disabled={
+                timetableData.length ===
+                0
+              }
+            >
+              <Download size={16} />
+              Download PDF
+            </button>
 
             <button
               type="button"
               className="btn-timetable-action"
-              onClick={() => loadTimetable(selectedStaffId)}
-              title="Refresh timetable"
+              onClick={() => {
+                loadTimetable();
+                loadAssignedSections();
+              }}
             >
-              <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`}></i>
-              <span>Refresh</span>
+              <RefreshCw
+                size={15}
+                className={
+                  loading
+                    ? "teacher-spin"
+                    : ""
+                }
+              />
+
+              Refresh
             </button>
+
           </div>
         </div>
 
-      {/* Stats Row */}
-      <div className="timetable-stats-row">
-        <div className="timetable-stat-card">
-          <div className="stat-icon-wrapper stat-blue">
-            <i className="fa-solid fa-calendar-day"></i>
+        {/* ==================================================
+            CLASS INCHARGE
+        ================================================== */}
+
+        <section className="class-incharge-panel">
+
+          <div className="class-incharge-heading">
+
+            <div className="class-incharge-icon">
+              <Crown size={20} />
+            </div>
+
+            <div>
+              <h2>
+                Class Incharge
+              </h2>
+
+              <p>
+                Sections assigned to you
+                as class teacher
+              </p>
+            </div>
+
           </div>
-          <div className="stat-info">
-            <h3>{totalLecturesToday}</h3>
-            <p>Lectures Today ({DAYS.find((d) => d.value === selectedDay)?.label})</p>
+
+          {sectionsLoading ? (
+            <div className="class-incharge-loading">
+              Loading your assigned sections...
+            </div>
+          ) : assignedSections.length >
+            0 ? (
+            <div className="incharge-section-list">
+
+              {assignedSections.map(
+                (section) => (
+                  <div
+                    className="incharge-section-card"
+                    key={section.id}
+                  >
+
+                    <div className="incharge-section-icon">
+                      <GraduationCap
+                        size={20}
+                      />
+                    </div>
+
+                    <div className="incharge-section-info">
+
+                      <span>
+                        CLASS INCHARGE
+                      </span>
+
+                      <strong>
+                        {section.class
+                          ?.name ||
+                          section.className ||
+                          `Class ${section.classId}`}
+                        {" - "}
+                        {section.name}
+                      </strong>
+
+                    </div>
+
+                    <div className="incharge-badge">
+                      <Crown size={13} />
+                      Incharge
+                    </div>
+
+                  </div>
+                )
+              )}
+
+            </div>
+          ) : (
+            <div className="no-incharge-state">
+              <UserRound size={19} />
+
+              <span>
+                You are not assigned as
+                class incharge for any
+                section.
+              </span>
+            </div>
+          )}
+
+        </section>
+
+        {/* ==================================================
+            STATS
+        ================================================== */}
+
+        <div className="timetable-stats-row">
+
+          <div className="timetable-stat-card">
+
+            <div className="stat-icon-wrapper stat-blue">
+              <CalendarDays size={20} />
+            </div>
+
+            <div className="stat-info">
+              <h3>
+                {todayLectures}
+              </h3>
+
+              <p>
+                Lectures on{" "}
+                {
+                  DAYS.find(
+                    (day) =>
+                      day.value ===
+                      selectedDay
+                  )?.label
+                }
+              </p>
+            </div>
+
           </div>
+
+          <div className="timetable-stat-card">
+
+            <div className="stat-icon-wrapper stat-purple">
+              <GraduationCap size={20} />
+            </div>
+
+            <div className="stat-info">
+              <h3>
+                {
+                  new Set(
+                    timetableData.map(
+                      (entry) =>
+                        `${entry.classId}-${entry.sectionId}`
+                    )
+                  ).size
+                }
+              </h3>
+
+              <p>
+                Assigned Classes
+              </p>
+            </div>
+
+          </div>
+
+          <div className="timetable-stat-card">
+
+            <div className="stat-icon-wrapper stat-green">
+              <Clock3 size={20} />
+            </div>
+
+            <div className="stat-info">
+              <h3>
+                {timetableData.length}
+              </h3>
+
+              <p>
+                Weekly Lectures
+              </p>
+            </div>
+
+          </div>
+
         </div>
 
-        <div className="timetable-stat-card">
-          <div className="stat-icon-wrapper stat-purple">
-            <i className="fa-solid fa-book-bookmark"></i>
-          </div>
-          <div className="stat-info">
-            <h3>{weeklyTotalLectures}</h3>
-            <p>Total Weekly Lectures</p>
-          </div>
-        </div>
+        {/* ==================================================
+            DAY SELECTOR
+        ================================================== */}
 
-        <div className="timetable-stat-card">
-          <div className="stat-icon-wrapper stat-green">
-            <i className="fa-solid fa-clock"></i>
-          </div>
-          <div className="stat-info">
-            <h3>{periodSlots.length || 7}</h3>
-            <p>Configured Period Slots</p>
-          </div>
-        </div>
-      </div>
+        <div className="day-selector-card">
 
-      {/* Day Selector */}
-      <div className="day-selector-card">
-        <div className="day-tabs">
-          {DAYS.map((day) => {
-            const isToday = (new Date().getDay() === 0 ? 7 : new Date().getDay()) === day.value;
-            const count = timetableData.filter((item) => Number(item.dayOfWeek) === Number(day.value)).length;
-            return (
+          <div className="day-tabs">
+
+            {DAYS.map((day) => (
               <button
                 key={day.value}
                 type="button"
-                className={`day-tab-btn ${selectedDay === day.value ? 'active' : ''}`}
-                onClick={() => setSelectedDay(day.value)}
+                className={`day-tab-btn ${
+                  selectedDay ===
+                  day.value
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() =>
+                  setSelectedDay(
+                    day.value
+                  )
+                }
               >
                 {day.label}
-                {isToday && <span className="today-indicator-badge">Today</span>}
-                {count > 0 && <span style={{ marginLeft: 6, opacity: 0.8 }}>({count})</span>}
+
+                {day.value ===
+                  (new Date().getDay() ||
+                    7) && (
+                  <span className="today-indicator-badge">
+                    Today
+                  </span>
+                )}
               </button>
-            );
-          })}
-        </div>
-      </div>
+            ))}
 
-      {/* Main Schedule List */}
-      <div className="timetable-main-card">
-        <div className="card-header-clean">
-          <h2>
-            <i className="fa-solid fa-timeline text-blue-600"></i>
-            Schedule for {DAYS.find((d) => d.value === selectedDay)?.label}
-          </h2>
-          <span style={{ fontSize: 13, color: '#64748b' }}>
-            {totalLecturesToday} active classes assigned
-          </span>
+          </div>
+
         </div>
 
-        {loading ? (
-          <div className="empty-timetable-state">
-            <i className="fa-solid fa-circle-notch fa-spin text-blue-500 text-3xl mb-3"></i>
-            <p>Loading your timetable...</p>
-          </div>
-        ) : error ? (
-          <div className="empty-timetable-state">
-            <div className="empty-icon-circle" style={{ color: '#ef4444', background: '#fee2e2' }}>
-              <i className="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h3>Unable to load timetable</h3>
-            <p>{error}</p>
-          </div>
-        ) : daySchedule.length === 0 ? (
-          <div className="empty-timetable-state">
-            <div className="empty-icon-circle">
-              <i className="fa-solid fa-mug-hot"></i>
-            </div>
-            <h3>No classes scheduled for {DAYS.find((d) => d.value === selectedDay)?.label}</h3>
-            <p>You have no assigned lecture periods on this day.</p>
-          </div>
-        ) : (
-          <div className="period-list">
-            {daySchedule.map((item, index) => {
-              const { slot, entry } = item;
-              const hasClass = Boolean(entry);
+        {/* ==================================================
+            WEEKLY TIMETABLE
+        ================================================== */}
 
-              return (
-                <div
-                  key={slot?.id || index}
-                  className={`period-card ${hasClass ? 'current-active' : ''}`}
-                >
-                  <div className="period-time-col">
-                    <span className="period-badge">{slot?.label || `Period ${index + 1}`}</span>
-                    <div className="period-time-range">
-                      <i className="fa-regular fa-clock" style={{ fontSize: 12, color: '#64748b' }}></i>
-                      {slot?.startTime || '08:00'} - {slot?.endTime || '08:45'}
-                    </div>
-                  </div>
+        <div className="teacher-week-card">
 
-                  <div className="period-content-col">
-                    {hasClass ? (
-                      <>
-                        <div className="subject-details">
-                          <h3>{entry.subject?.name || `Subject #${entry.subjectId}`}</h3>
-                          <div className="subject-meta">
-                            <span className="meta-item">
-                              <i className="fa-solid fa-graduation-cap text-blue-500"></i>
-                              Class: {entry.class?.name || `Class #${entry.classId}`}
-                              {entry.section?.name ? ` (Sec ${entry.section.name})` : ''}
-                            </span>
-                            {entry.academicYear?.name && (
-                              <span className="meta-item">
-                                <i className="fa-solid fa-calendar"></i>
-                                {entry.academicYear.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="period-actions">
-                          <span className="status-tag status-lecture">
-                            <i className="fa-solid fa-chalkboard-user mr-1"></i> Active Lecture
-                          </span>
-                          <button
-                            type="button"
-                            className="btn-find-substitute"
-                            onClick={() =>
-                              setSubstituteContext({
-                                timetableId: entry.id,
-                                date: getDateForDayOfWeek(selectedDay),
-                                subjectName: entry.subject?.name || `Subject #${entry.subjectId}`,
-                                className: entry.class?.name || `Class #${entry.classId}`,
-                              })
-                            }
-                          >
-                            <i className="fa-solid fa-user-plus"></i> Find Substitute
-                          </button>
-                        </div>
-                      </>
-                    ) : slot?.slotType === 'recess' || slot?.slotType === 'lunch' ? (
-                      <>
-                        <div className="subject-details">
-                          <h3 style={{ color: '#92400e' }}>{slot.label || 'Break Time'}</h3>
-                          <span style={{ fontSize: 13, color: '#b45309' }}>Recess / Lunch Interval</span>
-                        </div>
-                        <span className="status-tag status-break">Break</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="subject-details">
-                          <h3 style={{ color: '#94a3b8' }}>Free Period</h3>
-                          <span style={{ fontSize: 13, color: '#94a3b8' }}>No assigned class</span>
-                        </div>
-                        <span className="status-tag status-free">Available</span>
-                      </>
+          <div className="teacher-week-header">
+
+            <div>
+              <h2>
+                Weekly Schedule
+              </h2>
+
+              <p>
+                Your assigned subjects,
+                classes and sections
+              </p>
+            </div>
+
+            <span>
+              {filteredEntries.length}{" "}
+              periods
+            </span>
+
+          </div>
+
+          {loading ? (
+            <div className="teacher-empty-state">
+              <RefreshCw
+                size={30}
+                className="teacher-spin"
+              />
+
+              <h3>
+                Loading timetable...
+              </h3>
+
+              <p>
+                Please wait while we
+                load your weekly schedule.
+              </p>
+            </div>
+          ) : error ? (
+            <div className="teacher-empty-state error">
+
+              <h3>
+                Unable to load timetable
+              </h3>
+
+              <p>{error}</p>
+
+              <button
+                type="button"
+                className="btn-timetable-action"
+                onClick={
+                  loadTimetable
+                }
+              >
+                Try Again
+              </button>
+
+            </div>
+          ) : (
+            <div className="teacher-week-table-wrap">
+
+              <table className="teacher-week-table">
+
+                <thead>
+                  <tr>
+
+                    <th className="teacher-time-column">
+                      Time
+                    </th>
+
+                    {DAYS.map(
+                      (day) => (
+                        <th
+                          key={
+                            day.value
+                          }
+                          className={
+                            selectedDay ===
+                            day.value
+                              ? "selected-day"
+                              : ""
+                          }
+                        >
+                          {day.label}
+
+                          {day.value ===
+                            (new Date().getDay() ||
+                              7) && (
+                            <small>
+                              Today
+                            </small>
+                          )}
+                        </th>
+                      )
                     )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
 
-    {substituteContext && (
-      <SubstitutePickerModal
-        timetableId={substituteContext.timetableId}
-        date={substituteContext.date}
-        subjectName={substituteContext.subjectName}
-        className={substituteContext.className}
-        onClose={() => setSubstituteContext(null)}
-        onAssigned={() => {
-          setSubstituteContext(null);
-          loadTimetable(selectedStaffId);
-        }}
-      />
-    )}
-  </div>
-);
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {slots.map(
+                    (slot) => {
+
+                      if (
+                        isBreak(slot)
+                      ) {
+                        return (
+                          <tr
+                            key={
+                              slot.id
+                            }
+                            className="teacher-break-row"
+                          >
+
+                            <td>
+                              {slot.label}
+                              <small>
+                                {formatRange(
+                                  slot
+                                )}
+                              </small>
+                            </td>
+
+                            <td
+                              colSpan={
+                                DAYS.length
+                              }
+                            >
+                              <Coffee
+                                size={
+                                  15
+                                }
+                              />
+
+                              <strong>
+                                {
+                                  slot.label
+                                }
+                              </strong>
+
+                              <span>
+                                Break / Recess
+                              </span>
+                            </td>
+
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr
+                          key={
+                            slot.id
+                          }
+                        >
+
+                          <td className="teacher-time-cell">
+
+                            <strong>
+                              {
+                                slot.label
+                              }
+                            </strong>
+
+                            <span>
+                              {formatRange(
+                                slot
+                              )}
+                            </span>
+
+                          </td>
+
+                          {DAYS.map(
+                            (day) => {
+
+                              const entries =
+                                filteredCellMap[
+                                  `${day.value}-${slot.id}`
+                                ] ||
+                                [];
+
+                              return (
+                                <td
+                                  key={
+                                    day.value
+                                  }
+                                  className={
+                                    selectedDay ===
+                                    day.value
+                                      ? "teacher-selected-cell"
+                                      : ""
+                                  }
+                                >
+
+                                  {entries.length ===
+                                  0 ? (
+                                    <span className="teacher-free">
+                                      —
+                                    </span>
+                                  ) : (
+                                    entries.map(
+                                      (
+                                        entry
+                                      ) => {
+
+                                        const sectionTeacherId =
+                                          entry
+                                            .section
+                                            ?.classTeacher
+                                            ?.id ??
+                                          entry
+                                            .section
+                                            ?.classTeacherId;
+
+                                        const isClassIncharge =
+                                          String(
+                                            sectionTeacherId
+                                          ) ===
+                                          String(
+                                            loggedInStaffId
+                                          );
+
+                                        return (
+                                          <div
+                                            key={
+                                              entry.id
+                                            }
+                                            className="teacher-period-card"
+                                          >
+
+                                            <strong className="teacher-subject">
+                                              {entry.subject
+                                                ?.name ||
+                                                "Subject"}
+                                            </strong>
+
+                                            <span className="teacher-class">
+                                              <GraduationCap
+                                                size={
+                                                  12
+                                                }
+                                              />
+
+                                              {entry.class
+                                                ?.name ||
+                                                `Class ${entry.classId}`}
+
+                                              {entry.section
+                                                ?.name
+                                                ? ` - ${entry.section.name}`
+                                                : ""}
+                                            </span>
+
+                                            {isClassIncharge && (
+                                              <span className="teacher-incharge-badge">
+                                                <Crown
+                                                  size={
+                                                    11
+                                                  }
+                                                />
+
+                                                Class Incharge
+                                              </span>
+                                            )}
+
+                                            <button
+                                              type="button"
+                                              className="teacher-substitute-button"
+                                              onClick={() =>
+                                                openSubstitute(
+                                                  entry
+                                                )
+                                              }
+                                            >
+                                              Find Substitute
+                                            </button>
+
+                                          </div>
+                                        );
+                                      }
+                                    )
+                                  )}
+
+                                </td>
+                              );
+                            }
+                          )}
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {substituteContext && (
+        <SubstitutePickerModal
+          timetableId={
+            substituteContext.timetableId
+          }
+          date={
+            substituteContext.date
+          }
+          subjectName={
+            substituteContext.subjectName
+          }
+          className={
+            substituteContext.className
+          }
+          onClose={() =>
+            setSubstituteContext(
+              null
+            )
+          }
+          onAssigned={() => {
+            setSubstituteContext(
+              null
+            );
+
+            loadTimetable();
+          }}
+        />
+      )}
+
+    </div>
+  );
 }
