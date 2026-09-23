@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require('helmet');
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
+const path = require("path");
 
 const requestId = require('./middleware/requestId');
 const preventPrototypePollution = require('./middleware/preventPrototypePollution');
@@ -21,6 +22,7 @@ app.use(requestId);
 app.use(
   helmet({
     contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
   })
 );
 
@@ -58,6 +60,9 @@ app.use(
 
 // Body size limits reduce DoS risk from giant JSON payloads.
 app.use(express.json({ limit: '100kb' }));
+
+// Static file serving for uploaded documents (PDF, Word, PPT)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rate limiting mitigates brute-force and basic DoS.
 app.use('/api/v1', apiLimiter);

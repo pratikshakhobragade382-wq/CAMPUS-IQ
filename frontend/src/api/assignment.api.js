@@ -55,3 +55,31 @@ export const gradeSubmission = async (submissionId, data) => {
   const response = await axiosClient.put(`/assignments/submissions/${submissionId}/grade`, data);
   return response.data;
 };
+
+/**
+ * Upload assignment document (PDF, Word, PPT)
+ */
+export const uploadAssignmentFile = async (file, onUploadProgress) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await axiosClient.post('/assignments/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    onUploadProgress,
+  });
+  return response.data;
+};
+
+/**
+ * Helper to get absolute downloadable/viewable URL for uploaded files
+ */
+export const getFileUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const baseUrl = import.meta.env.VITE_API_URL
+    ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '')
+    : 'http://localhost:8000';
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+

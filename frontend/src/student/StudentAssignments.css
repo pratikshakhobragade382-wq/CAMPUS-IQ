@@ -429,6 +429,119 @@
   gap: 10px;
 }
 
+/* Student Upload Box & File Card */
+.student-asgn-upload-btn {
+  width: 100%;
+  padding: 16px 14px;
+  background: #fffaf7;
+  border: 2px dashed #ffd1b3;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #ff914d;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.student-asgn-upload-btn:hover {
+  background: #fff0e6;
+  border-color: #ff914d;
+}
+
+.student-asgn-upload-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.student-asgn-file-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #ffe3d2;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(255, 145, 77, 0.06);
+}
+
+.student-asgn-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.student-asgn-file-info .file-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #183b5d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-asgn-file-info .file-size {
+  font-size: 12px;
+  color: #718096;
+}
+
+.student-asgn-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.student-asgn-file-actions .btn-preview-file {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff914d;
+  background: #fff0e6;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.student-asgn-file-actions .btn-preview-file:hover {
+  background: #ffe3d2;
+}
+
+.student-asgn-file-actions .btn-remove-file {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #dc2626;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.student-asgn-file-actions .btn-remove-file:hover {
+  background: #fee2e2;
+}
+
+.student-asgn-upload-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
 .student-asgn-submit-btn {
   height: 38px;
   padding: 0 18px;

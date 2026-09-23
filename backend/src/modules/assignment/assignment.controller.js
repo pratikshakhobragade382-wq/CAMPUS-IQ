@@ -251,13 +251,41 @@ exports.gradeSubmission = async (
 
     return res.status(200).json({
       success: true,
-
-      message:
-        'Submission graded successfully',
-
+      message: 'Submission graded successfully',
       data: graded,
     });
   } catch (error) {
     next(error);
   }
 };
+
+/* ============================================================
+   UPLOAD ASSIGNMENT FILE (PDF, Word, PPT)
+============================================================ */
+
+exports.uploadAssignmentFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded or file format is invalid.',
+        message: 'No file uploaded or file format is invalid.',
+      });
+    }
+
+    const fileUrl = `/uploads/assignments/${req.file.filename}`;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Assignment document uploaded successfully',
+      data: {
+        url: fileUrl,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

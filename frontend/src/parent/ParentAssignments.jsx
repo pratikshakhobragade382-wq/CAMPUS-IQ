@@ -25,7 +25,10 @@ import {
   getChildAssignments,
 } from "../api/parent.api";
 
+import { getFileUrl } from "../api/assignment.api";
+
 import "./ParentAssignments.css";
+
 
 /* ============================================================
    FILTER TABS
@@ -532,6 +535,27 @@ export default function ParentAssignments() {
                         </div>
                       </div>
                     )}
+
+                    {assignment.attachmentUrl && (
+                      <div className="assignment-meta-item">
+                        <div className="meta-icon">
+                          <FileText size={14} />
+                        </div>
+                        <div>
+                          <span className="meta-label">Document</span>
+                          <a
+                            href={getFileUrl(assignment.attachmentUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="meta-value"
+                            style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600 }}
+                          >
+                            View Attachment
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
 
                     {assignment.submission?.submittedAt && (
                       <div className="assignment-meta-item">

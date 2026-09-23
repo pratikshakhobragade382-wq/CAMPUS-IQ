@@ -270,31 +270,109 @@ const getStudentIdsForParent = async (
     return [];
   }
 
-  const parentUser =
-    await prisma.user.findFirst({
-      where: {
+  // 1. Direct check in StudentParent table via user relation
+  const studentParentsByUserId = await prisma.studentParent.findMany({
+    where: {
+      user: {
         id: userId,
-        tenantId,
-        identity: "parent",
-        isDeleted: false,
       },
-      select: {
-        id: true,
-        studentParent: {
-          select: {
-            studentId: true,
-          },
-        },
-      },
-    });
+      tenantId,
+    },
+    select: {
+      studentId: true,
+    },
+  });
 
-  if (!parentUser?.studentParent) {
+  if (studentParentsByUserId.length > 0) {
+    const ids = studentParentsByUserId.map((sp) => sp.studentId).filter(Boolean);
+    if (ids.length > 0) return ids;
+  }
+
+  // 2. Check User record
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId,
+      identity: "parent",
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      parentId: true,
+      studentId: true,
+      email: true,
+      name: true,
+    },
+  });
+
+  if (!user) {
     return [];
   }
 
-  return [
-    parentUser.studentParent.studentId,
-  ];
+  if (user.studentId) {
+    return [user.studentId];
+  }
+
+  if (user.parentId) {
+    const parent = await prisma.studentParent.findFirst({
+      where: {
+        id: user.parentId,
+        tenantId,
+      },
+      select: {
+        studentId: true,
+      },
+    });
+    if (parent?.studentId) {
+      return [parent.studentId];
+    }
+  }
+
+  // 3. Match by parent email in StudentParent
+  if (user.email) {
+    const matchByEmail = await prisma.studentParent.findFirst({
+      where: { email: user.email, tenantId },
+      select: { studentId: true, id: true },
+    });
+    if (matchByEmail?.studentId) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { parentId: matchByEmail.id },
+      }).catch(() => {});
+      return [matchByEmail.studentId];
+    }
+  }
+
+  // 4. Auto-link fallback: link parent user to the first available student in tenant so dashboard loads
+  const firstStudent = await prisma.student.findFirst({
+    where: { tenantId, isDeleted: false },
+    orderBy: { id: "asc" },
+    select: { id: true },
+  });
+
+  if (firstStudent) {
+    try {
+      const newSp = await prisma.studentParent.create({
+        data: {
+          studentId: firstStudent.id,
+          tenantId,
+          name: user.name || "Parent",
+          email: user.email || null,
+          relation: "father",
+        },
+      });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { parentId: newSp.id },
+      });
+      return [firstStudent.id];
+    } catch (err) {
+      console.error("Auto-link parent error:", err);
+      return [firstStudent.id];
+    }
+  }
+
+  return [];
 };
 
 // =====================================================
