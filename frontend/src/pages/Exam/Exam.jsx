@@ -120,6 +120,12 @@ function canManageMarks(user) {
   return user?.identity === 'staff' && getStaffRole(user) === 'teacher';
 }
 
+/** Admin portal marks are view-only. Teachers may still enter marks. */
+function canEnterMarks(user) {
+  if (isAdminUser(user)) return false;
+  return user?.identity === 'staff' && getStaffRole(user) === 'teacher';
+}
+
 function canViewReport(user) {
   return canManageMarks(user);
 }
@@ -132,6 +138,7 @@ export default function Exam() {
   const { user } = useAuth();
   const isAdmin = isAdminUser(user);
   const marksAllowed = canManageMarks(user);
+  const marksEditable = canEnterMarks(user);
   const reportAllowed = canViewReport(user);
   const linkedStaffId = getStaffId(user);
 
@@ -429,10 +436,14 @@ export default function Exam() {
       setExistingMarks([]);
       return;
     }
-    loadStudentsForMarks(selectedMarksExam.classId);
+    if (marksEditable) {
+      loadStudentsForMarks(selectedMarksExam.classId);
+    } else {
+      setMarkRows([]);
+    }
     loadExistingMarks(marksExamId, marksSubjectId || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marksExamId, selectedMarksExam?.classId]);
+  }, [marksExamId, selectedMarksExam?.classId, marksEditable]);
 
   useEffect(() => {
     if (!marksExamId) return;
@@ -451,6 +462,11 @@ export default function Exam() {
   const handleSubmitMarks = async () => {
     setMarksMessage('');
     setMarksError('');
+
+    if (!marksEditable) {
+      setMarksError('Admins can view marks but cannot enter them.');
+      return;
+    }
 
     if (!marksExamId || !marksSubjectId || !maxMarks) {
       setMarksError('Please select exam, subject and enter max marks.');
@@ -760,7 +776,7 @@ export default function Exam() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Marks Entry</CardTitle>
+          <CardTitle>{marksEditable ? 'Marks Entry' : 'View Marks'}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Select
@@ -791,28 +807,32 @@ export default function Exam() {
               label: subject.code ? `${subject.name} (${subject.code})` : subject.name,
             }))}
           />
-          <Input
-            label="Max Marks"
-            required
-            type="number"
-            min="1"
-            step="0.01"
-            value={maxMarks}
-            onChange={(e) => setMaxMarks(e.target.value)}
-          />
-          <div className="flex items-end">
-            <Button
-              onClick={handleSubmitMarks}
-              disabled={marksSaving || !marksExamId}
-              loading={marksSaving}
-            >
-              Save Marks
-            </Button>
-          </div>
+          {marksEditable && (
+            <Input
+              label="Max Marks"
+              required
+              type="number"
+              min="1"
+              step="0.01"
+              value={maxMarks}
+              onChange={(e) => setMaxMarks(e.target.value)}
+            />
+          )}
+          {marksEditable && (
+            <div className="flex items-end">
+              <Button
+                onClick={handleSubmitMarks}
+                disabled={marksSaving || !marksExamId}
+                loading={marksSaving}
+              >
+                Save Marks
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {!linkedStaffId && (
+      {marksEditable && !linkedStaffId && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Your login is not linked to a staff record. The backend requires <code>enteredById</code> from a staff profile to save marks.
         </div>
@@ -829,13 +849,14 @@ export default function Exam() {
         </div>
       )}
 
-      {selectedMarksExam && (
+      {marksEditable && selectedMarksExam && (
         <p className="text-sm text-gray-600">
           Entering marks for class <strong>{selectedMarksExam.class?.name || selectedMarksExam.classId}</strong>.
           Only students in this class are listed. Duplicate student/subject entries return HTTP 409.
         </p>
       )}
 
+      {marksEditable && (
       <Card>
         <CardHeader>
           <CardTitle>
@@ -909,6 +930,7 @@ export default function Exam() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <Card>
         <CardHeader>

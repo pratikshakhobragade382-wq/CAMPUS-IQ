@@ -5,11 +5,22 @@ import { getExams, getExamMarks, bulkEnterMarks, getStudentReportCard } from '..
 import { getClasses } from '../../api/class.api';
 import { getSubjects } from '../../api/subject.api';
 import { getStudents } from '../../api/student.api';
+import { getTeacherTimetable } from '../../api/timetable.api';
 import './TeacherExams.css';
+
+function timetableEntriesFromResponse(response) {
+  const raw = response?.data || response;
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === 'object') return Object.values(raw).flat();
+  return [];
+}
 
 export default function TeacherExams() {
   const { user } = useAuth();
+  const staffId = user?.staffId || user?.staff?.id || null;
   const [activeTab, setActiveTab] = useState('marks'); // default to 'marks' or 'schedules'
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
 
   // Master Data
   const [exams, setExams] = useState([]);
@@ -61,12 +72,88 @@ export default function TeacherExams() {
     loadMasterData();
   }, []);
 
+  useEffect(() => {
+    if (!staffId) {
+      setAssignments([]);
+      setAssignmentsLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadAssignments() {
+      try {
+        const response = await getTeacherTimetable({ staffId });
+        if (!cancelled) {
+          setAssignments(timetableEntriesFromResponse(response));
+        }
+      } catch (err) {
+        console.error('Failed to load teacher timetable assignments:', err);
+        if (!cancelled) setAssignments([]);
+      } finally {
+        if (!cancelled) setAssignmentsLoaded(true);
+      }
+    }
+
+    loadAssignments();
+    return () => {
+      cancelled = true;
+    };
+  }, [staffId]);
+
+  const assignedClassIds = useMemo(() => {
+    const ids = new Set();
+    assignments.forEach((entry) => {
+      const id = entry.classId ?? entry.class?.id;
+      if (id != null) ids.add(Number(id));
+    });
+    return ids;
+  }, [assignments]);
+
+  const assignedSubjectIds = useMemo(() => {
+    const ids = new Set();
+    assignments.forEach((entry) => {
+      const classId = Number(entry.classId ?? entry.class?.id);
+      if (selectedClassId && classId !== Number(selectedClassId)) return;
+      const subjectId = entry.subjectId ?? entry.subject?.id;
+      if (subjectId != null) ids.add(Number(subjectId));
+    });
+    return ids;
+  }, [assignments, selectedClassId]);
+
+  const assignedSectionIds = useMemo(() => {
+    const ids = new Set();
+    assignments.forEach((entry) => {
+      const classId = Number(entry.classId ?? entry.class?.id);
+      if (selectedClassId && classId !== Number(selectedClassId)) return;
+      const sectionId = entry.sectionId ?? entry.section?.id;
+      if (sectionId != null) ids.add(Number(sectionId));
+    });
+    return ids;
+  }, [assignments, selectedClassId]);
+
+  const marksClasses = useMemo(
+    () => classes.filter((c) => assignedClassIds.has(Number(c.id))),
+    [classes, assignedClassIds]
+  );
+
+  const marksSubjects = useMemo(
+    () => subjects.filter((s) => assignedSubjectIds.has(Number(s.id))),
+    [subjects, assignedSubjectIds]
+  );
+
+  const marksExams = useMemo(
+    () => exams.filter((exam) => assignedClassIds.has(Number(exam.classId ?? exam.class?.id))),
+    [exams, assignedClassIds]
+  );
+
   // Available sections for the selected class in marks entry
   const marksClassSections = useMemo(() => {
     if (!selectedClassId) return [];
     const cls = classes.find((c) => Number(c.id) === Number(selectedClassId));
-    return cls?.sections || [];
-  }, [classes, selectedClassId]);
+    const sections = cls?.sections || [];
+    if (assignedSectionIds.size === 0) return sections;
+    return sections.filter((sec) => assignedSectionIds.has(Number(sec.id)));
+  }, [classes, selectedClassId, assignedSectionIds]);
 
   // Available sections for the selected class in report card
   const reportClassSections = useMemo(() => {
@@ -76,13 +163,33 @@ export default function TeacherExams() {
   }, [classes, reportClassId]);
 
   // Auto-fill class if an exam is selected
+  const isAssignedClass = (classId) => assignedClassIds.has(Number(classId));
+
+  const isAssignedSubject = (subjectId, classId = selectedClassId) => {
+    return assignments.some((entry) => {
+      const entryClassId = Number(entry.classId ?? entry.class?.id);
+      const entrySubjectId = Number(entry.subjectId ?? entry.subject?.id);
+      if (classId && entryClassId !== Number(classId)) return false;
+      return entrySubjectId === Number(subjectId);
+    });
+  };
+
   const handleExamChange = (examId) => {
     setSelectedExamId(examId);
     if (examId) {
       const ex = exams.find((e) => Number(e.id) === Number(examId));
-      if (ex && ex.classId) {
-        setSelectedClassId(String(ex.classId));
+      const classId = ex?.classId ?? ex?.class?.id;
+      if (classId && isAssignedClass(classId)) {
+        setSelectedClassId(String(classId));
         setSelectedSectionId('');
+        setSelectedSubjectId('');
+      } else if (classId) {
+        setSelectedClassId('');
+        setSelectedSubjectId('');
+        setAlertMsg({
+          type: 'error',
+          text: 'This exam is not for a class assigned on your timetable.',
+        });
       }
     }
   };
@@ -120,6 +227,13 @@ export default function TeacherExams() {
     }
     if (!selectedSubjectId) {
       setAlertMsg({ type: 'error', text: 'Please select a Subject.' });
+      return;
+    }
+    if (!isAssignedClass(selectedClassId) || !isAssignedSubject(selectedSubjectId, selectedClassId)) {
+      setAlertMsg({
+        type: 'error',
+        text: 'You can enter marks only for a class and subject on your timetable.',
+      });
       return;
     }
 
@@ -200,6 +314,13 @@ export default function TeacherExams() {
   // Save marks to backend
   const handleSaveMarks = async () => {
     if (!selectedExamId || !selectedSubjectId || marksRecords.length === 0) return;
+    if (!isAssignedClass(selectedClassId) || !isAssignedSubject(selectedSubjectId, selectedClassId)) {
+      setAlertMsg({
+        type: 'error',
+        text: 'You can save marks only for a class and subject on your timetable.',
+      });
+      return;
+    }
 
     // Check for students missing marks who are not marked absent
     const missingStudent = marksRecords.find(
@@ -346,8 +467,8 @@ export default function TeacherExams() {
                   value={selectedExamId}
                   onChange={(e) => handleExamChange(e.target.value)}
                 >
-                  <option value="">-- Choose Exam ({exams.length}) --</option>
-                  {exams.map((e) => (
+                  <option value="">-- Choose Exam ({marksExams.length}) --</option>
+                  {marksExams.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
                     </option>
@@ -363,10 +484,11 @@ export default function TeacherExams() {
                   onChange={(e) => {
                     setSelectedClassId(e.target.value);
                     setSelectedSectionId('');
+                    setSelectedSubjectId('');
                   }}
                 >
-                  <option value="">-- Choose Class ({classes.length}) --</option>
-                  {classes.map((c) => (
+                  <option value="">-- Choose Class ({marksClasses.length}) --</option>
+                  {marksClasses.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -398,8 +520,8 @@ export default function TeacherExams() {
                   value={selectedSubjectId}
                   onChange={(e) => setSelectedSubjectId(e.target.value)}
                 >
-                  <option value="">-- Choose Subject ({subjects.length}) --</option>
-                  {subjects.map((s) => (
+                  <option value="">-- Choose Subject ({marksSubjects.length}) --</option>
+                  {marksSubjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.code || 'Sub'})
                     </option>
@@ -432,6 +554,11 @@ export default function TeacherExams() {
                 </button>
               </div>
             </div>
+            {assignmentsLoaded && marksClasses.length === 0 && (
+              <p style={{ color: '#b45309', fontSize: 14, margin: '12px 0 0' }}>
+                No class or subject is assigned on your timetable, so marks entry is unavailable.
+              </p>
+            )}
           </div>
 
           {marksRecords.length > 0 ? (
@@ -602,9 +729,18 @@ export default function TeacherExams() {
                       type="button"
                       className="btn-enter-marks"
                       onClick={() => {
+                        const classId = exam.classId ?? exam.class?.id;
+                        if (!isAssignedClass(classId)) {
+                          setAlertMsg({
+                            type: 'error',
+                            text: 'This exam is not for a class assigned on your timetable.',
+                          });
+                          return;
+                        }
                         setSelectedExamId(String(exam.id));
-                        setSelectedClassId(String(exam.classId));
+                        setSelectedClassId(String(classId));
                         setSelectedSectionId('');
+                        setSelectedSubjectId('');
                         setActiveTab('marks');
                       }}
                     >

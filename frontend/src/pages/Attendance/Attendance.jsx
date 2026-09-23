@@ -112,12 +112,11 @@ function canViewClassAttendance(user) {
 }
 
 /**
- * Matches attendance.service assertCanMarkClassAttendance:
- * only admin identity OR staff teacher (route also lists management/principal,
- * but service rejects them).
+ * Admin portal: student attendance is view-only.
+ * Staff teachers may still mark when this page is reached with a teacher identity.
  */
 function canMarkStudentAttendance(user) {
-  if (user?.identity === "admin") return true;
+  if (user?.identity === "admin") return false;
   return user?.identity === "staff" && getStaffRole(user) === "teacher";
 }
 
