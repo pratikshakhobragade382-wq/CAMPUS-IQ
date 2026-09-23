@@ -29,7 +29,6 @@ import {
   Lightbulb,
   Loader2,
   Target,
-  TrendingDown,
   TrendingUp,
   UserRound,
 } from "lucide-react";
@@ -59,37 +58,46 @@ const SUBJECT_COLORS = [
    HELPERS
 ============================================================ */
 
-const numberOrNull = (
-  value
-) => {
-  const number =
-    Number(value);
+const numberOrNull = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
 
   return Number.isFinite(number)
     ? number
     : null;
 };
 
-const formatPercent = (
-  value
-) => {
-  const number =
-    numberOrNull(value);
+const firstValidNumber = (...values) => {
+  for (const value of values) {
+    const number = numberOrNull(value);
+
+    if (number !== null) {
+      return number;
+    }
+  }
+
+  return null;
+};
+
+const formatPercent = (value) => {
+  const number = numberOrNull(value);
 
   if (number === null) {
     return "—";
   }
 
-  return `${Math.round(
-    number
-  )}%`;
+  return `${Math.round(number)}%`;
 };
 
-const formatScore = (
-  value
-) => {
-  const number =
-    numberOrNull(value);
+const formatScore = (value) => {
+  const number = numberOrNull(value);
 
   if (number === null) {
     return "—";
@@ -98,11 +106,8 @@ const formatScore = (
   return Math.round(number);
 };
 
-const getStatus = (
-  score
-) => {
-  const value =
-    numberOrNull(score);
+const getStatus = (score) => {
+  const value = numberOrNull(score);
 
   if (value === null) {
     return {
@@ -148,8 +153,7 @@ const getStatus = (
 ============================================================ */
 
 export default function StudentPerformance() {
-  const [data, setData] =
-    useState(null);
+  const [data, setData] = useState(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -164,50 +168,52 @@ export default function StudentPerformance() {
   useEffect(() => {
     let mounted = true;
 
-    const loadPerformance =
-      async () => {
-        try {
-          setLoading(true);
-          setError("");
+    const loadPerformance = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-          const response =
-            await axiosClient.get(
-              "/student-portal/performance"
-            );
-
-          const payload =
-            response?.data?.data ||
-            response?.data ||
-            null;
-
-          if (!mounted) {
-            return;
-          }
-
-          setData(payload);
-        } catch (err) {
-          console.error(
-            "Student performance load error:",
-            err
+        const response =
+          await axiosClient.get(
+            "/student-portal/performance"
           );
 
-          if (!mounted) {
-            return;
-          }
+        const payload =
+          response?.data?.data ??
+          response?.data ??
+          null;
 
-          setError(
-            err?.response?.data
-              ?.error ||
-              err?.response?.data
-                ?.message ||
-              "Unable to load your performance information."
-          );
-        } finally {
-          if (mounted) {
-            setLoading(false);
-          }
+        console.log(
+          "STUDENT PERFORMANCE API RESPONSE:",
+          payload
+        );
+
+        if (!mounted) {
+          return;
         }
-      };
+
+        setData(payload);
+      } catch (err) {
+        console.error(
+          "Student performance load error:",
+          err
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setError(
+          err?.response?.data?.error ||
+            err?.response?.data?.message ||
+            "Unable to load your performance information."
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
 
     loadPerformance();
 
@@ -223,11 +229,54 @@ export default function StudentPerformance() {
   const student =
     data?.student || {};
 
-  const prediction =
+  const backendPerformance =
+    data?.performance || {};
+
+  const backendPrediction =
     data?.prediction || {};
 
-  const metrics =
+  const backendMetrics =
     data?.metrics || {};
+
+  /*
+   * IMPORTANT:
+   *
+   * Different versions of the performance API may return
+   * the overall score in different places.
+   *
+   * We check all common locations before showing 0.
+   */
+
+  const overallScore = firstValidNumber(
+    backendPrediction?.score,
+    backendPerformance?.score,
+    backendPerformance?.overallScore,
+    backendPerformance?.overallPercentage,
+    backendPerformance?.percentage,
+    backendPerformance?.average,
+    backendMetrics?.overallScore,
+    backendMetrics?.overallPercentage,
+    backendMetrics?.percentage,
+    data?.overallScore,
+    data?.overallPercentage,
+    data?.score
+  );
+
+  const prediction = {
+    ...backendPrediction,
+
+    score: overallScore,
+
+    confidence:
+      firstValidNumber(
+        backendPrediction?.confidence,
+        backendPerformance?.confidence,
+        data?.confidence
+      ),
+  };
+
+  const metrics =
+    backendMetrics || {};
 
   const attendance =
     data?.attendance || {};
@@ -237,6 +286,8 @@ export default function StudentPerformance() {
       data?.trend?.points
     )
       ? data.trend.points
+      : Array.isArray(data?.trend)
+      ? data.trend
       : [];
 
   const subjects =
@@ -256,10 +307,136 @@ export default function StudentPerformance() {
       ? data.recommendations
       : [];
 
-  const status =
-    getStatus(
+  /* ==========================================================
+     METRIC NORMALIZATION
+  ========================================================== */
+
+  const attendancePercentage =
+    firstValidNumber(
+      metrics?.attendancePercentage,
+      metrics?.attendance,
+      attendance?.percentage,
+      attendance?.attendancePercentage,
+      attendance?.summary?.percentage
+    );
+
+  const assignmentCompletion =
+    firstValidNumber(
+      metrics?.assignmentCompletion,
+      metrics?.assignmentPercentage,
+      metrics?.assignmentsCompletion,
+      data?.assignments?.completionPercentage,
+      data?.assignments?.completion
+    );
+
+  const examAverage =
+    firstValidNumber(
+      metrics?.examAverage,
+      metrics?.examPercentage,
+      metrics?.average,
+      data?.examAverage
+    );
+
+  const subjectsCount =
+    firstValidNumber(
+      metrics?.subjectsCount,
+      metrics?.subjectCount,
+      subjects.length
+    );
+
+  /* ==========================================================
+     SCORE
+  ========================================================== */
+
+  const score =
+    numberOrNull(
       prediction.score
     );
+
+  const status =
+    getStatus(score);
+
+  /* ==========================================================
+     CONFIDENCE
+  ========================================================== */
+
+  const calculatedConfidence =
+    (() => {
+      if (
+        prediction.confidence !==
+          null &&
+        prediction.confidence !==
+          undefined &&
+        Number.isFinite(
+          Number(
+            prediction.confidence
+          )
+        )
+      ) {
+        return Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(
+              Number(
+                prediction.confidence
+              )
+            )
+          )
+        );
+      }
+
+      let available = 0;
+
+      let total = 0;
+
+      if (
+        numberOrNull(
+          examAverage
+        ) !== null
+      ) {
+        available++;
+      }
+
+      total++;
+
+      if (
+        numberOrNull(
+          attendancePercentage
+        ) !== null
+      ) {
+        available++;
+      }
+
+      total++;
+
+      if (
+        numberOrNull(
+          assignmentCompletion
+        ) !== null
+      ) {
+        available++;
+      }
+
+      total++;
+
+      if (
+        score !== null
+      ) {
+        available++;
+      }
+
+      total++;
+
+      if (total === 0) {
+        return 0;
+      }
+
+      return Math.round(
+        (available / total) *
+          100
+      );
+    })();
 
   /* ==========================================================
      CHART DATA
@@ -267,45 +444,75 @@ export default function StudentPerformance() {
 
   const trendData =
     useMemo(() => {
-      return trend.map(
-        (item, index) => ({
-          name:
-            item?.name ||
-            item?.exam ||
-            `Assessment ${
-              index + 1
-            }`,
+      return trend
+        .map(
+          (item, index) => {
+            const performance =
+              firstValidNumber(
+                item?.percentage,
+                item?.score,
+                item?.marksPercentage,
+                item?.average,
+                item?.value
+              );
 
-          performance:
-            numberOrNull(
-              item?.percentage
-            ),
-        })
-      );
+            return {
+              name:
+                item?.name ||
+                item?.exam ||
+                item?.examName ||
+                `Assessment ${
+                  index + 1
+                }`,
+
+              performance,
+            };
+          }
+        )
+        .filter(
+          (item) =>
+            item.performance !==
+            null
+        );
     }, [trend]);
 
   const subjectData =
     useMemo(() => {
-      return subjects.map(
-        (subject, index) => ({
-          name:
-            subject?.name ||
-            `Subject ${
-              index + 1
-            }`,
+      return subjects
+        .map(
+          (subject, index) => {
+            const percentage =
+              firstValidNumber(
+                subject?.percentage,
+                subject?.score,
+                subject?.marksPercentage,
+                subject?.average,
+                subject?.value
+              );
 
-          percentage:
-            numberOrNull(
-              subject?.percentage
-            ),
+            return {
+              name:
+                subject?.name ||
+                subject?.subjectName ||
+                `Subject ${
+                  index + 1
+                }`,
 
-          color:
-            SUBJECT_COLORS[
-              index %
-                SUBJECT_COLORS.length
-            ],
-        })
-      );
+              percentage,
+
+              color:
+                SUBJECT_COLORS[
+                  index %
+                    SUBJECT_COLORS.length
+                ],
+            };
+          }
+        )
+        .filter(
+          (item) =>
+            item.percentage !==
+            null
+        );
     }, [subjects]);
 
   /* ==========================================================
@@ -365,17 +572,15 @@ export default function StudentPerformance() {
      SCORE RING
   ========================================================== */
 
-  const score =
-    numberOrNull(
-      prediction.score
-    );
-
   const scoreForRing =
     score === null
       ? 0
       : Math.min(
           100,
-          Math.max(0, score)
+          Math.max(
+            0,
+            score
+          )
         );
 
   const ringStyle = {
@@ -454,6 +659,7 @@ export default function StudentPerformance() {
 
           <h2>
             {student.studentName ||
+              student.name ||
               "Student"}
           </h2>
 
@@ -567,9 +773,7 @@ export default function StudentPerformance() {
                 </span>
 
                 <strong>
-                  {prediction.confidence ??
-                    0}
-                  %
+                  {calculatedConfidence}%
                 </strong>
 
               </div>
@@ -590,7 +794,7 @@ export default function StudentPerformance() {
             icon={Activity}
             title="Attendance"
             value={formatPercent(
-              metrics.attendancePercentage
+              attendancePercentage
             )}
             description="Participation consistency"
             color="blue"
@@ -600,7 +804,7 @@ export default function StudentPerformance() {
             icon={ClipboardCheck}
             title="Assignments"
             value={formatPercent(
-              metrics.assignmentCompletion
+              assignmentCompletion
             )}
             description="Completion rate"
             color="green"
@@ -610,7 +814,7 @@ export default function StudentPerformance() {
             icon={GraduationCap}
             title="Assessments"
             value={formatPercent(
-              metrics.examAverage
+              examAverage
             )}
             description="Average performance"
             color="purple"
@@ -620,7 +824,7 @@ export default function StudentPerformance() {
             icon={BookOpen}
             title="Subjects"
             value={
-              metrics.subjectsCount ??
+              subjectsCount ??
               subjects.length
             }
             description="With available scores"
@@ -677,6 +881,7 @@ export default function StudentPerformance() {
                   bottom: 10,
                 }}
               >
+
                 <defs>
                   <linearGradient
                     id="studentPerformanceGradient"
@@ -734,7 +939,8 @@ export default function StudentPerformance() {
                 <Tooltip
                   contentStyle={{
                     borderRadius: 14,
-                    border: "1px solid #E2E8F0",
+                    border:
+                      "1px solid #E2E8F0",
                     boxShadow:
                       "0 12px 30px rgba(15,23,42,0.10)",
                   }}
@@ -766,7 +972,9 @@ export default function StudentPerformance() {
                   }}
                   connectNulls
                 />
+
               </LineChart>
+
             </ResponsiveContainer>
 
           </div>
@@ -823,6 +1031,7 @@ export default function StudentPerformance() {
                   bottom: 35,
                 }}
               >
+
                 <CartesianGrid
                   stroke="#E5E7EB"
                   strokeDasharray="4 5"
@@ -885,7 +1094,10 @@ export default function StudentPerformance() {
                   maxBarSize={58}
                 >
                   {subjectData.map(
-                    (entry, index) => (
+                    (
+                      entry,
+                      index
+                    ) => (
                       <Cell
                         key={`subject-${index}`}
                         fill={
@@ -897,6 +1109,7 @@ export default function StudentPerformance() {
                 </Bar>
 
               </BarChart>
+
             </ResponsiveContainer>
 
           </div>
@@ -917,6 +1130,7 @@ export default function StudentPerformance() {
         <div className="student-performance-card-header">
 
           <div>
+
             <div className="student-performance-section-label">
               CURRENT SNAPSHOT
             </div>
@@ -930,6 +1144,7 @@ export default function StudentPerformance() {
               academic records currently
               available.
             </p>
+
           </div>
 
           <div className="student-performance-card-icon">
@@ -944,7 +1159,7 @@ export default function StudentPerformance() {
             icon={GraduationCap}
             label="Assessment Average"
             value={formatPercent(
-              metrics.examAverage
+              examAverage
             )}
             color="purple"
           />
@@ -953,7 +1168,7 @@ export default function StudentPerformance() {
             icon={CalendarDays}
             label="Attendance"
             value={formatPercent(
-              metrics.attendancePercentage
+              attendancePercentage
             )}
             color="blue"
           />
@@ -962,7 +1177,7 @@ export default function StudentPerformance() {
             icon={ClipboardCheck}
             label="Assignments"
             value={formatPercent(
-              metrics.assignmentCompletion
+              assignmentCompletion
             )}
             color="green"
           />
@@ -971,7 +1186,7 @@ export default function StudentPerformance() {
             icon={BookOpen}
             label="Subjects"
             value={
-              metrics.subjectsCount ??
+              subjectsCount ??
               subjects.length
             }
             color="orange"
@@ -992,9 +1207,11 @@ export default function StudentPerformance() {
         <section className="student-performance-card student-performance-insight-card">
 
           <div className="student-performance-insight-title positive">
+
             <Award size={21} />
 
             <div>
+
               <span>
                 STRENGTHS
               </span>
@@ -1002,19 +1219,24 @@ export default function StudentPerformance() {
               <h2>
                 What's going well
               </h2>
+
             </div>
+
           </div>
 
           <div className="student-performance-list">
 
-            {explanation.strengths
-              ?.length ? (
+            {explanation.strengths?.length ? (
               explanation.strengths.map(
-                (item, index) => (
+                (
+                  item,
+                  index
+                ) => (
                   <div
                     className="student-performance-list-item"
                     key={index}
                   >
+
                     <CheckCircle2
                       size={17}
                     />
@@ -1022,6 +1244,7 @@ export default function StudentPerformance() {
                     <span>
                       {item}
                     </span>
+
                   </div>
                 )
               )
@@ -1041,9 +1264,11 @@ export default function StudentPerformance() {
         <section className="student-performance-card student-performance-insight-card">
 
           <div className="student-performance-insight-title focus">
+
             <Target size={21} />
 
             <div>
+
               <span>
                 FOCUS AREAS
               </span>
@@ -1051,19 +1276,24 @@ export default function StudentPerformance() {
               <h2>
                 Areas to improve
               </h2>
+
             </div>
+
           </div>
 
           <div className="student-performance-list">
 
-            {explanation.focusAreas
-              ?.length ? (
+            {explanation.focusAreas?.length ? (
               explanation.focusAreas.map(
-                (item, index) => (
+                (
+                  item,
+                  index
+                ) => (
                   <div
                     className="student-performance-list-item"
                     key={index}
                   >
+
                     <Target
                       size={17}
                     />
@@ -1071,6 +1301,7 @@ export default function StudentPerformance() {
                     <span>
                       {item}
                     </span>
+
                   </div>
                 )
               )
@@ -1096,6 +1327,7 @@ export default function StudentPerformance() {
         <div className="student-performance-card-header">
 
           <div>
+
             <div className="student-performance-section-label">
               NEXT STEPS
             </div>
@@ -1109,6 +1341,7 @@ export default function StudentPerformance() {
               your current academic
               records.
             </p>
+
           </div>
 
           <div className="student-performance-card-icon">
@@ -1121,16 +1354,21 @@ export default function StudentPerformance() {
 
           {recommendations.length ? (
             recommendations.map(
-              (item, index) => (
+              (
+                item,
+                index
+              ) => (
                 <div
                   className="student-performance-recommendation"
                   key={index}
                 >
+
                   <div className="student-performance-recommendation-number">
                     {index + 1}
                   </div>
 
                   <div>
+
                     <h3>
                       {typeof item ===
                       "string"
@@ -1146,7 +1384,9 @@ export default function StudentPerformance() {
                         : item?.description ||
                           ""}
                     </p>
+
                   </div>
+
                 </div>
               )
             )
@@ -1167,6 +1407,7 @@ export default function StudentPerformance() {
       ====================================================== */}
 
       <div className="student-performance-footer-note">
+
         <Activity size={16} />
 
         <span>
@@ -1174,6 +1415,7 @@ export default function StudentPerformance() {
           the academic records currently
           available in CampusIQ.
         </span>
+
       </div>
 
     </div>
@@ -1201,6 +1443,7 @@ function MetricCard({
       </div>
 
       <div>
+
         <span className="student-performance-metric-title">
           {title}
         </span>
@@ -1212,6 +1455,7 @@ function MetricCard({
         <small>
           {description}
         </small>
+
       </div>
 
     </div>
@@ -1238,6 +1482,7 @@ function SnapshotItem({
       </div>
 
       <div>
+
         <span>
           {label}
         </span>
@@ -1245,6 +1490,7 @@ function SnapshotItem({
         <strong>
           {value}
         </strong>
+
       </div>
 
     </div>
@@ -1260,6 +1506,7 @@ function EmptyChart({
 }) {
   return (
     <div className="student-performance-empty-chart">
+
       <BarChart3
         size={34}
       />
@@ -1267,6 +1514,7 @@ function EmptyChart({
       <p>
         {message}
       </p>
+
     </div>
   );
 }

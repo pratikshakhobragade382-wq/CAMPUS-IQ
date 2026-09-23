@@ -10,33 +10,82 @@ import axiosClient from "./axios";
  * Used for:
  * - All students
  * - Class filter
- * - Search
+ * - Search by:
+ *   - Student Name
+ *   - Admission Number
+ *   - GR Number
  */
 export const getStudents = async ({
   page = 1,
   limit = 10,
   search = "",
   classId,
+  gender,
 } = {}) => {
   const params = {
     page,
     limit,
   };
 
-  if (search?.trim()) {
-    params.search = search.trim();
+  if (search !== undefined && search !== null) {
+    const cleanSearch = String(search).trim();
+
+    if (cleanSearch) {
+      params.search = cleanSearch;
+    }
   }
 
-  if (classId) {
+  if (classId !== undefined && classId !== null && classId !== "") {
     params.classId = classId;
   }
 
+  if (gender !== undefined && gender !== null && gender !== "") {
+    params.gender = gender;
+  }
+
+  console.log("GET /students params:", params);
+
   const response = await axiosClient.get(
     "/students",
-    { params }
+    {
+      params,
+    }
   );
 
-  return response.data;
+  console.log(
+    "GET /students response:",
+    response.data
+  );
+
+  /*
+   Backend controller returns:
+
+   {
+     success: true,
+     message: "Students fetched successfully",
+     data: {
+       students: [...],
+       pagination: {...}
+     }
+   }
+
+   Return only `data` so callers receive:
+
+   {
+     students: [...],
+     pagination: {...}
+   }
+  */
+
+  return response.data?.data || {
+    students: [],
+    pagination: {
+      total: 0,
+      page,
+      limit,
+      totalPages: 0,
+    },
+  };
 };
 
 /**
@@ -81,7 +130,10 @@ export const createStudent = async (data) => {
 /**
  * PUT /students/:id
  */
-export const updateStudent = async (id, data) => {
+export const updateStudent = async (
+  id,
+  data
+) => {
   const response = await axiosClient.put(
     `/students/${id}`,
     data
