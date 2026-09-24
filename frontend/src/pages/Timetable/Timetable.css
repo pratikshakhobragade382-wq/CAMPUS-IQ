@@ -334,7 +334,7 @@
 
 .tt-view-switch button.active {
   background: #ffffff;
-  color: #2563eb;
+  color: #0EA5E9;
   box-shadow:
     0 1px 3px rgba(15, 23, 42, 0.1);
 }
@@ -364,12 +364,12 @@
 
 .tt-days button:hover {
   border-color: #93c5fd;
-  color: #2563eb;
+  color: #0EA5E9;
 }
 
 .tt-days button.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #0EA5E9;
+  border-color: #0EA5E9;
   color: #ffffff;
 }
 
@@ -399,7 +399,7 @@
   align-items: center;
   justify-content: center;
   padding: 9px;
-  background: #1e3a8a;
+  background: #0EA5E9;
   color: #ffffff;
   border-right: 1px solid
     rgba(255, 255, 255, 0.15);
@@ -409,7 +409,7 @@
 }
 
 .tt-time-header {
-  background: #172554;
+  background: #0EA5E9;
 }
 
 .tt-weekly-time {
