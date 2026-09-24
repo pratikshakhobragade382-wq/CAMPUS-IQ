@@ -1,9 +1,8 @@
 // src/pages/IndexPage/Navbar/Navbar.jsx
 //
 // Site-wide navbar, used on the landing page AND the About page.
-// Because it's shared across pages, "Home" / "Features" / "Pricing" need
-// to point back to "/" (with a hash for the in-page sections), and
-// "About" needs to go to the actual /about route instead of "#".
+// Because it's shared across pages, navigation links point to
+// their respective routes.
 
 import "./Navbar.css";
 import logo from "../../../assets/logo.png";
@@ -16,7 +15,10 @@ function Navbar() {
 
         {/* Logo */}
         <div className="logo">
-          <img src={logo} alt="Campus IQ Logo" />
+          <img
+            src={logo}
+            alt="Campus IQ Logo"
+          />
         </div>
 
         {/* Navigation Links */}
@@ -27,11 +29,25 @@ function Navbar() {
           {/* <Link to="/#pricing">Pricing</Link> */}
         </nav>
 
-        {/* Login Button */}
+        {/* Login + Register Buttons */}
         <div className="nav-buttons">
-          <Link to="/login" className="login-btn">
-            Login
+
+          {/* Login */}
+          <Link
+            to="/login"
+            className="login-btn"
+          >
+            Admin Login
           </Link>
+
+          {/* Register */}
+          <Link
+            to="/register"
+            className="signup-btn"
+          >
+            Admin Register
+          </Link>
+
         </div>
 
       </div>

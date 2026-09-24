@@ -7,6 +7,26 @@ const authorize = require('../../middleware/authorize');
 
 router.use(authenticate);
 
+// Upload assignment document (PDF, Word, PPT)
+const assignmentUpload = require('../../middleware/assignmentUpload');
+router.post(
+  '/upload',
+  authorize('admin', 'staff', 'teacher', 'student'),
+  (req, res, next) => {
+    assignmentUpload.single('file')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message || 'File upload failed',
+          message: err.message || 'File upload failed',
+        });
+      }
+      next();
+    });
+  },
+  controller.uploadAssignmentFile
+);
+
 // Create assignment (Teacher / Staff / Admin)
 router.post('/', authorize('admin', 'staff', 'teacher'), controller.createAssignment);
 

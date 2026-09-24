@@ -92,14 +92,14 @@ body {
 /* Login */
 
 .login-btn {
-    background: white;
-    color: #38bdf8;
+    background: #38bdf8;
+    color: #ffffff;
     border: 2px solid #38bdf8;
 }
 
 .login-btn:hover {
-    background: #38bdf8;
-    color: white;
+    background: #ffffff;
+    color: #0ea5e9;
 }
 
 /* Signup */
@@ -129,8 +129,9 @@ body {
 }
 
 .signup-btn:hover {
-    background: #0ea5e9;
-    color: #ffffff;
+    background: #ffffff;
+    color: #0ea5e9;
+    border: 2px solid #38bdf8;
 }
 
 /* ================= RESPONSIVE ================= */

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import TeacherTopbar from '../components/TeacherTopbar';
 import {
@@ -7,10 +7,39 @@ import {
   deleteAssignment,
   getAssignmentSubmissions,
   gradeSubmission,
+  uploadAssignmentFile,
+  getFileUrl,
 } from '../../api/assignment.api';
 import { getClasses } from '../../api/class.api';
 import { getSubjects } from '../../api/subject.api';
 import './TeacherAssignments.css';
+
+// Helpers for file display
+function formatFileSize(bytes) {
+  if (!bytes || isNaN(bytes)) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(fileNameOrUrl) {
+  if (!fileNameOrUrl) return 'fa-file-lines';
+  const lower = fileNameOrUrl.toLowerCase();
+  if (lower.endsWith('.pdf')) return 'fa-file-pdf';
+  if (lower.endsWith('.doc') || lower.endsWith('.docx')) return 'fa-file-word';
+  if (lower.endsWith('.ppt') || lower.endsWith('.pptx')) return 'fa-file-powerpoint';
+  return 'fa-file-lines';
+}
+
+function getFileBadgeColor(fileNameOrUrl) {
+  if (!fileNameOrUrl) return { bg: '#f1f5f9', color: '#64748b' };
+  const lower = fileNameOrUrl.toLowerCase();
+  if (lower.endsWith('.pdf')) return { bg: '#fee2e2', color: '#dc2626' };
+  if (lower.endsWith('.doc') || lower.endsWith('.docx')) return { bg: '#dbeafe', color: '#2563eb' };
+  if (lower.endsWith('.ppt') || lower.endsWith('.pptx')) return { bg: '#ffedd5', color: '#ea580c' };
+  return { bg: '#e0e7ff', color: '#4f46e5' };
+}
+
 
 export default function TeacherAssignments() {
   const { user } = useAuth();
@@ -26,6 +55,12 @@ export default function TeacherAssignments() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -35,7 +70,70 @@ export default function TeacherAssignments() {
     dueDate: '',
     maxMarks: 100,
     attachmentUrl: '',
+    attachmentName: '',
+    attachmentSize: null,
   });
+
+  // Allowed file extensions for teacher assignment documents
+  const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+
+  // Handle file selection / upload
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowedExtensions.includes(ext)) {
+      setUploadError(
+        'Invalid file type. Please upload a PDF, Word (.doc, .docx), or PowerPoint (.ppt, .pptx) document.'
+      );
+      return;
+    }
+
+    if (file.size > 30 * 1024 * 1024) {
+      setUploadError('File is too large. Maximum file size is 30 MB.');
+      return;
+    }
+
+    setUploadError('');
+    setUploadingFile(true);
+    setUploadProgress(0);
+
+    try {
+      const res = await uploadAssignmentFile(file, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      if (res?.data?.url) {
+        setFormData((prev) => ({
+          ...prev,
+          attachmentUrl: res.data.url,
+          attachmentName: res.data.fileName || file.name,
+          attachmentSize: res.data.fileSize || file.size,
+        }));
+      }
+    } catch (err) {
+      console.error('File upload error:', err);
+      setUploadError(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          'Failed to upload document. Please try again.'
+      );
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFormData((prev) => ({
+      ...prev,
+      attachmentUrl: '',
+      attachmentName: '',
+      attachmentSize: null,
+    }));
+    setUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // Submissions Modal State
   const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(false);
@@ -111,6 +209,10 @@ export default function TeacherAssignments() {
       setAlertMsg({ type: 'error', text: 'Please choose a due date.' });
       return;
     }
+    if (formData.maxMarks === '' || Number(formData.maxMarks) <= 0) {
+      setAlertMsg({ type: 'error', text: 'Please enter valid Max Marks (minimum 1).' });
+      return;
+    }
 
     setSaving(true);
     setAlertMsg(null);
@@ -137,7 +239,10 @@ export default function TeacherAssignments() {
         dueDate: '',
         maxMarks: 100,
         attachmentUrl: '',
+        attachmentName: '',
+        attachmentSize: null,
       });
+      setUploadError('');
       loadData();
     } catch (err) {
       console.error('Create error:', err);
@@ -178,10 +283,19 @@ export default function TeacherAssignments() {
 
   // Grade Submission
   const handleGrade = async (submissionId, grade, feedback) => {
+    if (grade !== '' && grade !== undefined && grade !== null) {
+      const numGrade = Number(grade);
+      const max = selectedAssignment?.maxMarks || 100;
+      if (isNaN(numGrade) || numGrade < 0 || numGrade > max) {
+        setAlertMsg({ type: 'error', text: `Marks must be between 0 and ${max}.` });
+        return;
+      }
+    }
+
     try {
-      await gradeSubmission(submissionId, { grade, feedback });
+      await gradeSubmission(submissionId, { grade: grade === '' ? null : Number(grade), feedback });
       setSubmissions((prev) =>
-        prev.map((s) => (s.id === submissionId ? { ...s, grade, feedback, status: 'graded' } : s))
+        prev.map((s) => (s.id === submissionId ? { ...s, grade: grade === '' ? null : Number(grade), feedback, status: 'graded' } : s))
       );
       setAlertMsg({ type: 'success', text: 'Submission graded successfully!' });
     } catch (err) {
@@ -189,6 +303,7 @@ export default function TeacherAssignments() {
       setAlertMsg({ type: 'error', text: 'Failed to grade submission.' });
     }
   };
+
 
   // Filtered list
   const filteredAssignments = assignments.filter((a) => {
@@ -385,10 +500,34 @@ export default function TeacherAssignments() {
                       <i className="fa-solid fa-graduation-cap text-blue-500 mr-1"></i> {className}
                       {assignment.sectionId ? ` (Sec ${assignment.sectionId})` : ''}
                     </span>
-                    <span>
-                      <i className="fa-solid fa-star text-amber-500 mr-1"></i> Max Marks: {assignment.maxMarks || 100}
+                    <span className="card-marks-badge">
+                      <i className="fa-solid fa-award text-amber-500 mr-1"></i> Max Marks: {assignment.maxMarks || 100}
                     </span>
                   </div>
+
+                  {assignment.attachmentUrl && (
+                    <div className="assignment-attachment-row">
+                      <a
+                        href={getFileUrl(assignment.attachmentUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="card-attachment-button"
+                        title="View or download attached assignment"
+                      >
+                        <i
+                          className={`fa-solid ${getFileIcon(assignment.attachmentUrl)}`}
+                          style={{ color: getFileBadgeColor(assignment.attachmentUrl).color }}
+                        ></i>
+                        <span>
+                          Attached Document ({assignment.attachmentUrl.split('.').pop()?.toUpperCase() || 'FILE'})
+                        </span>
+                        <i
+                          className="fa-solid fa-arrow-up-right-from-square"
+                          style={{ fontSize: 11, marginLeft: 'auto', opacity: 0.7 }}
+                        ></i>
+                      </a>
+                    </div>
+                  )}
 
                   <div className="assignment-actions-row">
                     <button
@@ -501,13 +640,30 @@ export default function TeacherAssignments() {
                   </div>
 
                   <div className="form-group-field">
-                    <label>Max Marks</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <label style={{ margin: 0 }}>Max Marks *</label>
+                      <div className="marks-preset-chips">
+                        {[20, 25, 50, 100].map((preset) => (
+                          <button
+                            type="button"
+                            key={preset}
+                            className={`chip-preset-mark ${Number(formData.maxMarks) === preset ? 'active' : ''}`}
+                            onClick={() => setFormData((p) => ({ ...p, maxMarks: preset }))}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <input
                       type="number"
                       name="maxMarks"
                       value={formData.maxMarks}
                       onChange={handleChange}
                       min={1}
+                      max={1000}
+                      required
+                      placeholder="e.g. 100"
                     />
                   </div>
                 </div>
@@ -533,6 +689,143 @@ export default function TeacherAssignments() {
                     value={formData.description}
                     onChange={handleChange}
                   />
+                </div>
+
+                {/* Assignment Document Upload Section (PDF, Word, PPT) */}
+                <div className="form-group-field">
+                  <div className="upload-section-header">
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                      Upload Assignment Document (Optional)
+                    </span>
+                    <span className="upload-section-tag">PDF • Word • PPT</span>
+                  </div>
+
+                  {/* Hidden File Input placed outside the dropzone button */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    style={{ display: 'none' }}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+
+                  {!formData.attachmentUrl ? (
+                    <button
+                      type="button"
+                      className={`upload-dropzone ${isDragging ? 'drag-over' : ''} ${uploadingFile ? 'uploading' : ''}`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDragging(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDragging(false);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!uploadingFile && fileInputRef.current) {
+                          fileInputRef.current.click();
+                        }
+                      }}
+                    >
+                      {uploadingFile ? (
+                        <div className="upload-progress-container">
+                          <i className="fa-solid fa-circle-notch fa-spin text-blue-500 text-2xl"></i>
+                          <p className="upload-progress-text">Uploading document... {uploadProgress}%</p>
+                          <div className="upload-progress-bar-bg">
+                            <div className="upload-progress-bar-fill" style={{ width: `${uploadProgress}%` }}></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="upload-dropzone-content">
+                          <div className="upload-icon-wrapper">
+                            <i className="fa-solid fa-cloud-arrow-up"></i>
+                          </div>
+                          <p className="upload-main-text">
+                            <span style={{ color: '#0ea5e9', fontWeight: 700, textDecoration: 'underline' }}>
+                              Click to upload
+                            </span>{' '}
+                            or drag and drop
+                          </p>
+                          <p className="upload-sub-text">
+                            Accepted formats: <strong>PDF, Word (.doc, .docx), PowerPoint (.ppt, .pptx)</strong>
+                          </p>
+                          <p className="upload-limit-text">Maximum file size: 30 MB</p>
+                        </div>
+                      )}
+                    </button>
+                  ) : (
+                    <div className="uploaded-file-card">
+                      <div className="uploaded-file-info">
+                        <div
+                          className="uploaded-file-icon"
+                          style={{
+                            background: getFileBadgeColor(formData.attachmentName || formData.attachmentUrl).bg,
+                            color: getFileBadgeColor(formData.attachmentName || formData.attachmentUrl).color,
+                          }}
+                        >
+                          <i
+                            className={`fa-solid ${getFileIcon(formData.attachmentName || formData.attachmentUrl)}`}
+                          ></i>
+                        </div>
+                        <div className="uploaded-file-text">
+                          <div
+                            className="uploaded-file-title"
+                            title={formData.attachmentName || formData.attachmentUrl}
+                          >
+                            {formData.attachmentName || 'Assignment Document'}
+                          </div>
+                          <div className="uploaded-file-meta">
+                            <span className="uploaded-success-tag">
+                              <i className="fa-solid fa-circle-check"></i> Uploaded
+                            </span>
+                            {formData.attachmentSize && (
+                              <span>• {formatFileSize(formData.attachmentSize)}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="uploaded-file-actions">
+                        <a
+                          href={getFileUrl(formData.attachmentUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-view-uploaded"
+                          title="Preview uploaded document"
+                        >
+                          <i className="fa-solid fa-arrow-up-right-from-square"></i> Preview
+                        </a>
+                        <button
+                          type="button"
+                          className="btn-remove-uploaded"
+                          onClick={handleRemoveFile}
+                          title="Remove document"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {uploadError && (
+                    <div className="upload-error-msg">
+                      <i className="fa-solid fa-triangle-exclamation"></i> {uploadError}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -586,8 +879,9 @@ export default function TeacherAssignments() {
                     <tr>
                       <th>Student ID</th>
                       <th>Submitted Date</th>
+                      <th>Submitted Work</th>
                       <th>Status</th>
-                      <th>Marks ({selectedAssignment.maxMarks})</th>
+                      <th>Marks (Max: {selectedAssignment.maxMarks || 100})</th>
                       <th>Feedback</th>
                     </tr>
                   </thead>
@@ -597,6 +891,32 @@ export default function TeacherAssignments() {
                         <td>Student #{sub.studentId}</td>
                         <td>{new Date(sub.submittedAt).toLocaleDateString('en-IN')}</td>
                         <td>
+                          {sub.attachmentUrl ? (
+                            <a
+                              href={getFileUrl(sub.attachmentUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#0284c7',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <i className={`fa-solid ${getFileIcon(sub.attachmentUrl)}`}></i> Attachment
+                            </a>
+                          ) : sub.content ? (
+                            <span style={{ fontSize: 12, color: '#334155' }} title={sub.content}>
+                              {sub.content.length > 25 ? `${sub.content.slice(0, 25)}…` : sub.content}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 12, color: '#94a3b8' }}>No file</span>
+                          )}
+                        </td>
+                        <td>
                           <span className={`grade-pill ${sub.status === 'graded' ? 'grade-a' : 'grade-b'}`}>
                             {sub.status}
                           </span>
@@ -604,16 +924,18 @@ export default function TeacherAssignments() {
                         <td>
                           <input
                             type="number"
-                            style={{ width: 70, padding: 4, borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{ width: 75, padding: 6, borderRadius: 6, border: '1px solid #cbd5e1' }}
                             defaultValue={sub.grade ?? ''}
+                            min={0}
+                            max={selectedAssignment.maxMarks || 100}
                             onBlur={(e) => handleGrade(sub.id, e.target.value, sub.feedback)}
-                            placeholder="Grade"
+                            placeholder={`0 - ${selectedAssignment.maxMarks || 100}`}
                           />
                         </td>
                         <td>
                           <input
                             type="text"
-                            style={{ width: '100%', padding: 4, borderRadius: 6, border: '1px solid #cbd5e1' }}
+                            style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid #cbd5e1' }}
                             defaultValue={sub.feedback ?? ''}
                             onBlur={(e) => handleGrade(sub.id, sub.grade, e.target.value)}
                             placeholder="Add remark"

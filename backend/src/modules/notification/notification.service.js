@@ -3,29 +3,6 @@ const prisma = require("../../prisma/prismaClient");
 // =====================================================
 // STUDENT NOTIFICATION RULES
 // =====================================================
-//
-// Students should NOT see internal administration
-// notifications such as:
-//
-// - New Student Added
-// - New Staff Added
-// - New Teacher Added
-//
-// Students SHOULD see useful academic/school notifications:
-//
-// - Holidays
-// - Exams
-// - Assignments
-// - Homework
-// - Activities
-// - Timetable
-// - Announcements
-// - Class updates
-// - Other school/general notices
-//
-// Existing notifications are NOT deleted from the database.
-// They are simply hidden from the Student Portal.
-// =====================================================
 
 const STUDENT_BLOCKED_NOTIFICATION_TITLES = [
   "New Student Added",
@@ -36,29 +13,13 @@ const STUDENT_BLOCKED_NOTIFICATION_TITLES = [
 // =====================================================
 // STUDENT NOTIFICATION FILTER
 // =====================================================
-//
-// This condition is added to every notification visibility
-// rule for students.
-//
-// The title filter is intentional because some older
-// notifications may have been stored with:
-//
-// type = "general"
-//
-// instead of:
-//
-// type = "student"
-// type = "staff"
-// type = "teacher"
-//
-// Therefore filtering only by type would not be enough.
-// =====================================================
 
 function getStudentNotificationFilter() {
   return {
     NOT: {
       title: {
-        in: STUDENT_BLOCKED_NOTIFICATION_TITLES,
+        in:
+          STUDENT_BLOCKED_NOTIFICATION_TITLES,
       },
     },
   };
@@ -68,648 +29,701 @@ function getStudentNotificationFilter() {
 // GET NOTIFICATION VISIBILITY
 // =====================================================
 
-const getNotificationVisibility = async (user) => {
-  const {
-    userId,
-    tenantId,
-    identity,
-    studentId,
-  } = user;
-
-  const visibility = [];
-
-  // ===================================================
-  // GENERAL "ALL" NOTIFICATIONS
-  // ===================================================
-  //
-  // School-wide notifications remain visible.
-  //
-  // IMPORTANT:
-  // Student-specific filtering is applied below.
-  // ===================================================
-
-  if (identity !== "student") {
-    visibility.push({
-      audience: "all",
-    });
-  }
-
-  // ===================================================
-  // ROLE-BASED NOTIFICATIONS
-  // ===================================================
-
-  if (identity !== "student") {
-    visibility.push({
-      audience: identity,
-    });
-  }
-
-  // Teachers are commonly stored as "staff".
-  if (
-    identity === "staff" ||
-    identity === "teacher"
-  ) {
-    visibility.push({
-      audience: "teacher",
-    });
-  }
-
-  // ===================================================
-  // DIRECT USER NOTIFICATION
-  // ===================================================
-  //
-  // Keep direct notifications for non-student users.
-  //
-  // Student direct notifications are handled below with
-  // the student-specific filter.
-  // ===================================================
-
-  if (identity !== "student") {
-    visibility.push({
-      audience: "individual",
+const getNotificationVisibility =
+  async (user) => {
+    const {
       userId,
-    });
-  }
+      tenantId,
+      identity,
+      studentId,
+    } = user;
 
-  // ===================================================
-  // STUDENT VISIBILITY
-  // ===================================================
+    const visibility = [];
 
-  if (identity === "student") {
-    let student = null;
+    // =================================================
+    // ALL
+    // =================================================
 
-    // -------------------------------------------------
-    // OPTION 1:
-    // studentId already exists in auth user
-    // -------------------------------------------------
+    if (
+      identity !== "student"
+    ) {
+      visibility.push({
+        audience: "all",
+      });
+    }
 
-    const resolvedStudentId =
-      studentId ||
-      user.studentId ||
-      user.student?.id;
+    // =================================================
+    // ROLE
+    // =================================================
 
-    if (resolvedStudentId) {
-      const parsedStudentId =
-        parseInt(
-          resolvedStudentId,
-          10
-        );
+    if (
+      identity !== "student"
+    ) {
+      visibility.push({
+        audience: identity,
+      });
+    }
+
+    // =================================================
+    // TEACHER
+    // =================================================
+
+    if (
+      identity === "staff" ||
+      identity === "teacher"
+    ) {
+      visibility.push({
+        audience: "teacher",
+      });
+    }
+
+    // =================================================
+    // DIRECT USER
+    // =================================================
+
+    if (
+      identity !== "student"
+    ) {
+      visibility.push({
+        audience:
+          "individual",
+
+        userId,
+      });
+    }
+
+    // =================================================
+    // STUDENT
+    // =================================================
+
+    if (
+      identity === "student"
+    ) {
+      let student = null;
+
+      const resolvedStudentId =
+        studentId ||
+        user.studentId ||
+        user.student?.id;
 
       if (
-        !Number.isNaN(
-          parsedStudentId
-        )
+        resolvedStudentId
       ) {
-        student =
-          await prisma.student.findFirst({
-            where: {
-              id: parsedStudentId,
-              tenantId,
-              isDeleted: false,
-            },
+        const parsedStudentId =
+          parseInt(
+            resolvedStudentId,
+            10
+          );
 
-            select: {
-              classId: true,
-              sectionId: true,
-            },
-          });
-      }
-    }
+        if (
+          !Number.isNaN(
+            parsedStudentId
+          )
+        ) {
+          student =
+            await prisma.student.findFirst(
+              {
+                where: {
+                  id:
+                    parsedStudentId,
 
-    // -------------------------------------------------
-    // OPTION 2:
-    // Find student using logged-in user email
-    // -------------------------------------------------
+                  tenantId,
 
-    if (!student && userId) {
-      const loggedInUser =
-        await prisma.user.findUnique({
-          where: {
-            id: userId,
-          },
-
-          select: {
-            email: true,
-          },
-        });
-
-      if (loggedInUser?.email) {
-        student =
-          await prisma.student.findFirst({
-            where: {
-              tenantId,
-              isDeleted: false,
-
-              OR: [
-                {
-                  studentEmail: {
-                    equals:
-                      loggedInUser.email,
-                    mode: "insensitive",
-                  },
+                  isDeleted: false,
                 },
 
-                {
-                  communicationEmail: {
-                    equals:
-                      loggedInUser.email,
-                    mode: "insensitive",
-                  },
+                select: {
+                  classId: true,
+                  sectionId: true,
                 },
-              ],
-            },
-
-            select: {
-              classId: true,
-              sectionId: true,
-            },
-          });
+              }
+            );
+        }
       }
-    }
 
-    // =================================================
-    // STUDENT NOTIFICATION VISIBILITY
-    // =================================================
-    //
-    // Students can receive:
-    //
-    // - school-wide notifications
-    // - student notifications
-    // - class notifications
-    // - section/class notifications
-    // - direct student notifications
-    //
-    // BUT the blocked administrative notifications
-    // are removed using getStudentNotificationFilter().
-    // =================================================
+      // -------------------------------------------------
+      // FIND STUDENT BY EMAIL
+      // -------------------------------------------------
 
-    const studentFilter =
-      getStudentNotificationFilter();
+      if (
+        !student &&
+        userId
+      ) {
+        const loggedInUser =
+          await prisma.user.findUnique(
+            {
+              where: {
+                id: userId,
+              },
 
-    // -------------------------------------------------
-    // SCHOOL-WIDE NOTIFICATIONS
-    // -------------------------------------------------
+              select: {
+                email: true,
+              },
+            }
+          );
 
-    visibility.push({
-      audience: "all",
+        if (
+          loggedInUser?.email
+        ) {
+          student =
+            await prisma.student.findFirst(
+              {
+                where: {
+                  tenantId,
 
-      ...studentFilter,
-    });
+                  isDeleted: false,
 
-    // -------------------------------------------------
-    // GENERIC STUDENT NOTIFICATION
-    // -------------------------------------------------
+                  OR: [
+                    {
+                      studentEmail: {
+                        equals:
+                          loggedInUser.email,
 
-    visibility.push({
-      audience: "student",
+                        mode:
+                          "insensitive",
+                      },
+                    },
 
-      classId: null,
+                    {
+                      communicationEmail:
+                        {
+                          equals:
+                            loggedInUser.email,
 
-      sectionId: null,
+                          mode:
+                            "insensitive",
+                        },
+                    },
+                  ],
+                },
 
-      ...studentFilter,
-    });
+                select: {
+                  classId: true,
+                  sectionId: true,
+                },
+              }
+            );
+        }
+      }
 
-    // -------------------------------------------------
-    // CLASS TARGETED NOTIFICATION
-    // -------------------------------------------------
+      const studentFilter =
+        getStudentNotificationFilter();
 
-    if (student?.classId) {
+      // -------------------------------------------------
+      // SCHOOL WIDE
+      // -------------------------------------------------
+
+      visibility.push({
+        audience: "all",
+
+        ...studentFilter,
+      });
+
+      // -------------------------------------------------
+      // GENERIC STUDENT
+      // -------------------------------------------------
+
       visibility.push({
         audience: "student",
 
-        classId:
-          student.classId,
+        classId: null,
 
         sectionId: null,
 
         ...studentFilter,
       });
 
-      // Also allow class audience.
-      visibility.push({
-        audience: "class",
+      // -------------------------------------------------
+      // CLASS
+      // -------------------------------------------------
 
-        classId:
-          student.classId,
+      if (
+        student?.classId
+      ) {
+        visibility.push({
+          audience: "student",
+
+          classId:
+            student.classId,
+
+          sectionId: null,
+
+          ...studentFilter,
+        });
+
+        visibility.push({
+          audience: "class",
+
+          classId:
+            student.classId,
+
+          ...studentFilter,
+        });
+      }
+
+      // -------------------------------------------------
+      // SECTION
+      // -------------------------------------------------
+
+      if (
+        student?.classId &&
+        student?.sectionId
+      ) {
+        visibility.push({
+          audience: "student",
+
+          classId:
+            student.classId,
+
+          sectionId:
+            student.sectionId,
+
+          ...studentFilter,
+        });
+      }
+
+      // -------------------------------------------------
+      // DIRECT STUDENT
+      // -------------------------------------------------
+
+      visibility.push({
+        audience:
+          "individual",
+
+        userId,
 
         ...studentFilter,
       });
     }
 
-    // -------------------------------------------------
-    // CLASS + SECTION TARGETED NOTIFICATION
-    // -------------------------------------------------
+    // =================================================
+    // PARENT
+    // =================================================
 
     if (
-      student?.classId &&
-      student?.sectionId
+      identity === "parent"
     ) {
+      const parentStudents =
+        await prisma.student.findMany(
+          {
+            where: {
+              tenantId,
+
+              isDeleted: false,
+
+              parents: {
+                some: {
+                  user: {
+                    id: userId,
+                  },
+                },
+              },
+            },
+
+            select: {
+              classId: true,
+              sectionId: true,
+            },
+          }
+        );
+
+      const classIds =
+        parentStudents
+          .map(
+            (student) =>
+              student.classId
+          )
+          .filter(Boolean);
+
+      const sectionIds =
+        parentStudents
+          .map(
+            (student) =>
+              student.sectionId
+          )
+          .filter(Boolean);
+
+      // =================================================
+      // IMPORTANT:
+      // DIRECT PARENT NOTIFICATIONS
+      // =================================================
+      //
+      // This is what allows a fee payment notification
+      // addressed specifically to this parent to appear
+      // in the Parent Portal.
+      //
+      // =================================================
+
       visibility.push({
-        audience: "student",
+        audience:
+          "individual",
 
-        classId:
-          student.classId,
-
-        sectionId:
-          student.sectionId,
-
-        ...studentFilter,
+        userId,
       });
+
+      // =================================================
+      // CLASS NOTIFICATIONS
+      // =================================================
+
+      if (
+        classIds.length > 0
+      ) {
+        visibility.push({
+          audience: "class",
+
+          classId: {
+            in: classIds,
+          },
+        });
+      }
+
+      // =================================================
+      // STUDENT-TARGETED NOTIFICATIONS
+      // =================================================
+
+      if (
+        sectionIds.length > 0
+      ) {
+        const studentVisibility =
+          [
+            {
+              audience:
+                "student",
+
+              classId: null,
+
+              sectionId: null,
+            },
+
+            ...classIds.map(
+              (classId) => ({
+                audience:
+                  "student",
+
+                classId,
+
+                sectionId:
+                  null,
+              })
+            ),
+
+            ...parentStudents
+              .filter(
+                (student) =>
+                  student.classId &&
+                  student.sectionId
+              )
+              .map(
+                (student) => ({
+                  audience:
+                    "student",
+
+                  classId:
+                    student.classId,
+
+                  sectionId:
+                    student.sectionId,
+                })
+              ),
+          ];
+
+        visibility.push({
+          OR:
+            studentVisibility,
+        });
+      }
     }
 
-    // -------------------------------------------------
-    // DIRECT STUDENT NOTIFICATION
-    // -------------------------------------------------
+    return visibility;
+  };
 
-    visibility.push({
-      audience: "individual",
+// =====================================================
+// GET NOTIFICATIONS
+// =====================================================
 
+const getNotifications =
+  async (user) => {
+    const {
       userId,
+      tenantId,
+    } = user;
 
-      ...studentFilter,
-    });
-  }
+    const visibility =
+      await getNotificationVisibility(
+        user
+      );
 
-  // ===================================================
-  // PARENT VISIBILITY
-  // ===================================================
+    const notifications =
+      await prisma.notification.findMany(
+        {
+          where: {
+            tenantId,
 
-  if (identity === "parent") {
-    const parentStudents =
-      await prisma.student.findMany({
-        where: {
-          tenantId,
-          isDeleted: false,
+            isActive: true,
 
-          parents: {
-            some: {
-              user: {
-                id: userId,
+            OR: [
+              {
+                expiresAt:
+                  null,
+              },
+
+              {
+                expiresAt: {
+                  gt: new Date(),
+                },
+              },
+            ],
+
+            AND: [
+              {
+                OR:
+                  visibility,
+              },
+            ],
+          },
+
+          orderBy: {
+            createdAt:
+              "desc",
+          },
+
+          take: 10,
+
+          include: {
+            NotificationRead: {
+              where: {
+                userId,
+              },
+
+              select: {
+                readAt: true,
               },
             },
           },
-        },
+        }
+      );
 
-        select: {
-          classId: true,
-          sectionId: true,
-        },
-      });
+    return notifications.map(
+      (notification) => ({
+        id:
+          notification.id,
 
-    const classIds =
-      parentStudents
-        .map(
-          (student) =>
-            student.classId
-        )
-        .filter(Boolean);
+        title:
+          notification.title,
 
-    const sectionIds =
-      parentStudents
-        .map(
-          (student) =>
-            student.sectionId
-        )
-        .filter(Boolean);
+        message:
+          notification.message,
 
-    // -------------------------------------------------
-    // Parent can receive class notifications
-    // -------------------------------------------------
+        type:
+          notification.type,
 
-    if (classIds.length > 0) {
-      visibility.push({
-        audience: "class",
+        priority:
+          notification.priority,
 
-        classId: {
-          in: classIds,
-        },
-      });
-    }
+        audience:
+          notification.audience,
 
-    // -------------------------------------------------
-    // Parent can receive student-targeted notifications
-    // for the child's class/section
-    // -------------------------------------------------
+        classId:
+          notification.classId,
 
-    if (sectionIds.length > 0) {
-      visibility.push({
-        OR: [
-          {
-            audience: "student",
+        sectionId:
+          notification.sectionId,
 
-            classId: null,
+        userId:
+          notification.userId,
 
-            sectionId: null,
-          },
+        createdById:
+          notification.createdById,
 
-          ...classIds.map(
-            (classId) => ({
-              audience: "student",
+        createdAt:
+          notification.createdAt,
 
-              classId,
+        expiresAt:
+          notification.expiresAt,
 
-              sectionId: null,
-            })
-          ),
-
-          ...parentStudents
-            .filter(
-              (student) =>
-                student.classId &&
-                student.sectionId
-            )
-            .map(
-              (student) => ({
-                audience: "student",
-
-                classId:
-                  student.classId,
-
-                sectionId:
-                  student.sectionId,
-              })
-            ),
-        ],
-      });
-    }
-  }
-
-  return visibility;
-};
-
-// =====================================================
-// GET LATEST NOTIFICATIONS
-// =====================================================
-
-const getNotifications = async (
-  user
-) => {
-  const {
-    userId,
-    tenantId,
-  } = user;
-
-  const visibility =
-    await getNotificationVisibility(
-      user
+        isRead:
+          notification
+            .NotificationRead
+            .length > 0,
+      })
     );
-
-  const notifications =
-    await prisma.notification.findMany({
-      where: {
-        tenantId,
-
-        isActive: true,
-
-        OR: [
-          {
-            expiresAt: null,
-          },
-
-          {
-            expiresAt: {
-              gt: new Date(),
-            },
-          },
-        ],
-
-        AND: [
-          {
-            OR: visibility,
-          },
-        ],
-      },
-
-      orderBy: {
-        createdAt: "desc",
-      },
-
-      take: 10,
-
-      include: {
-        NotificationRead: {
-          where: {
-            userId,
-          },
-
-          select: {
-            readAt: true,
-          },
-        },
-      },
-    });
-
-  return notifications.map(
-    (notification) => ({
-      id:
-        notification.id,
-
-      title:
-        notification.title,
-
-      message:
-        notification.message,
-
-      type:
-        notification.type,
-
-      priority:
-        notification.priority,
-
-      audience:
-        notification.audience,
-
-      classId:
-        notification.classId,
-
-      sectionId:
-        notification.sectionId,
-
-      userId:
-        notification.userId,
-
-      createdById:
-        notification.createdById,
-
-      createdAt:
-        notification.createdAt,
-
-      expiresAt:
-        notification.expiresAt,
-
-      isRead:
-        notification.NotificationRead
-          .length > 0,
-    })
-  );
-};
+  };
 
 // =====================================================
 // GET ALL NOTIFICATIONS
 // =====================================================
 
-const getAllNotifications = async (
-  user
-) => {
-  const {
-    userId,
-    tenantId,
-  } = user;
+const getAllNotifications =
+  async (user) => {
+    const {
+      userId,
+      tenantId,
+    } = user;
 
-  const fifteenDaysAgo =
-    new Date();
+    const fifteenDaysAgo =
+      new Date();
 
-  fifteenDaysAgo.setDate(
-    fifteenDaysAgo.getDate() - 15
-  );
-
-  const visibility =
-    await getNotificationVisibility(
-      user
+    fifteenDaysAgo.setDate(
+      fifteenDaysAgo.getDate() -
+        15
     );
 
-  const notifications =
-    await prisma.notification.findMany({
-      where: {
-        tenantId,
+    const visibility =
+      await getNotificationVisibility(
+        user
+      );
 
-        isActive: true,
+    const notifications =
+      await prisma.notification.findMany(
+        {
+          where: {
+            tenantId,
 
-        createdAt: {
-          gte: fifteenDaysAgo,
-        },
+            isActive: true,
 
-        OR: [
-          {
-            expiresAt: null,
+            createdAt: {
+              gte:
+                fifteenDaysAgo,
+            },
+
+            OR: [
+              {
+                expiresAt:
+                  null,
+              },
+
+              {
+                expiresAt: {
+                  gt: new Date(),
+                },
+              },
+            ],
+
+            AND: [
+              {
+                OR:
+                  visibility,
+              },
+            ],
           },
 
-          {
-            expiresAt: {
-              gt: new Date(),
+          orderBy: {
+            createdAt:
+              "desc",
+          },
+
+          include: {
+            NotificationRead: {
+              where: {
+                userId,
+              },
+
+              select: {
+                readAt: true,
+              },
             },
           },
-        ],
+        }
+      );
 
-        AND: [
-          {
-            OR: visibility,
-          },
-        ],
-      },
+    return notifications.map(
+      (notification) => ({
+        id:
+          notification.id,
 
-      orderBy: {
-        createdAt: "desc",
-      },
+        title:
+          notification.title,
 
-      include: {
-        NotificationRead: {
-          where: {
-            userId,
-          },
+        message:
+          notification.message,
 
-          select: {
-            readAt: true,
-          },
-        },
-      },
-    });
+        type:
+          notification.type,
 
-  return notifications.map(
-    (notification) => ({
-      id:
-        notification.id,
+        priority:
+          notification.priority,
 
-      title:
-        notification.title,
+        audience:
+          notification.audience,
 
-      message:
-        notification.message,
+        classId:
+          notification.classId,
 
-      type:
-        notification.type,
+        sectionId:
+          notification.sectionId,
 
-      priority:
-        notification.priority,
+        userId:
+          notification.userId,
 
-      audience:
-        notification.audience,
+        createdById:
+          notification.createdById,
 
-      classId:
-        notification.classId,
+        createdAt:
+          notification.createdAt,
 
-      sectionId:
-        notification.sectionId,
+        expiresAt:
+          notification.expiresAt,
 
-      userId:
-        notification.userId,
-
-      createdById:
-        notification.createdById,
-
-      createdAt:
-        notification.createdAt,
-
-      expiresAt:
-        notification.expiresAt,
-
-      isRead:
-        notification.NotificationRead
-          .length > 0,
-    })
-  );
-};
-
-// =====================================================
-// GET UNREAD COUNT
-// =====================================================
-
-const getUnreadCount = async (
-  user
-) => {
-  const {
-    userId,
-    tenantId,
-  } = user;
-
-  const visibility =
-    await getNotificationVisibility(
-      user
+        isRead:
+          notification
+            .NotificationRead
+            .length > 0,
+      })
     );
+  };
 
-  return prisma.notification.count({
-    where: {
+// =====================================================
+// UNREAD COUNT
+// =====================================================
+
+const getUnreadCount =
+  async (user) => {
+    const {
+      userId,
       tenantId,
+    } = user;
 
-      isActive: true,
+    const visibility =
+      await getNotificationVisibility(
+        user
+      );
 
-      OR: [
-        {
-          expiresAt: null,
-        },
+    return prisma.notification.count(
+      {
+        where: {
+          tenantId,
 
-        {
-          expiresAt: {
-            gt: new Date(),
+          isActive: true,
+
+          OR: [
+            {
+              expiresAt:
+                null,
+            },
+
+            {
+              expiresAt: {
+                gt: new Date(),
+              },
+            },
+          ],
+
+          AND: [
+            {
+              OR:
+                visibility,
+            },
+          ],
+
+          NotificationRead: {
+            none: {
+              userId,
+            },
           },
         },
-      ],
-
-      AND: [
-        {
-          OR: visibility,
-        },
-      ],
-
-      NotificationRead: {
-        none: {
-          userId,
-        },
-      },
-    },
-  });
-};
+      }
+    );
+  };
 
 // =====================================================
 // MARK ONE AS READ
@@ -724,208 +738,232 @@ const markAsRead = async (
     tenantId,
   } = user;
 
-  const id = parseInt(
-    notificationId,
-    10
-  );
+  const id =
+    parseInt(
+      notificationId,
+      10
+    );
 
-  if (Number.isNaN(id)) {
+  if (
+    Number.isNaN(id)
+  ) {
     return null;
   }
 
   const notification =
-    await prisma.notification.findFirst({
-      where: {
-        id,
+    await prisma.notification.findFirst(
+      {
+        where: {
+          id,
 
-        tenantId,
+          tenantId,
 
-        isActive: true,
-      },
-    });
+          isActive: true,
+        },
+      }
+    );
 
   if (!notification) {
     return null;
   }
 
-  return prisma.notificationRead.upsert({
-    where: {
-      notificationId_userId: {
+  return prisma.notificationRead.upsert(
+    {
+      where: {
+        notificationId_userId: {
+          notificationId:
+            notification.id,
+
+          userId,
+        },
+      },
+
+      update: {
+        readAt:
+          new Date(),
+      },
+
+      create: {
+        tenantId,
+
         notificationId:
           notification.id,
 
         userId,
+
+        readAt:
+          new Date(),
       },
-    },
-
-    update: {
-      readAt:
-        new Date(),
-    },
-
-    create: {
-      tenantId,
-
-      notificationId:
-        notification.id,
-
-      userId,
-
-      readAt:
-        new Date(),
-    },
-  });
+    }
+  );
 };
 
 // =====================================================
 // MARK ALL AS READ
 // =====================================================
 
-const markAllAsRead = async (
-  user
-) => {
-  const {
-    userId,
-    tenantId,
-  } = user;
+const markAllAsRead =
+  async (user) => {
+    const {
+      userId,
+      tenantId,
+    } = user;
 
-  const visibility =
-    await getNotificationVisibility(
-      user
-    );
+    const visibility =
+      await getNotificationVisibility(
+        user
+      );
 
-  const unreadNotifications =
-    await prisma.notification.findMany({
-      where: {
-        tenantId,
+    const unreadNotifications =
+      await prisma.notification.findMany(
+        {
+          where: {
+            tenantId,
 
-        isActive: true,
+            isActive: true,
 
-        OR: [
-          {
-            expiresAt: null,
-          },
+            OR: [
+              {
+                expiresAt:
+                  null,
+              },
 
-          {
-            expiresAt: {
-              gt: new Date(),
+              {
+                expiresAt: {
+                  gt: new Date(),
+                },
+              },
+            ],
+
+            AND: [
+              {
+                OR:
+                  visibility,
+              },
+            ],
+
+            NotificationRead: {
+              none: {
+                userId,
+              },
             },
           },
-        ],
 
-        AND: [
-          {
-            OR: visibility,
+          select: {
+            id: true,
           },
-        ],
+        }
+      );
 
-        NotificationRead: {
-          none: {
-            userId,
-          },
-        },
-      },
+    if (
+      unreadNotifications.length ===
+      0
+    ) {
+      return {
+        markedCount: 0,
+      };
+    }
 
-      select: {
-        id: true,
-      },
-    });
+    await prisma.notificationRead.createMany(
+      {
+        data:
+          unreadNotifications.map(
+            (
+              notification
+            ) => ({
+              tenantId,
 
-  if (
-    unreadNotifications.length ===
-    0
-  ) {
-    return {
-      markedCount: 0,
-    };
-  }
+              notificationId:
+                notification.id,
 
-  await prisma.notificationRead.createMany({
-    data:
-      unreadNotifications.map(
-        (notification) => ({
-          tenantId,
+              userId,
 
-          notificationId:
-            notification.id,
+              readAt:
+                new Date(),
+            })
+          ),
 
-          userId,
-
-          readAt:
-            new Date(),
-        })
-      ),
-
-    skipDuplicates: true,
-  });
-
-  return {
-    markedCount:
-      unreadNotifications.length,
-  };
-};
-
-// =====================================================
-// DELETE ONE NOTIFICATION
-// =====================================================
-
-const deleteNotification = async (
-  notificationId,
-  user
-) => {
-  const {
-    tenantId,
-  } = user;
-
-  const id = parseInt(
-    notificationId,
-    10
-  );
-
-  if (Number.isNaN(id)) {
-    return null;
-  }
-
-  const visibility =
-    await getNotificationVisibility(
-      user
+        skipDuplicates:
+          true,
+      }
     );
 
-  const notification =
-    await prisma.notification.findFirst({
-      where: {
-        id,
-
-        tenantId,
-
-        isActive: true,
-
-        OR: visibility,
-      },
-    });
-
-  if (!notification) {
-    return null;
-  }
-
-  await prisma.notification.update({
-    where: {
-      id,
-    },
-
-    data: {
-      isActive: false,
-    },
-  });
-
-  return {
-    message:
-      "Notification deleted successfully",
+    return {
+      markedCount:
+        unreadNotifications.length,
+    };
   };
-};
 
 // =====================================================
-// DELETE ALL NOTIFICATIONS
+// DELETE ONE
+// =====================================================
+
+const deleteNotification =
+  async (
+    notificationId,
+    user
+  ) => {
+    const {
+      tenantId,
+    } = user;
+
+    const id =
+      parseInt(
+        notificationId,
+        10
+      );
+
+    if (
+      Number.isNaN(id)
+    ) {
+      return null;
+    }
+
+    const visibility =
+      await getNotificationVisibility(
+        user
+      );
+
+    const notification =
+      await prisma.notification.findFirst(
+        {
+          where: {
+            id,
+
+            tenantId,
+
+            isActive: true,
+
+            OR: visibility,
+          },
+        }
+      );
+
+    if (!notification) {
+      return null;
+    }
+
+    await prisma.notification.update(
+      {
+        where: {
+          id,
+        },
+
+        data: {
+          isActive:
+            false,
+        },
+      }
+    );
+
+    return {
+      message:
+        "Notification deleted successfully",
+    };
+  };
+
+// =====================================================
+// DELETE ALL
 // =====================================================
 
 const deleteAllNotifications =
@@ -940,19 +978,22 @@ const deleteAllNotifications =
       );
 
     const result =
-      await prisma.notification.updateMany({
-        where: {
-          tenantId,
+      await prisma.notification.updateMany(
+        {
+          where: {
+            tenantId,
 
-          isActive: true,
+            isActive: true,
 
-          OR: visibility,
-        },
+            OR: visibility,
+          },
 
-        data: {
-          isActive: false,
-        },
-      });
+          data: {
+            isActive:
+              false,
+          },
+        }
+      );
 
     return {
       message:
@@ -967,45 +1008,48 @@ const deleteAllNotifications =
 // CREATE NOTIFICATION
 // =====================================================
 
-const createNotification = async ({
-  tenantId,
-  title,
-  message,
-  type = "general",
-  priority = "normal",
-  audience = "all",
-  classId = null,
-  sectionId = null,
-  userId = null,
-  createdById = null,
-  expiresAt = null,
-}) => {
-  return prisma.notification.create({
-    data: {
-      tenantId,
+const createNotification =
+  async ({
+    tenantId,
+    title,
+    message,
+    type = "general",
+    priority = "normal",
+    audience = "all",
+    classId = null,
+    sectionId = null,
+    userId = null,
+    createdById = null,
+    expiresAt = null,
+  }) => {
+    return prisma.notification.create(
+      {
+        data: {
+          tenantId,
 
-      title,
+          title,
 
-      message,
+          message,
 
-      type,
+          type,
 
-      priority,
+          priority,
 
-      audience,
+          audience,
 
-      classId,
+          classId,
 
-      sectionId,
+          sectionId,
 
-      userId,
+          userId,
 
-      createdById,
+          createdById,
 
-      expiresAt,
-    },
-  });
-};
+          expiresAt,
+        },
+      }
+    );
+  };
 
 // =====================================================
 // EXPORTS

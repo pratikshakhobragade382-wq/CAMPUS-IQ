@@ -247,6 +247,13 @@ async function getSummary(tenantId) {
       }
     }),
 
+    /*
+     * Get active students with their class and department.
+     *
+     * We use the same student query for both:
+     * 1. Department distribution
+     * 2. Student distribution by class
+     */
     prisma.student.findMany({
       where: {
         tenantId,
@@ -255,6 +262,7 @@ async function getSummary(tenantId) {
       select: {
         class: {
           select: {
+            name: true,
             department: {
               select: {
                 name: true
@@ -320,6 +328,12 @@ async function getSummary(tenantId) {
       }
     }),
 
+    /*
+     * Upcoming holidays.
+     *
+     * The first record after sorting by date is
+     * automatically the next holiday.
+     */
     prisma.holiday.findMany({
       where: {
         tenantId,
@@ -374,7 +388,9 @@ async function getSummary(tenantId) {
     );
 
   /*
+   * ============================================================
    * Weekly attendance
+   * ============================================================
    */
 
   const byDate = {};
@@ -461,7 +477,9 @@ async function getSummary(tenantId) {
     );
 
   /*
+   * ============================================================
    * Fees
+   * ============================================================
    */
 
   const feesThisMonth = toNum(
@@ -479,7 +497,9 @@ async function getSummary(tenantId) {
     );
 
   /*
+   * ============================================================
    * Fee collection trend
+   * ============================================================
    */
 
   const monthBuckets = [];
@@ -529,7 +549,9 @@ async function getSummary(tenantId) {
     );
 
   /*
+   * ============================================================
    * Fee summary
+   * ============================================================
    */
 
   const totalExpected =
@@ -582,18 +604,36 @@ async function getSummary(tenantId) {
   ];
 
   /*
-   * Department distribution
+   * ============================================================
+   * Student distributions
+   * ============================================================
+   *
+   * We create two distributions:
+   *
+   * 1. Department distribution
+   *    Kept for compatibility with existing dashboard data.
+   *
+   * 2. Student distribution
+   *    Groups active students by their class.
    */
 
   const deptMap = {};
+  const classMap = {};
 
   for (const s of studentsWithDept) {
-    const name =
+    const departmentName =
       s.class?.department?.name ||
       'Unassigned';
 
-    deptMap[name] =
-      (deptMap[name] || 0) + 1;
+    deptMap[departmentName] =
+      (deptMap[departmentName] || 0) + 1;
+
+    const className =
+      s.class?.name ||
+      'Unassigned';
+
+    classMap[className] =
+      (classMap[className] || 0) + 1;
   }
 
   const departmentDistribution =
@@ -605,7 +645,58 @@ async function getSummary(tenantId) {
     );
 
   /*
+   * Sort classes naturally:
+   *
+   * Class 1
+   * Class 2
+   * Class 10
+   *
+   * instead of:
+   *
+   * Class 1
+   * Class 10
+   * Class 2
+   */
+  const studentDistribution =
+    Object.entries(classMap)
+      .map(([name, value]) => ({
+        name,
+        value
+      }))
+      .sort((a, b) =>
+        a.name.localeCompare(
+          b.name,
+          undefined,
+          {
+            numeric: true,
+            sensitivity: 'base'
+          }
+        )
+      );
+
+  /*
+   * ============================================================
+   * Next holiday
+   * ============================================================
+   *
+   * upcomingHolidays is already sorted by date.
+   * Therefore the first item is the nearest upcoming holiday.
+   */
+
+  const nextHoliday =
+    upcomingHolidays.length > 0
+      ? {
+          name:
+            upcomingHolidays[0].name,
+          date:
+            upcomingHolidays[0].date
+        }
+      : null;
+
+  /*
+   * ============================================================
    * Recent activities
+   * ============================================================
    */
 
   const activities = [
@@ -662,7 +753,12 @@ async function getSummary(tenantId) {
     .slice(0, 5);
 
   /*
+   * ============================================================
    * Upcoming events
+   * ============================================================
+   *
+   * IMPORTANT:
+   * This remains unchanged.
    */
 
   const upcomingEvents = [
@@ -689,6 +785,12 @@ async function getSummary(tenantId) {
     )
     .slice(0, 4);
 
+  /*
+   * ============================================================
+   * ADMIN DASHBOARD RESPONSE
+   * ============================================================
+   */
+
   return {
     stats: {
       totalStudents,
@@ -711,11 +813,30 @@ async function getSummary(tenantId) {
 
     feeSummary,
 
+    /*
+     * Kept for compatibility.
+     */
     departmentDistribution,
+
+    /*
+     * New:
+     * Students grouped by class.
+     */
+    studentDistribution,
+
+    /*
+     * New:
+     * Nearest upcoming holiday.
+     */
+    nextHoliday,
 
     recentActivities:
       activities,
 
+    /*
+     * Existing upcoming events
+     * remain unchanged.
+     */
     upcomingEvents
   };
 }
@@ -1355,13 +1476,6 @@ async function getTeacherSummary(
    * ============================================================
    * STEP 7: RECENT ACTIVITY
    * ============================================================
-   *
-   * We combine:
-   *
-   * 1. Assignments created
-   * 2. Attendance marked
-   *
-   * Then sort everything by latest date.
    */
 
   const assignmentActivities =
@@ -1466,22 +1580,10 @@ async function getTeacherSummary(
         })
       ),
 
-    /*
-     * Dynamic upcoming classes
-     */
-
     upcomingClasses:
       upcomingClassList,
 
-    /*
-     * Dynamic attendance
-     */
-
     attendanceOverview,
-
-    /*
-     * Dynamic recent activity
-     */
 
     recentActivity,
 
@@ -1506,7 +1608,6 @@ async function getTeacherSummary(
   };
 }
 
-
 /*
  * ============================================================
  * STUDENT / PARENT DASHBOARD
@@ -1522,7 +1623,11 @@ async function buildStudentDashboard(tenantId, studentId) {
   const dayOfWeek = jsDay === 0 ? null : jsDay;
 
   const student = await prisma.student.findFirst({
-    where: { id: studentId, tenantId, isDeleted: false },
+    where: {
+      id: studentId,
+      tenantId,
+      isDeleted: false
+    },
     select: {
       id: true,
       studentName: true,
@@ -1530,12 +1635,24 @@ async function buildStudentDashboard(tenantId, studentId) {
       photoUrl: true,
       classId: true,
       sectionId: true,
-      class: { select: { id: true, name: true } },
-      section: { select: { id: true, name: true } }
+      class: {
+        select: {
+          id: true,
+          name: true
+        }
+      },
+      section: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
     }
   });
 
-  if (!student) throw new Error('Student not found');
+  if (!student) {
+    throw new Error('Student not found');
+  }
 
   const [
     todaySchedule,
@@ -1551,16 +1668,43 @@ async function buildStudentDashboard(tenantId, studentId) {
             classId: student.classId,
             dayOfWeek,
             isActive: true,
-            OR: [{ sectionId: student.sectionId }, { sectionId: null }]
+            OR: [
+              {
+                sectionId:
+                  student.sectionId
+              },
+              {
+                sectionId: null
+              }
+            ]
           },
           include: {
-            subject: { select: { id: true, name: true } },
-            staff: { select: { id: true, name: true } },
+            subject: {
+              select: {
+                id: true,
+                name: true
+              }
+            },
+            staff: {
+              select: {
+                id: true,
+                name: true
+              }
+            },
             periodSlot: {
-              select: { slotNo: true, label: true, startTime: true, endTime: true }
+              select: {
+                slotNo: true,
+                label: true,
+                startTime: true,
+                endTime: true
+              }
             }
           },
-          orderBy: { periodSlot: { slotNo: 'asc' } }
+          orderBy: {
+            periodSlot: {
+              slotNo: 'asc'
+            }
+          }
         })
       : Promise.resolve([]),
 
@@ -1568,9 +1712,15 @@ async function buildStudentDashboard(tenantId, studentId) {
       where: {
         tenantId,
         studentId: student.id,
-        date: { gte: sevenDaysAgo, lt: tomorrowStart }
+        date: {
+          gte: sevenDaysAgo,
+          lt: tomorrowStart
+        }
       },
-      select: { date: true, status: true }
+      select: {
+        date: true,
+        status: true
+      }
     }),
 
     prisma.assignment.findMany({
@@ -1578,15 +1728,30 @@ async function buildStudentDashboard(tenantId, studentId) {
         tenantId,
         classId: student.classId,
         isActive: true,
-        OR: [{ sectionId: student.sectionId }, { sectionId: null }]
+        OR: [
+          {
+            sectionId:
+              student.sectionId
+          },
+          {
+            sectionId: null
+          }
+        ]
       },
       include: {
         AssignmentSubmission: {
-          where: { studentId: student.id },
-          select: { status: true, submittedAt: true }
+          where: {
+            studentId: student.id
+          },
+          select: {
+            status: true,
+            submittedAt: true
+          }
         }
       },
-      orderBy: { dueDate: 'desc' },
+      orderBy: {
+        dueDate: 'desc'
+      },
       take: 20
     }),
 
@@ -1595,147 +1760,331 @@ async function buildStudentDashboard(tenantId, studentId) {
         tenantId,
         isActive: true,
         classId: student.classId,
-        startDate: { gte: todayStart }
+        startDate: {
+          gte: todayStart
+        }
       },
-      select: { id: true, name: true, examType: true, startDate: true, endDate: true },
-      orderBy: { startDate: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        examType: true,
+        startDate: true,
+        endDate: true
+      },
+      orderBy: {
+        startDate: 'asc'
+      },
       take: 5
     }),
 
     prisma.studentAttendance.findMany({
-      where: { tenantId, studentId: student.id },
-      orderBy: { updatedAt: 'desc' },
+      where: {
+        tenantId,
+        studentId: student.id
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      },
       take: 5,
-      select: { id: true, date: true, status: true, updatedAt: true }
+      select: {
+        id: true,
+        date: true,
+        status: true,
+        updatedAt: true
+      }
     })
   ]);
 
-  const todayAttendanceRow = weeklyAttendanceRows.find(
-    (row) => utcStartOfDay(row.date).getTime() === todayStart.getTime()
-  );
+  const todayAttendanceRow =
+    weeklyAttendanceRows.find(
+      (row) =>
+        utcStartOfDay(
+          row.date
+        ).getTime() ===
+        todayStart.getTime()
+    );
 
   const attendanceByDate = {};
+
   for (const row of weeklyAttendanceRows) {
-    const key = row.date.toISOString().slice(0, 10);
+    const key = row.date
+      .toISOString()
+      .slice(0, 10);
+
     if (!attendanceByDate[key]) {
-      attendanceByDate[key] = { present: 0, absent: 0, late: 0 };
+      attendanceByDate[key] = {
+        present: 0,
+        absent: 0,
+        late: 0
+      };
     }
-    if (row.status === 'present') attendanceByDate[key].present++;
-    else if (row.status === 'absent') attendanceByDate[key].absent++;
-    else if (row.status === 'late') attendanceByDate[key].late++;
+
+    if (
+      row.status === 'present'
+    ) {
+      attendanceByDate[key]
+        .present++;
+    } else if (
+      row.status === 'absent'
+    ) {
+      attendanceByDate[key]
+        .absent++;
+    } else if (
+      row.status === 'late'
+    ) {
+      attendanceByDate[key]
+        .late++;
+    }
   }
 
   const attendanceOverview = [];
+
   for (let i = 6; i >= 0; i--) {
-    const date = utcAddDays(todayStart, -i);
-    const key = date.toISOString().slice(0, 10);
-    const bucket = attendanceByDate[key] || { present: 0, absent: 0, late: 0 };
+    const date =
+      utcAddDays(
+        todayStart,
+        -i
+      );
+
+    const key = date
+      .toISOString()
+      .slice(0, 10);
+
+    const bucket =
+      attendanceByDate[key] || {
+        present: 0,
+        absent: 0,
+        late: 0
+      };
+
     attendanceOverview.push({
-      name: DAY_LABELS[date.getUTCDay()],
+      name:
+        DAY_LABELS[
+          date.getUTCDay()
+        ],
       date: key,
-      present: bucket.present,
-      absent: bucket.absent,
-      late: bucket.late
+      present:
+        bucket.present,
+      absent:
+        bucket.absent,
+      late:
+        bucket.late
     });
   }
 
-  const presentDays = weeklyAttendanceRows.filter(
-    (r) => r.status === 'present' || r.status === 'late'
-  ).length;
+  const presentDays =
+    weeklyAttendanceRows.filter(
+      (r) =>
+        r.status === 'present' ||
+        r.status === 'late'
+    ).length;
+
   const attendancePercentage =
     weeklyAttendanceRows.length > 0
-      ? Math.round((presentDays / weeklyAttendanceRows.length) * 100)
+      ? Math.round(
+          (presentDays /
+            weeklyAttendanceRows.length) *
+            100
+        )
       : 0;
 
-  const pendingAssignments = assignments.filter(
-    (a) => new Date(a.dueDate) >= todayStart && a.AssignmentSubmission.length === 0
-  ).length;
+  const pendingAssignments =
+    assignments.filter(
+      (a) =>
+        new Date(a.dueDate) >=
+          todayStart &&
+        a.AssignmentSubmission
+          .length === 0
+    ).length;
 
-  const recentActivity = recentAttendance.map((a) => ({
-    id: `attendance-${a.id}`,
-    type: 'attendance',
-    title: 'Attendance marked',
-    description: `Marked ${a.status} on ${a.date.toISOString().slice(0, 10)}`,
-    date: a.updatedAt
-  }));
+  const recentActivity =
+    recentAttendance.map(
+      (a) => ({
+        id:
+          `attendance-${a.id}`,
+        type: 'attendance',
+        title:
+          'Attendance marked',
+        description:
+          `Marked ${a.status} on ${a.date
+            .toISOString()
+            .slice(0, 10)}`,
+        date:
+          a.updatedAt
+      })
+    );
 
   return {
     profile: {
       id: student.id,
       name: student.studentName,
-      admissionNo: student.admissionNo,
-      photoUrl: student.photoUrl,
-      class: student.class ? student.class.name : null,
-      section: student.section ? student.section.name : null
+      admissionNo:
+        student.admissionNo,
+      photoUrl:
+        student.photoUrl,
+      class: student.class
+        ? student.class.name
+        : null,
+      section: student.section
+        ? student.section.name
+        : null
     },
-    todaySchedule: todaySchedule.map((t) => ({
-      id: t.id,
-      period: t.periodSlot.label,
-      slotNo: t.periodSlot.slotNo,
-      startTime: t.periodSlot.startTime,
-      endTime: t.periodSlot.endTime,
-      subject: t.subject.name,
-      teacher: t.staff ? t.staff.name : null
-    })),
+
+    todaySchedule:
+      todaySchedule.map(
+        (t) => ({
+          id: t.id,
+          period:
+            t.periodSlot.label,
+          slotNo:
+            t.periodSlot.slotNo,
+          startTime:
+            t.periodSlot.startTime,
+          endTime:
+            t.periodSlot.endTime,
+          subject:
+            t.subject.name,
+          teacher: t.staff
+            ? t.staff.name
+            : null
+        })
+      ),
+
     attendanceOverview,
+
     stats: {
-      todayStatus: todayAttendanceRow ? todayAttendanceRow.status : null,
+      todayStatus:
+        todayAttendanceRow
+          ? todayAttendanceRow.status
+          : null,
+
       attendancePercentage,
+
       pendingAssignments,
-      totalAssignments: assignments.length
+
+      totalAssignments:
+        assignments.length
     },
+
     upcomingExams,
+
     recentActivity
   };
 }
 
-async function getStudentSummary(tenantId, studentId) {
-  return buildStudentDashboard(tenantId, studentId);
+async function getStudentSummary(
+  tenantId,
+  studentId
+) {
+  return buildStudentDashboard(
+    tenantId,
+    studentId
+  );
 }
 
-async function getParentSummary(tenantId, userId, requestedStudentId) {
-  const { getStudentIdsForParent } = require('../student/student.service');
-  const studentIds = await getStudentIdsForParent(userId, tenantId);
+async function getParentSummary(
+  tenantId,
+  userId,
+  requestedStudentId
+) {
+  const {
+    getStudentIdsForParent
+  } = require('../student/student.service');
+
+  const studentIds =
+    await getStudentIdsForParent(
+      userId,
+      tenantId
+    );
 
   if (!studentIds.length) {
-    throw new Error('No linked children found');
+    throw new Error(
+      'No linked children found'
+    );
   }
 
-  const activeStudentId = requestedStudentId
-    ? parseInt(requestedStudentId)
-    : studentIds[0];
+  const activeStudentId =
+    requestedStudentId
+      ? parseInt(
+          requestedStudentId
+        )
+      : studentIds[0];
 
-  if (!studentIds.includes(activeStudentId)) {
-    throw new Error('Student not found');
+  if (
+    !studentIds.includes(
+      activeStudentId
+    )
+  ) {
+    throw new Error(
+      'Student not found'
+    );
   }
 
-  const children = await prisma.student.findMany({
-    where: { id: { in: studentIds }, tenantId, isDeleted: false },
-    select: {
-      id: true,
-      studentName: true,
-      photoUrl: true,
-      class: { select: { name: true } },
-      section: { select: { name: true } }
-    },
-    orderBy: { studentName: 'asc' }
-  });
+  const children =
+    await prisma.student.findMany({
+      where: {
+        id: {
+          in: studentIds
+        },
+        tenantId,
+        isDeleted: false
+      },
 
-  const activeChildDashboard = await buildStudentDashboard(tenantId, activeStudentId);
+      select: {
+        id: true,
+        studentName: true,
+        photoUrl: true,
+
+        class: {
+          select: {
+            name: true
+          }
+        },
+
+        section: {
+          select: {
+            name: true
+          }
+        }
+      },
+
+      orderBy: {
+        studentName: 'asc'
+      }
+    });
+
+  const activeChildDashboard =
+    await buildStudentDashboard(
+      tenantId,
+      activeStudentId
+    );
 
   return {
-    children: children.map((c) => ({
-      id: c.id,
-      name: c.studentName,
-      photoUrl: c.photoUrl,
-      class: c.class ? c.class.name : null,
-      section: c.section ? c.section.name : null
-    })),
+    children: children.map(
+      (c) => ({
+        id: c.id,
+        name: c.studentName,
+        photoUrl: c.photoUrl,
+        class: c.class
+          ? c.class.name
+          : null,
+        section: c.section
+          ? c.section.name
+          : null
+      })
+    ),
+
     activeStudentId,
+
     ...activeChildDashboard
   };
 }
 
+/*
+ * ============================================================
+ * EXPORTS
+ * ============================================================
+ */
 
 module.exports = {
   getSummary,

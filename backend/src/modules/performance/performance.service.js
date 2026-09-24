@@ -107,7 +107,6 @@ const getParentChildren = async (
       studentName: true,
       photoUrl: true,
       classId: true,
-
       sectionId: true,
 
       class: {
@@ -1365,6 +1364,23 @@ const buildChildPerformance =
   }) => {
     /* ---------------------------------------------------------
        ATTENDANCE
+
+       IMPORTANT:
+       Attendance is intentionally NOT filtered by academicYearId.
+
+       The Parent Portal should use the real attendance records
+       recorded by teachers for this student.
+
+       Student attendance is stored in:
+       studentAttendance
+
+       We only filter by:
+       - tenantId
+       - studentId
+
+       This prevents the predictor from showing an incorrect
+       100% attendance value simply because the selected
+       academic year contains only a limited number of records.
     --------------------------------------------------------- */
 
     const attendanceRecords =
@@ -1375,9 +1391,6 @@ const buildChildPerformance =
 
             studentId:
               child.id,
-
-            academicYearId:
-              academicYear.id,
           },
 
           select: {
@@ -1657,13 +1670,13 @@ const buildChildPerformance =
 
     /* ---------------------------------------------------------
        PERFORMANCE EXPLANATION
-       
+
        IMPORTANT:
        Do NOT wait for Gemini here.
-       
+
        The parent performance page should load immediately
        from the real ERP data already calculated above.
-       
+
        basicInsights is generated locally from:
        - examination performance
        - attendance

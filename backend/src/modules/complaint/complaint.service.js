@@ -812,16 +812,6 @@ async function createComplaint(user, body = {}) {
   );
 
   // ===================================================
-  // NOTIFY ADMINS
-  // ===================================================
-
-  await notifyAdmins(
-    complaint,
-    "New complaint received",
-    `A new complaint "${subject}" has been submitted.`
-  );
-
-  // ===================================================
   // RESPONSE
   // ===================================================
 

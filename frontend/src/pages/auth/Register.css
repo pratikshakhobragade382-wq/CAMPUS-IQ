@@ -1,0 +1,503 @@
+/* =========================================================
+   CAMPUS IQ - REGISTER PAGE
+   Matches the Admin Login design
+   ========================================================= */
+
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.register-page {
+  min-height: 100vh;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px 20px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  font-family:
+    "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+
+/* =========================================================
+   REGISTER CARD
+   ========================================================= */
+
+.register-card {
+  width: 100%;
+  max-width: 440px;
+
+  padding: 42px 40px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 2px solid #b8dcf5;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 12px 35px rgba(30, 136, 229, 0.12),
+    0 4px 12px rgba(30, 136, 229, 0.06);
+}
+
+
+/* =========================================================
+   LOGO
+   ========================================================= */
+
+.register-logo-wrapper {
+  width: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin-bottom: 22px;
+}
+
+.register-logo {
+  display: block;
+
+  width: 210px;
+  max-width: 100%;
+
+  height: auto;
+
+  object-fit: contain;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.register-header {
+  text-align: center;
+
+  margin-bottom: 28px;
+}
+
+.register-header h2 {
+  margin: 0 0 8px;
+
+  color: #173b5c;
+
+  font-size: 28px;
+  line-height: 1.2;
+
+  font-weight: 700;
+}
+
+.register-header p {
+  margin: 0;
+
+  color: #6c8498;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   MESSAGES
+   ========================================================= */
+
+.register-message {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+  padding: 12px 14px;
+
+  border-radius: 9px;
+
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.register-message i {
+  flex-shrink: 0;
+
+  font-size: 15px;
+}
+
+
+/* ERROR */
+
+.register-error {
+  background: #fff4f4;
+
+  border: 1px solid #f5b8b8;
+
+  color: #d32f2f;
+}
+
+
+/* SUCCESS */
+
+.register-success {
+  background: #f1fff7;
+
+  border: 1px solid #a8dfc0;
+
+  color: #21864a;
+}
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
+
+.register-form-group {
+  margin-bottom: 20px;
+}
+
+.register-form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #234866;
+
+  font-size: 14px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   INPUT WRAPPER
+   ========================================================= */
+
+.register-input-wrapper {
+  position: relative;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   INPUT ICON
+   ========================================================= */
+
+.register-input-icon {
+  position: absolute;
+
+  left: 15px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: #4da6dc;
+
+  font-size: 15px;
+
+  pointer-events: none;
+
+  z-index: 2;
+}
+
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.register-input-wrapper input {
+  width: 100%;
+
+  height: 50px;
+
+  box-sizing: border-box;
+
+  padding:
+    0
+    15px
+    0
+    43px;
+
+  outline: none;
+
+  border: 1.5px solid #b9dcf3;
+
+  border-radius: 9px;
+
+  background: #f8fcff;
+
+  color: #173b5c;
+
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+/* =========================================================
+   PLACEHOLDER
+   ========================================================= */
+
+.register-input-wrapper input::placeholder {
+  color: #91a8ba;
+}
+
+
+/* =========================================================
+   HOVER
+   ========================================================= */
+
+.register-input-wrapper input:hover {
+  border-color: #82c2eb;
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.register-input-wrapper input:focus {
+  border-color: #2997dc;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 3px rgba(41, 151, 220, 0.12);
+}
+
+
+/* =========================================================
+   PASSWORD HELP TEXT
+   ========================================================= */
+
+.register-help-text {
+  display: block;
+
+  margin-top: 6px;
+
+  color: #8298a8;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   REGISTER BUTTON
+   ========================================================= */
+
+.register-submit-btn {
+  width: 100%;
+
+  height: 50px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 9px;
+
+  margin-top: 8px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #249bdc 0%,
+      #1976d2 100%
+    );
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 7px 16px rgba(25, 118, 210, 0.20);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+
+/* =========================================================
+   BUTTON HOVER
+   ========================================================= */
+
+.register-submit-btn:hover:not(:disabled) {
+  background:
+    linear-gradient(
+      135deg,
+      #168fd2 0%,
+      #1565c0 100%
+    );
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 22px rgba(25, 118, 210, 0.27);
+}
+
+
+/* =========================================================
+   BUTTON ACTIVE
+   ========================================================= */
+
+.register-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+
+  box-shadow:
+    0 5px 12px rgba(25, 118, 210, 0.18);
+}
+
+
+/* =========================================================
+   BUTTON DISABLED
+   ========================================================= */
+
+.register-submit-btn:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* =========================================================
+   BUTTON ICON
+   ========================================================= */
+
+.register-submit-btn i {
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.register-footer {
+  margin: 24px 0 0;
+
+  text-align: center;
+
+  color: #71889a;
+
+  font-size: 14px;
+}
+
+.register-footer a {
+  color: #1976d2;
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition: color 0.2s ease;
+}
+
+.register-footer a:hover {
+  color: #125da5;
+
+  text-decoration: underline;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .register-page {
+    padding: 25px 16px;
+  }
+
+  .register-card {
+    max-width: 440px;
+
+    padding: 35px 28px;
+  }
+
+  .register-logo {
+    width: 190px;
+  }
+
+  .register-header h2 {
+    font-size: 26px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .register-page {
+    padding: 20px 12px;
+  }
+
+  .register-card {
+    padding: 30px 20px;
+
+    border-radius: 15px;
+
+    border-width: 1.5px;
+  }
+
+  .register-logo {
+    width: 175px;
+  }
+
+  .register-header {
+    margin-bottom: 24px;
+  }
+
+  .register-header h2 {
+    font-size: 24px;
+  }
+
+  .register-header p {
+    font-size: 13px;
+  }
+
+  .register-form-group {
+    margin-bottom: 18px;
+  }
+
+  .register-input-wrapper input {
+    height: 48px;
+  }
+
+  .register-submit-btn {
+    height: 48px;
+  }
+}

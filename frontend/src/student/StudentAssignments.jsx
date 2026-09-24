@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   BookOpen,
   Search,
@@ -13,12 +13,14 @@ import {
   X,
   Star,
   ClipboardList,
+  UploadCloud,
 } from "lucide-react";
 
 import {
   getMyAssignments,
   submitAssignment,
 } from "../api/studentPortal.api";
+import { getFileUrl, uploadAssignmentFile } from "../api/assignment.api";
 
 import "./StudentAssignments.css";
 
@@ -33,6 +35,13 @@ function formatDate(dateStr) {
     month: "short",
     year: "numeric",
   });
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || isNaN(bytes)) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getStatus(assignment) {
@@ -79,6 +88,91 @@ export default function StudentAssignments() {
   const [submitUrl, setSubmitUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Student File Upload State
+  const fileInputRef = useRef(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploadedFileSize, setUploadedFileSize] = useState(null);
+
+  const handleStudentFileUpload = async (file) => {
+    if (!file) return;
+
+    if (file.size > 30 * 1024 * 1024) {
+      setUploadError("File is too large. Maximum size is 30 MB.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadingFile(true);
+    setUploadProgress(0);
+
+    try {
+      const res = await uploadAssignmentFile(file, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      if (res?.data?.url) {
+        setSubmitUrl(res.data.url);
+        setUploadedFileName(res.data.fileName || file.name);
+        setUploadedFileSize(res.data.fileSize || file.size);
+      }
+    } catch (err) {
+      console.error("Student upload error:", err);
+      setUploadError(
+        err?.response?.data?.message || err?.response?.data?.error || "Failed to upload file. Please try again."
+      );
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleRemoveStudentFile = () => {
+    setSubmitUrl("");
+    setUploadedFileName("");
+    setUploadedFileSize(null);
+    setUploadError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSubmit = async (assignmentId) => {
+    if (!submitContent.trim() && !submitUrl) {
+      setError("Please type an answer or upload a file before submitting.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      await submitAssignment(assignmentId, {
+        content: submitContent.trim() || null,
+        attachmentUrl: submitUrl || null,
+      });
+
+      setSuccessMsg("Assignment submitted successfully!");
+      setSubmitId(null);
+      setSubmitContent("");
+      setSubmitUrl("");
+      setUploadedFileName("");
+      setUploadedFileSize(null);
+      setUploadError("");
+
+      fetchData();
+    } catch (err) {
+      console.error("Submit error:", err);
+      setError(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to submit assignment. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -128,32 +222,6 @@ export default function StudentAssignments() {
     return matchesSearch && matchesFilter;
   });
 
-  /* --------------------------------------------------------
-     SUBMIT HANDLER
-  -------------------------------------------------------- */
-
-  const handleSubmit = async (assignmentId) => {
-    if (!submitContent.trim()) return;
-    setSubmitting(true);
-    try {
-      await submitAssignment(assignmentId, {
-        content: submitContent.trim(),
-        attachmentUrl: submitUrl.trim() || null,
-      });
-      setSubmitId(null);
-      setSubmitContent("");
-      setSubmitUrl("");
-      setSuccessMsg("Assignment submitted successfully!");
-      setTimeout(() => setSuccessMsg(""), 4000);
-      fetchData();
-    } catch (err) {
-      setError(
-        err?.response?.data?.error || err?.message || "Failed to submit."
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   /* --------------------------------------------------------
      LOADING STATE
@@ -361,7 +429,7 @@ export default function StudentAssignments() {
                   )}
                   {a.attachmentUrl && (
                     <a
-                      href={a.attachmentUrl}
+                      href={getFileUrl(a.attachmentUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="student-asgn-meta-item"
@@ -371,6 +439,7 @@ export default function StudentAssignments() {
                       View Attachment
                     </a>
                   )}
+
                 </div>
 
                 {/* SUBMISSION DETAILS (when graded or submitted) */}
@@ -415,6 +484,9 @@ export default function StudentAssignments() {
                       setSubmitId(a.id);
                       setSubmitContent("");
                       setSubmitUrl("");
+                      setUploadedFileName("");
+                      setUploadedFileSize(null);
+                      setUploadError("");
                     }}
                   >
                     <Send size={13} /> Submit Assignment
@@ -436,25 +508,90 @@ export default function StudentAssignments() {
                     </div>
 
                     <div className="student-asgn-submit-field">
-                      <label>Attachment URL (optional)</label>
+                      <label>Upload Work / Attachment (Optional)</label>
+
                       <input
-                        type="url"
-                        placeholder="https://drive.google.com/..."
-                        value={submitUrl}
-                        onChange={(e) => setSubmitUrl(e.target.value)}
+                        ref={fileInputRef}
+                        type="file"
+                        style={{ display: "none" }}
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.zip,.rar,.txt"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleStudentFileUpload(file);
+                          e.target.value = "";
+                        }}
                       />
+
+                      {!submitUrl ? (
+                        <button
+                          type="button"
+                          className="student-asgn-upload-btn"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingFile}
+                        >
+                          {uploadingFile ? (
+                            <>
+                              <RefreshCw size={15} className="fa-spin" />
+                              <span>Uploading... {uploadProgress}%</span>
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud size={16} />
+                              <span>Click to upload file from your device (PDF, Word, PPT, Image, ZIP)</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div className="student-asgn-file-preview">
+                          <div className="student-asgn-file-info">
+                            <FileText size={16} color="#ff914d" />
+                            <span className="file-name" title={uploadedFileName}>
+                              {uploadedFileName || "Uploaded File"}
+                            </span>
+                            {uploadedFileSize && (
+                              <span className="file-size">({formatFileSize(uploadedFileSize)})</span>
+                            )}
+                          </div>
+                          <div className="student-asgn-file-actions">
+                            <a
+                              href={getFileUrl(submitUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-preview-file"
+                            >
+                              Preview
+                            </a>
+                            <button
+                              type="button"
+                              className="btn-remove-file"
+                              onClick={handleRemoveStudentFile}
+                              title="Remove File"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {uploadError && (
+                        <div className="student-asgn-upload-error">
+                          <AlertTriangle size={13} /> {uploadError}
+                        </div>
+                      )}
                     </div>
 
                     <div className="student-asgn-submit-actions">
                       <button
+                        type="button"
                         className="student-asgn-submit-btn"
                         onClick={() => handleSubmit(a.id)}
-                        disabled={submitting || !submitContent.trim()}
+                        disabled={submitting || (!submitContent.trim() && !submitUrl)}
                       >
                         <Send size={14} />
-                        {submitting ? "Submitting…" : "Submit"}
+                        {submitting ? "Submitting…" : "Submit Assignment"}
                       </button>
                       <button
+                        type="button"
                         className="student-asgn-cancel-btn"
                         onClick={() => setSubmitId(null)}
                       >
