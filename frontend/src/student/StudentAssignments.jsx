@@ -30,11 +30,17 @@ import "./StudentAssignments.css";
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
 }
 
 function formatFileSize(bytes) {
@@ -45,11 +51,15 @@ function formatFileSize(bytes) {
 }
 
 function getStatus(assignment) {
+  if (!assignment) return "pending";
   const sub = assignment.submission;
-  if (sub) return sub.status; // "submitted" | "graded" | "late"
+  if (sub && sub.status) return sub.status; // "submitted" | "graded" | "late"
   const now = new Date();
-  const due = new Date(assignment.dueDate);
-  return now > due ? "overdue" : "pending";
+  const due = assignment.dueDate ? new Date(assignment.dueDate) : null;
+  if (due && !isNaN(due.getTime())) {
+    return now > due ? "overdue" : "pending";
+  }
+  return "pending";
 }
 
 function getStatusLabel(status) {
@@ -197,7 +207,7 @@ export default function StudentAssignments() {
      DERIVED
   -------------------------------------------------------- */
 
-  const withStatus = assignments.map((a) => ({
+  const withStatus = (assignments || []).map((a) => ({
     ...a,
     _status: getStatus(a),
   }));
@@ -208,10 +218,11 @@ export default function StudentAssignments() {
   const gradedCount = withStatus.filter((a) => a._status === "graded").length;
 
   const filtered = withStatus.filter((a) => {
-    const matchesSearch =
-      !search ||
-      a.title.toLowerCase().includes(search.toLowerCase()) ||
-      (a.description || "").toLowerCase().includes(search.toLowerCase());
+    if (!a) return false;
+    const title = (a.title || "").toLowerCase();
+    const desc = (a.description || "").toLowerCase();
+    const q = (search || "").toLowerCase();
+    const matchesSearch = !q || title.includes(q) || desc.includes(q);
 
     const matchesFilter =
       statusFilter === "all" ||
@@ -511,23 +522,24 @@ export default function StudentAssignments() {
                       <label>Upload Work / Attachment (Optional)</label>
 
                       <input
+                        id="student-assignment-file-input"
                         ref={fileInputRef}
                         type="file"
                         style={{ display: "none" }}
                         accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.zip,.rar,.txt"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleStudentFileUpload(file);
-                          e.target.value = "";
+                          if (file) {
+                            handleStudentFileUpload(file);
+                          }
                         }}
                       />
 
                       {!submitUrl ? (
-                        <button
-                          type="button"
-                          className="student-asgn-upload-btn"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingFile}
+                        <label
+                          htmlFor={uploadingFile ? undefined : "student-assignment-file-input"}
+                          className={`student-asgn-upload-btn ${uploadingFile ? 'disabled' : ''}`}
+                          style={{ cursor: uploadingFile ? 'default' : 'pointer' }}
                         >
                           {uploadingFile ? (
                             <>
@@ -540,7 +552,7 @@ export default function StudentAssignments() {
                               <span>Click to upload file from your device (PDF, Word, PPT, Image, ZIP)</span>
                             </>
                           )}
-                        </button>
+                        </label>
                       ) : (
                         <div className="student-asgn-file-preview">
                           <div className="student-asgn-file-info">

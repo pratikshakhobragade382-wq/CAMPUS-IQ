@@ -16,14 +16,16 @@ import './TeacherAssignments.css';
 
 // Helpers for file display
 function formatFileSize(bytes) {
-  if (!bytes || isNaN(bytes)) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes === null || bytes === undefined || bytes === '') return '';
+  const num = Number(bytes);
+  if (isNaN(num) || num <= 0) return '';
+  if (num < 1024) return `${num} B`;
+  if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
+  return `${(num / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getFileIcon(fileNameOrUrl) {
-  if (!fileNameOrUrl) return 'fa-file-lines';
+  if (!fileNameOrUrl || typeof fileNameOrUrl !== 'string') return 'fa-file-lines';
   const lower = fileNameOrUrl.toLowerCase();
   if (lower.endsWith('.pdf')) return 'fa-file-pdf';
   if (lower.endsWith('.doc') || lower.endsWith('.docx')) return 'fa-file-word';
@@ -32,7 +34,7 @@ function getFileIcon(fileNameOrUrl) {
 }
 
 function getFileBadgeColor(fileNameOrUrl) {
-  if (!fileNameOrUrl) return { bg: '#f1f5f9', color: '#64748b' };
+  if (!fileNameOrUrl || typeof fileNameOrUrl !== 'string') return { bg: '#f1f5f9', color: '#64748b' };
   const lower = fileNameOrUrl.toLowerCase();
   if (lower.endsWith('.pdf')) return { bg: '#fee2e2', color: '#dc2626' };
   if (lower.endsWith('.doc') || lower.endsWith('.docx')) return { bg: '#dbeafe', color: '#2563eb' };
@@ -61,7 +63,7 @@ export default function TeacherAssignments() {
   const [uploadError, setUploadError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     title: '',
     description: '',
     classId: '',
@@ -72,7 +74,41 @@ export default function TeacherAssignments() {
     attachmentUrl: '',
     attachmentName: '',
     attachmentSize: null,
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  const openCreateModal = () => {
+    setFormData(initialFormData);
+    setUploadError('');
+    setUploadingFile(false);
+    setUploadProgress(0);
+    setIsDragging(false);
+    if (fileInputRef.current) {
+      try {
+        fileInputRef.current.value = '';
+      } catch {
+        // ignore
+      }
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    setIsModalOpen(false);
+    setFormData(initialFormData);
+    setUploadError('');
+    setUploadingFile(false);
+    setUploadProgress(0);
+    setIsDragging(false);
+    if (fileInputRef.current) {
+      try {
+        fileInputRef.current.value = '';
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Allowed file extensions for teacher assignment documents
   const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
@@ -81,46 +117,61 @@ export default function TeacherAssignments() {
   const handleFileUpload = async (file) => {
     if (!file) return;
 
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!allowedExtensions.includes(ext)) {
-      setUploadError(
-        'Invalid file type. Please upload a PDF, Word (.doc, .docx), or PowerPoint (.ppt, .pptx) document.'
-      );
-      return;
-    }
-
-    if (file.size > 30 * 1024 * 1024) {
-      setUploadError('File is too large. Maximum file size is 30 MB.');
-      return;
-    }
-
-    setUploadError('');
-    setUploadingFile(true);
-    setUploadProgress(0);
-
     try {
+      const fileName = file.name || '';
+      const dotIdx = fileName.lastIndexOf('.');
+      const ext = dotIdx !== -1 ? fileName.substring(dotIdx).toLowerCase() : '';
+      if (!allowedExtensions.includes(ext)) {
+        setUploadError(
+          'Invalid file type. Please upload a PDF, Word (.doc, .docx), or PowerPoint (.ppt, .pptx) document.'
+        );
+        return;
+      }
+
+      if (file.size > 30 * 1024 * 1024) {
+        setUploadError('File is too large. Maximum file size is 30 MB.');
+        return;
+      }
+
+      setUploadError('');
+      setUploadingFile(true);
+      setUploadProgress(0);
+
       const res = await uploadAssignmentFile(file, (progress) => {
-        setUploadProgress(progress);
+        setUploadProgress(progress || 0);
       });
 
-      if (res?.data?.url) {
+      const uploadedUrl = res?.data?.url || res?.url;
+      const uploadedName = res?.data?.fileName || res?.fileName || file.name;
+      const uploadedSize = res?.data?.fileSize || res?.fileSize || file.size;
+
+      if (uploadedUrl) {
         setFormData((prev) => ({
           ...prev,
-          attachmentUrl: res.data.url,
-          attachmentName: res.data.fileName || file.name,
-          attachmentSize: res.data.fileSize || file.size,
+          attachmentUrl: String(uploadedUrl),
+          attachmentName: String(uploadedName),
+          attachmentSize: Number(uploadedSize) || null,
         }));
+      } else {
+        setUploadError('Upload finished but server did not return a valid URL.');
       }
     } catch (err) {
       console.error('File upload error:', err);
       setUploadError(
         err?.response?.data?.message ||
           err?.response?.data?.error ||
+          err?.message ||
           'Failed to upload document. Please try again.'
       );
     } finally {
       setUploadingFile(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) {
+        try {
+          fileInputRef.current.value = '';
+        } catch {
+          // ignore
+        }
+      }
     }
   };
 
@@ -229,20 +280,7 @@ export default function TeacherAssignments() {
       });
 
       setAlertMsg({ type: 'success', text: 'Assignment successfully published to students!' });
-      setIsModalOpen(false);
-      setFormData({
-        title: '',
-        description: '',
-        classId: '',
-        sectionId: '',
-        subjectId: '',
-        dueDate: '',
-        maxMarks: 100,
-        attachmentUrl: '',
-        attachmentName: '',
-        attachmentSize: null,
-      });
-      setUploadError('');
+      closeCreateModal();
       loadData();
     } catch (err) {
       console.error('Create error:', err);
@@ -306,12 +344,12 @@ export default function TeacherAssignments() {
 
 
   // Filtered list
-  const filteredAssignments = assignments.filter((a) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      !q ||
-      a.title?.toLowerCase().includes(q) ||
-      a.description?.toLowerCase().includes(q);
+  const filteredAssignments = (assignments || []).filter((a) => {
+    if (!a) return false;
+    const q = (searchQuery || '').toLowerCase();
+    const title = (a.title || '').toLowerCase();
+    const desc = (a.description || '').toLowerCase();
+    const matchesSearch = !q || title.includes(q) || desc.includes(q);
 
     const matchesClass =
       !selectedFilterClass || Number(a.classId) === Number(selectedFilterClass);
@@ -337,14 +375,14 @@ export default function TeacherAssignments() {
           </div>
 
           <button
-          type="button"
-          className="btn-create-assignment"
-          onClick={() => setIsModalOpen(true)}
-        >
-          <i className="fa-solid fa-plus"></i>
-          Create Assignment
-        </button>
-      </div>
+            type="button"
+            className="btn-create-assignment"
+            onClick={openCreateModal}
+          >
+            <i className="fa-solid fa-plus"></i>
+            Create Assignment
+          </button>
+        </div>
 
       {alertMsg && (
         <div
@@ -563,7 +601,7 @@ export default function TeacherAssignments() {
               <button
                 type="button"
                 className="modal-close-btn"
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeCreateModal}
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
@@ -700,22 +738,24 @@ export default function TeacherAssignments() {
                     <span className="upload-section-tag">PDF • Word • PPT</span>
                   </div>
 
-                  {/* Hidden File Input placed outside the dropzone button */}
+                  {/* Hidden File Input placed outside the dropzone label */}
                   <input
+                    id="teacher-assignment-file-input"
                     ref={fileInputRef}
                     type="file"
                     style={{ display: 'none' }}
                     accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file);
-                      e.target.value = '';
+                      if (file) {
+                        handleFileUpload(file);
+                      }
                     }}
                   />
 
                   {!formData.attachmentUrl ? (
-                    <button
-                      type="button"
+                    <label
+                      htmlFor={uploadingFile ? undefined : 'teacher-assignment-file-input'}
                       className={`upload-dropzone ${isDragging ? 'drag-over' : ''} ${uploadingFile ? 'uploading' : ''}`}
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -733,13 +773,6 @@ export default function TeacherAssignments() {
                         setIsDragging(false);
                         const file = e.dataTransfer.files?.[0];
                         if (file) handleFileUpload(file);
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!uploadingFile && fileInputRef.current) {
-                          fileInputRef.current.click();
-                        }
                       }}
                     >
                       {uploadingFile ? (
@@ -767,7 +800,7 @@ export default function TeacherAssignments() {
                           <p className="upload-limit-text">Maximum file size: 30 MB</p>
                         </div>
                       )}
-                    </button>
+                    </label>
                   ) : (
                     <div className="uploaded-file-card">
                       <div className="uploaded-file-info">
@@ -833,7 +866,7 @@ export default function TeacherAssignments() {
                 <button
                   type="button"
                   className="btn-card-action"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeCreateModal}
                 >
                   Cancel
                 </button>

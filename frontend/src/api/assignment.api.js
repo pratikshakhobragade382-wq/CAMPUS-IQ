@@ -75,8 +75,15 @@ export const uploadAssignmentFile = async (file, onUploadProgress) => {
  * Helper to get absolute downloadable/viewable URL for uploaded files
  */
 export const getFileUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (!url || typeof url !== 'string' || !url.trim()) return '#';
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('blob:') ||
+    url.startsWith('data:')
+  ) {
+    return url;
+  }
   const baseUrl = import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '')
     : 'http://localhost:8000';

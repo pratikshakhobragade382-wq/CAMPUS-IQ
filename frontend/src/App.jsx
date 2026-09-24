@@ -15,6 +15,7 @@ import { SidebarProvider } from "./context/SidebarContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Chatbot from "./components/chatbot/chatbot";
 import DashboardLayout from "./layouts/DashboardLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 /*
 ============================================================
@@ -741,7 +742,9 @@ function App() {
 
         <SidebarProvider>
 
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
 
         </SidebarProvider>
 
