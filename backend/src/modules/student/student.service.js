@@ -300,7 +300,102 @@ async function getStudentIdsForParent(
     ? [parent.studentId]
     : [];
 }
+async function getStudentIdsForTeacher(
+  userId,
+  tenantId
+) {
 
+  if (!userId) {
+    return [];
+  }
+
+
+  // Find logged in staff
+  const staff = await prisma.staff.findFirst({
+
+    where: {
+
+      user: {
+        id: userId,
+      },
+
+      tenantId,
+
+      isDeleted:false,
+
+    },
+
+    select:{
+      id:true,
+    },
+
+  });
+
+
+  if (!staff) {
+    return [];
+  }
+
+
+  // Find sections from timetable where teacher is assigned
+  const timetableSections = await prisma.timetable.findMany({
+
+    where: {
+
+      staffId: staff.id,
+
+      tenantId,
+
+    },
+
+    select: {
+
+      sectionId:true,
+
+    },
+
+    distinct:["sectionId"],
+
+  });
+
+
+  const sectionIds = timetableSections.map(
+    item => item.sectionId
+  );
+
+
+  if(sectionIds.length === 0){
+    return [];
+  }
+
+
+  // Get students from those sections
+  const students = await prisma.student.findMany({
+
+    where: {
+
+      tenantId,
+
+      isDeleted:false,
+
+      sectionId:{
+        in:sectionIds,
+      },
+
+    },
+
+    select:{
+      id:true,
+    },
+
+  });
+
+
+  return students.map(
+    student => student.id
+  );
+
+}
 // =====================================================
 // CREATE STUDENT
 // =====================================================
@@ -758,7 +853,25 @@ const getAllStudents = async (
     where.id =
       requester.studentId || -1;
   }
+  // Teacher can only see assigned students
 
+if (
+  requester &&
+  requester.identity === "staff"
+) {
+
+  const allowedIds =
+    await getStudentIdsForTeacher(
+      requester.userId,
+      tenantId
+    );
+
+
+  where.id = {
+    in: allowedIds,
+  };
+
+}
   const [
     students,
     total,
@@ -1367,4 +1480,5 @@ module.exports = {
   updateStudent,
   deleteStudent,
   getStudentIdsForParent,
+  getStudentIdsForTeacher,
 };

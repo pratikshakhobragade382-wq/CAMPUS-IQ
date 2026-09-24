@@ -165,16 +165,17 @@ function AppContent() {
   */
 
   const hideChatbot = [
-    "/login",
-    "/register",
-    "/change-password",
-    "/portal-login",
-    "/portal",
-    "/teacher-login",
-    "/parent-login",
-    "/student-login",
-    "/student/login",
-  ].includes(location.pathname);
+  "/",
+  "/login",
+  "/register",
+  "/change-password",
+  "/portal-login",
+  "/portal",
+  "/teacher-login",
+  "/parent-login",
+  "/student-login",
+  "/student/login",
+].includes(location.pathname);
 
   return (
     <>
