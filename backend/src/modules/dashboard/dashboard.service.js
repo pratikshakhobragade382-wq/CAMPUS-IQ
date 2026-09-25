@@ -107,23 +107,26 @@ async function getSummary(tenantId) {
   );
 
   const [
-    totalStudents,
-    newStudents30,
-    totalTeachers,
-    newTeachers30,
-    presentToday,
-    weekAttendanceRows,
-    feesThisMonthAgg,
-    feesLastMonthAgg,
-    feeCollectionRows,
-    feeStructures,
-    studentsWithDept,
-    recentStudents,
-    recentFees,
-    recentStaff,
-    upcomingHolidays,
-    upcomingExams
-  ] = await Promise.all([
+  totalStudents,
+  newStudents30,
+  totalTeachers,
+  newTeachers30,
+  totalComplaints,
+  complaintsThisMonth,
+  complaintsLastMonth,
+  presentToday,
+  weeklyAttendance,
+  feesThisMonthAgg,
+  feesLastMonthAgg,
+  feeCollectionRows,
+  feeStructures,
+  studentsWithDept,
+  recentStudents,
+  recentFees,
+  recentStaff,
+  upcomingHolidays,
+  upcomingExams
+] = await Promise.all([
     prisma.student.count({
       where: {
         tenantId,
@@ -159,6 +162,40 @@ async function getSummary(tenantId) {
         }
       }
     }),
+
+    /*
+ * ============================================================
+ * COMPLAINTS
+ * ============================================================
+ */
+
+// Total complaints for this school
+prisma.complaint.count({
+  where: {
+    tenantId
+  }
+}),
+
+// Complaints created this month
+prisma.complaint.count({
+  where: {
+    tenantId,
+    createdAt: {
+      gte: monthStart
+    }
+  }
+}),
+
+// Complaints created last month
+prisma.complaint.count({
+  where: {
+    tenantId,
+    createdAt: {
+      gte: lastMonthStart,
+      lt: monthStart
+    }
+  }
+}),
 
     prisma.studentAttendance.count({
       where: {
@@ -387,94 +424,21 @@ async function getSummary(tenantId) {
       baselineTeachers
     );
 
-  /*
-   * ============================================================
-   * Weekly attendance
-   * ============================================================
-   */
+    /*
+ * ============================================================
+ * COMPLAINT TREND
+ * ============================================================
+ *
+ * Main card shows all complaints.
+ * Trend compares complaints created this month
+ * with complaints created last month.
+ */
 
-  const byDate = {};
-
-  for (const row of weekAttendanceRows) {
-    const key = row.date
-      .toISOString()
-      .slice(0, 10);
-
-    if (!byDate[key]) {
-      byDate[key] = {
-        present: 0,
-        absent: 0,
-        late: 0
-      };
-    }
-
-    if (row.status === 'present') {
-      byDate[key].present++;
-    } else if (row.status === 'absent') {
-      byDate[key].absent++;
-    } else if (row.status === 'late') {
-      byDate[key].late++;
-    }
-  }
-
-  const weeklyAttendance = [];
-
-  for (let i = 6; i >= 0; i--) {
-    const d = addDays(
-      todayStart,
-      -i
-    );
-
-    const key = d
-      .toISOString()
-      .slice(0, 10);
-
-    const bucket =
-      byDate[key] || {
-        present: 0,
-        absent: 0,
-        late: 0
-      };
-
-    weeklyAttendance.push({
-      name: DAY_LABELS[d.getDay()],
-      ...bucket
-    });
-  }
-
-  const todayPct =
-    totalStudents > 0
-      ? Math.round(
-          (presentToday /
-            totalStudents) *
-            100
-        )
-      : 0;
-
-  const otherDaysPct =
-    weeklyAttendance
-      .slice(0, -1)
-      .map((d) =>
-        totalStudents > 0
-          ? (d.present /
-              totalStudents) *
-            100
-          : 0
-      );
-
-  const avgPrevPct =
-    otherDaysPct.length
-      ? otherDaysPct.reduce(
-          (a, b) => a + b,
-          0
-        ) / otherDaysPct.length
-      : 0;
-
-  const attendanceTrend =
-    percentChange(
-      todayPct,
-      Math.round(avgPrevPct)
-    );
+const complaintsTrend =
+  percentChange(
+    complaintsThisMonth,
+    complaintsLastMonth
+  );
 
   /*
    * ============================================================
@@ -797,9 +761,8 @@ async function getSummary(tenantId) {
       studentsTrend,
       totalTeachers,
       teachersTrend,
-      todayAttendancePercentage:
-        todayPct,
-      attendanceTrend,
+      totalComplaints,
+      complaintsTrend,
       feesCollectedThisMonth:
         Math.round(
           feesThisMonth

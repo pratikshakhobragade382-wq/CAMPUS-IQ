@@ -315,17 +315,17 @@ export default function Dashboard() {
             />
 
             <StatCard
-              title="Today's Attendance"
-              value={`${stats.todayAttendancePercentage}%`}
-              icon={Activity}
-              trend={trend(
-                stats.attendanceTrend
-              )}
-              trendValue={trendLabel(
-                stats.attendanceTrend
-              )}
-              color="purple"
-            />
+  title="Total Complaints"
+  value={stats.totalComplaints.toString()}
+  icon={AlertCircle}
+  trend={trend(
+    stats.complaintsTrend
+  )}
+  trendValue={trendLabel(
+    stats.complaintsTrend
+  )}
+  color="purple"
+/>
 
             <StatCard
               title="Fees Collected (This Month)"
