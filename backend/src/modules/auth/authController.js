@@ -11,11 +11,23 @@ const prisma = require("../../prisma/prismaClient");
  * Falls back to req.body.tenantId for local development / API testing.
  */
 async function resolveTenantId(req) {
-  // --- Production: resolve from subdomain ---
   const host = req.headers.host || "";
+
+  // Render deployment:
+  // campus-iq-kabt.onrender.com is NOT a tenant subdomain.
+  // Use the tenantId supplied by the frontend.
+  if (host.includes(".onrender.com")) {
+    if (req.body.tenantId) {
+      return Number(req.body.tenantId);
+    }
+
+    return null;
+  }
+
+  // Production/custom domain:
+  // school1.dpinfosystem.in -> resolve tenant using "school1"
   const parts = host.split(".");
 
-  // A real subdomain has at least 3 parts: [subdomain, domain, tld]
   if (parts.length >= 3) {
     const subdomain = parts[0];
 
@@ -24,10 +36,12 @@ async function resolveTenantId(req) {
       select: { id: true },
     });
 
-    if (tenant) return tenant.id;
+    if (tenant) {
+      return tenant.id;
+    }
   }
 
-  // --- Development fallback ---
+  // Development / API testing fallback
   if (req.body.tenantId) {
     return Number(req.body.tenantId);
   }
