@@ -8,12 +8,31 @@ import axiosClient from "./axios";
  * GET /students
  *
  * Used for:
- * - All students
+ * - Admin student list
+ * - Teacher student list
  * - Class filter
  * - Search by:
  *   - Student Name
  *   - Admission Number
  *   - GR Number
+ *
+ * IMPORTANT:
+ * The Student.jsx and TeacherStudents.jsx pages expect
+ * an Axios-style response where:
+ *
+ * response.data.students
+ * response.data.pagination
+ *
+ * Therefore this function returns:
+ *
+ * {
+ *   data: {
+ *     students: [...],
+ *     pagination: {...}
+ *   }
+ * }
+ *
+ * instead of returning response.data.data directly.
  */
 export const getStudents = async ({
   page = 1,
@@ -27,65 +46,109 @@ export const getStudents = async ({
     limit,
   };
 
-  if (search !== undefined && search !== null) {
-    const cleanSearch = String(search).trim();
+  // ---------------------------------------------------
+  // SEARCH
+  // ---------------------------------------------------
+
+  if (
+    search !== undefined &&
+    search !== null
+  ) {
+    const cleanSearch =
+      String(search).trim();
 
     if (cleanSearch) {
       params.search = cleanSearch;
     }
   }
 
-  if (classId !== undefined && classId !== null && classId !== "") {
+  // ---------------------------------------------------
+  // CLASS FILTER
+  // ---------------------------------------------------
+
+  if (
+    classId !== undefined &&
+    classId !== null &&
+    classId !== ""
+  ) {
     params.classId = classId;
   }
 
-  if (gender !== undefined && gender !== null && gender !== "") {
+  // ---------------------------------------------------
+  // GENDER FILTER
+  // ---------------------------------------------------
+
+  if (
+    gender !== undefined &&
+    gender !== null &&
+    gender !== ""
+  ) {
     params.gender = gender;
   }
 
-  console.log("GET /students params:", params);
-
-  const response = await axiosClient.get(
-    "/students",
-    {
-      params,
-    }
-  );
-
   console.log(
-    "GET /students response:",
-    response.data
+    "GET /students params:",
+    params
   );
 
-  /*
-   Backend controller returns:
+  try {
+    const response =
+      await axiosClient.get(
+        "/students",
+        {
+          params,
+        }
+      );
 
-   {
-     success: true,
-     message: "Students fetched successfully",
-     data: {
-       students: [...],
-       pagination: {...}
-     }
-   }
+    console.log(
+      "GET /students response:",
+      response.data
+    );
 
-   Return only `data` so callers receive:
+    /*
+     * Backend response:
+     *
+     * {
+     *   success: true,
+     *   message: "Students fetched successfully",
+     *   data: {
+     *     students: [...],
+     *     pagination: {...}
+     *   }
+     * }
+     *
+     * The Admin Student page and Teacher Student
+     * page expect:
+     *
+     * response.data.students
+     *
+     * So we replace the Axios response's `data`
+     * with the backend's nested `data`.
+     */
 
-   {
-     students: [...],
-     pagination: {...}
-   }
-  */
+    return {
+      ...response,
 
-  return response.data?.data || {
-    students: [],
-    pagination: {
-      total: 0,
-      page,
-      limit,
-      totalPages: 0,
-    },
-  };
+      data:
+        response.data?.data || {
+          students: [],
+
+          pagination: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+          },
+        },
+    };
+  } catch (error) {
+    console.error(
+      "GET /students failed:",
+      error
+    );
+
+    throw error;
+  }
 };
 
 /**
@@ -97,9 +160,10 @@ export const getStudentsBySection = async (
   classId,
   sectionId
 ) => {
-  const response = await axiosClient.get(
-    `/classes/${classId}/sections/${sectionId}/students`
-  );
+  const response =
+    await axiosClient.get(
+      `/classes/${classId}/sections/${sectionId}/students`
+    );
 
   return response.data;
 };
@@ -107,10 +171,13 @@ export const getStudentsBySection = async (
 /**
  * GET /students/:id
  */
-export const getStudentById = async (id) => {
-  const response = await axiosClient.get(
-    `/students/${id}`
-  );
+export const getStudentById = async (
+  id
+) => {
+  const response =
+    await axiosClient.get(
+      `/students/${id}`
+    );
 
   return response.data;
 };
@@ -118,11 +185,14 @@ export const getStudentById = async (id) => {
 /**
  * POST /students
  */
-export const createStudent = async (data) => {
-  const response = await axiosClient.post(
-    "/students",
-    data
-  );
+export const createStudent = async (
+  data
+) => {
+  const response =
+    await axiosClient.post(
+      "/students",
+      data
+    );
 
   return response.data;
 };
@@ -134,10 +204,11 @@ export const updateStudent = async (
   id,
   data
 ) => {
-  const response = await axiosClient.put(
-    `/students/${id}`,
-    data
-  );
+  const response =
+    await axiosClient.put(
+      `/students/${id}`,
+      data
+    );
 
   return response.data;
 };
@@ -145,10 +216,13 @@ export const updateStudent = async (
 /**
  * DELETE /students/:id
  */
-export const deleteStudent = async (id) => {
-  const response = await axiosClient.delete(
-    `/students/${id}`
-  );
+export const deleteStudent = async (
+  id
+) => {
+  const response =
+    await axiosClient.delete(
+      `/students/${id}`
+    );
 
   return response.data;
 };

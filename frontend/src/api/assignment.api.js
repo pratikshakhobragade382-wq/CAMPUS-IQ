@@ -44,7 +44,10 @@ export const deleteAssignment = async (id) => {
  * Get submissions for an assignment
  */
 export const getAssignmentSubmissions = async (id) => {
-  const response = await axiosClient.get(`/assignments/${id}/submissions`);
+  const response = await axiosClient.get(
+    `/assignments/${id}/submissions`
+  );
+
   return response.data;
 };
 
@@ -52,41 +55,168 @@ export const getAssignmentSubmissions = async (id) => {
  * Grade a student's submission
  */
 export const gradeSubmission = async (submissionId, data) => {
-  const response = await axiosClient.put(`/assignments/submissions/${submissionId}/grade`, data);
+  const response = await axiosClient.put(
+    `/assignments/submissions/${submissionId}/grade`,
+    data
+  );
+
   return response.data;
 };
 
 /**
- * Upload assignment document (PDF, Word, PPT)
+ * Upload assignment document
+ *
+ * Supported by the backend:
+ * - PDF
+ * - Word (.doc / .docx)
+ * - PowerPoint (.ppt / .pptx)
+ *
+ * IMPORTANT:
+ * Axios sends an upload progress EVENT object to onUploadProgress.
+ * The old implementation passed that entire object to the React
+ * component, which caused:
+ *
+ * "Objects are not valid as a React child"
+ *
+ * We convert the event into a normal percentage number here.
  */
-export const uploadAssignmentFile = async (file, onUploadProgress) => {
+export const uploadAssignmentFile = async (
+  file,
+  onUploadProgress
+) => {
+  if (!file) {
+    throw new Error('No file selected.');
+  }
+
   const formData = new FormData();
+
   formData.append('file', file);
-  const response = await axiosClient.post('/assignments/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    onUploadProgress,
-  });
+
+  const response = await axiosClient.post(
+    '/assignments/upload',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+
+      onUploadProgress: (event) => {
+        let percentage = 0;
+
+        /*
+         * Some Axios versions provide:
+         *
+         * event.progress
+         *
+         * as a decimal:
+         *
+         * 0.25 = 25%
+         *
+         * Other versions provide loaded/total.
+         *
+         * We support both.
+         */
+
+        if (
+          typeof event?.progress === 'number' &&
+          Number.isFinite(event.progress)
+        ) {
+          percentage =
+            event.progress <= 1
+              ? event.progress * 100
+              : event.progress;
+        } else if (
+          typeof event?.loaded === 'number' &&
+          typeof event?.total === 'number' &&
+          event.total > 0
+        ) {
+          percentage =
+            (event.loaded / event.total) * 100;
+        }
+
+        /*
+         * Keep the value between 0 and 100.
+         */
+        percentage = Math.max(
+          0,
+          Math.min(100, percentage)
+        );
+
+        /*
+         * Send ONLY a number to React.
+         *
+         * This is the important fix.
+         */
+        if (typeof onUploadProgress === 'function') {
+          onUploadProgress(Math.round(percentage));
+        }
+      },
+    }
+  );
+
   return response.data;
 };
 
 /**
- * Helper to get absolute downloadable/viewable URL for uploaded files
+ * Helper to get absolute downloadable/viewable URL
+ * for uploaded files.
+ *
+ * Backend stores assignment files like:
+ *
+ * /uploads/assignments/example-123456.pdf
+ *
+ * The backend server runs on:
+ *
+ * http://localhost:8000
+ *
+ * Therefore the final URL becomes:
+ *
+ * http://localhost:8000/uploads/assignments/example-123456.pdf
  */
 export const getFileUrl = (url) => {
-  if (!url || typeof url !== 'string' || !url.trim()) return '#';
   if (
-    url.startsWith('http://') ||
-    url.startsWith('https://') ||
-    url.startsWith('blob:') ||
-    url.startsWith('data:')
+    !url ||
+    typeof url !== 'string' ||
+    !url.trim()
   ) {
-    return url;
+    return '#';
   }
-  const baseUrl = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '')
-    : 'http://localhost:8000';
-  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-};
 
+  const cleanUrl = url.trim();
+
+  /*
+   * Already an absolute URL.
+   */
+  if (
+    cleanUrl.startsWith('http://') ||
+    cleanUrl.startsWith('https://') ||
+    cleanUrl.startsWith('blob:') ||
+    cleanUrl.startsWith('data:')
+  ) {
+    return cleanUrl;
+  }
+
+  /*
+   * VITE_API_URL may contain:
+   *
+   * http://localhost:8000/api/v1
+   *
+   * We remove /api/v1 because uploaded files are
+   * served from:
+   *
+   * /uploads/...
+   */
+  const configuredApiUrl =
+    import.meta.env.VITE_API_URL;
+
+  const baseUrl = configuredApiUrl
+    ? configuredApiUrl.replace(
+        /\/api\/v1\/?$/,
+        ''
+      )
+    : 'http://localhost:8000';
+
+  return `${baseUrl}${
+    cleanUrl.startsWith('/') ? '' : '/'
+  }${cleanUrl}`;
+};
