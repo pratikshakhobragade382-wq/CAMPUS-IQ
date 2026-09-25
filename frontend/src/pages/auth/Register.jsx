@@ -18,7 +18,7 @@ export default function Register() {
     email: "",
     password: "",
     tenantId: 1,
-    identity: "student",
+    identity: "admin",
   });
 
   const [error, setError] =
