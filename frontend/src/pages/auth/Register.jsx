@@ -1,8 +1,5 @@
 import { useState } from "react";
-import {
-  useNavigate,
-  Link,
-} from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 import axiosClient from "../../api/axios";
 
@@ -13,37 +10,17 @@ import "./Register.css";
 export default function Register() {
   const navigate = useNavigate();
 
-  /*
-  ============================================================
-   REGISTRATION FORM
-  ============================================================
-
-   Identity is intentionally NOT included here.
-
-   Public registration creates a normal student account.
-   Admin / Principal / Management accounts should be created
-   through the controlled admin-side process.
-
-   Tenant ID is also kept internally as tenant 1 and is not
-   shown as a field to the user.
-  ============================================================
-  */
-
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     tenantId: 1,
+    identity: "student",
   });
 
-  const [error, setError] =
-    useState("");
-
-  const [success, setSuccess] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   /*
   ============================================================
@@ -52,10 +29,7 @@ export default function Register() {
   */
 
   const handleChange = (event) => {
-    const {
-      name,
-      value,
-    } = event.target;
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
@@ -77,25 +51,14 @@ export default function Register() {
     setSuccess("");
 
     try {
-      /*
-      ----------------------------------------------------------
-       Public registration
-      ----------------------------------------------------------
-
-       We only send the information required to create a
-       normal account.
-
-       Identity is NOT sent from the frontend.
-      ----------------------------------------------------------
-      */
-
       await axiosClient.post(
         "/auth/register",
         {
           name: form.name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          tenantId: 1,
+          tenantId: Number(form.tenantId),
+          identity: form.identity,
         },
         {
           headers: {
@@ -107,12 +70,6 @@ export default function Register() {
       setSuccess(
         "Account created successfully. Redirecting to login..."
       );
-
-      /*
-      ----------------------------------------------------------
-       Redirect to login after successful registration
-      ----------------------------------------------------------
-      */
 
       setTimeout(() => {
         navigate("/login");
@@ -170,7 +127,7 @@ export default function Register() {
         </div>
 
         {/* ==================================================
-            ERROR MESSAGE
+            ERROR
         ================================================== */}
 
         {error && (
@@ -186,7 +143,7 @@ export default function Register() {
         )}
 
         {/* ==================================================
-            SUCCESS MESSAGE
+            SUCCESS
         ================================================== */}
 
         {success && (
@@ -293,6 +250,54 @@ export default function Register() {
 
           </div>
 
+          {/* ================= IDENTITY ================= */}
+
+          <div className="register-form-group">
+
+            <label htmlFor="identity">
+              Register As
+            </label>
+
+            <div className="register-input-wrapper">
+
+              <i className="fa-solid fa-user-tag register-input-icon"></i>
+
+              <select
+                id="identity"
+                name="identity"
+                value={form.identity}
+                onChange={handleChange}
+                required
+              >
+                <option value="student">
+                  Student
+                </option>
+
+                <option value="parent">
+                  Parent
+                </option>
+
+                <option value="staff">
+                  Staff / Teacher
+                </option>
+
+                <option value="admin">
+                  Admin
+                </option>
+
+                <option value="principal">
+                  Principal
+                </option>
+
+                <option value="management">
+                  Management
+                </option>
+              </select>
+
+            </div>
+
+          </div>
+
           {/* ==================================================
               REGISTER BUTTON
           ================================================== */}
@@ -306,13 +311,11 @@ export default function Register() {
             {loading ? (
               <>
                 <i className="fa-solid fa-spinner fa-spin"></i>
-
                 Creating Account...
               </>
             ) : (
               <>
                 <i className="fa-solid fa-user-plus"></i>
-
                 Create Account
               </>
             )}
