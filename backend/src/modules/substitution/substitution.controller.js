@@ -1,5 +1,5 @@
 const substitutionService = require("./substitution.service");
-const { notifyTeacher } = require("../notification/teacherNotification");
+const { notifyTeacher } = require("../notification/teachernotification");
 
 /* ============================================================
    GET AVAILABLE SUBSTITUTES FOR A TIMETABLE ENTRY + DATE
