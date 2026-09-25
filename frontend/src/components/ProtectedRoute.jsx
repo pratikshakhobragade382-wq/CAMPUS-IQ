@@ -4,10 +4,18 @@ import { useAuth } from "../context/AuthContext";
 function tokenRequiresPasswordChange() {
   try {
     const token = localStorage.getItem("token");
+
     if (!token) return false;
+
     const payload = JSON.parse(
-      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+      atob(
+        token
+          .split(".")[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+      )
     );
+
     return payload.mustChangePassword === true;
   } catch {
     return false;
@@ -60,39 +68,85 @@ export default function ProtectedRoute({
   }
 
   // =====================================================
-  // DETERMINE USER ROLE
+  // PASSWORD CHANGE REQUIRED
   // =====================================================
 
   if (tokenRequiresPasswordChange()) {
-    return <Navigate to="/change-password" replace />;
+    return (
+      <Navigate
+        to="/change-password"
+        replace
+      />
+    );
   }
 
-  let userRole = String(user?.identity || "").toLowerCase();
+  // =====================================================
+  // DETERMINE USER ROLE
+  // =====================================================
+
+  let userRole = String(
+    user?.identity ||
+      user?.role ||
+      user?.staff?.role ||
+      user?.staffRole ||
+      ""
+  ).toLowerCase();
 
   // -----------------------------------------------------
   // TEACHER
-  // Backend identity = "staff"
-  // Actual staff role = "teacher"
+  // Backend identity may be "staff"
+  // Actual staff role may be "teacher"
   // -----------------------------------------------------
 
   if (
-    userRole === "staff" &&
+    String(user?.identity || "").toLowerCase() === "staff" &&
     (
-      user?.role === "teacher" ||
-      user?.staff?.role === "teacher" ||
-      user?.staffRole === "teacher"
+      String(user?.role || "").toLowerCase() === "teacher" ||
+      String(user?.staff?.role || "").toLowerCase() === "teacher" ||
+      String(user?.staffRole || "").toLowerCase() === "teacher"
     )
   ) {
     userRole = "teacher";
+  }
+
+  // -----------------------------------------------------
+  // ADMIN
+  // Some backend responses may use:
+  //
+  // identity: "admin"
+  // OR
+  // identity: "staff", role: "admin"
+  // OR
+  // staffRole: "admin"
+  // -----------------------------------------------------
+
+  if (
+    String(user?.identity || "").toLowerCase() === "admin" ||
+    String(user?.role || "").toLowerCase() === "admin" ||
+    String(user?.staff?.role || "").toLowerCase() === "admin" ||
+    String(user?.staffRole || "").toLowerCase() === "admin"
+  ) {
+    userRole = "admin";
   }
 
   // =====================================================
   // DEBUG
   // =====================================================
 
-  console.log("ProtectedRoute user:", user);
-  console.log("ProtectedRoute resolved role:", userRole);
-  console.log("Allowed roles:", allowedRoles);
+  console.log(
+    "ProtectedRoute user:",
+    user
+  );
+
+  console.log(
+    "ProtectedRoute resolved role:",
+    userRole
+  );
+
+  console.log(
+    "Allowed roles:",
+    allowedRoles
+  );
 
   // =====================================================
   // AUTHORIZATION
@@ -142,7 +196,7 @@ export default function ProtectedRoute({
     }
 
     // ---------------------------------------------------
-    // OTHER VALID ROLES
+    // PRINCIPAL
     // ---------------------------------------------------
 
     if (userRole === "principal") {
@@ -153,6 +207,10 @@ export default function ProtectedRoute({
         />
       );
     }
+
+    // ---------------------------------------------------
+    // MANAGEMENT
+    // ---------------------------------------------------
 
     if (userRole === "management") {
       return (
