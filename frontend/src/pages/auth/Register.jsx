@@ -13,12 +13,27 @@ import "./Register.css";
 export default function Register() {
   const navigate = useNavigate();
 
+  /*
+  ============================================================
+   REGISTRATION FORM
+  ============================================================
+
+   Identity is intentionally NOT included here.
+
+   Public registration creates a normal student account.
+   Admin / Principal / Management accounts should be created
+   through the controlled admin-side process.
+
+   Tenant ID is also kept internally as tenant 1 and is not
+   shown as a field to the user.
+  ============================================================
+  */
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     tenantId: 1,
-    identity: "admin",
   });
 
   const [error, setError] =
@@ -54,9 +69,7 @@ export default function Register() {
   ============================================================
   */
 
-  const handleSubmit = async (
-    event
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setLoading(true);
@@ -64,13 +77,29 @@ export default function Register() {
     setSuccess("");
 
     try {
+      /*
+      ----------------------------------------------------------
+       Public registration
+      ----------------------------------------------------------
+
+       We only send the information required to create a
+       normal account.
+
+       Identity is NOT sent from the frontend.
+      ----------------------------------------------------------
+      */
+
       await axiosClient.post(
         "/auth/register",
-        form,
+        {
+          name: form.name.trim(),
+          email: form.email.trim().toLowerCase(),
+          password: form.password,
+          tenantId: 1,
+        },
         {
           headers: {
-            "X-Registration-Key":
-              "dev-reg-key-123",
+            "X-Registration-Key": "dev-reg-key-123",
           },
         }
       );
@@ -79,12 +108,19 @@ export default function Register() {
         "Account created successfully. Redirecting to login..."
       );
 
+      /*
+      ----------------------------------------------------------
+       Redirect to login after successful registration
+      ----------------------------------------------------------
+      */
+
       setTimeout(() => {
         navigate("/login");
       }, 1200);
     } catch (err) {
       setError(
         err.response?.data?.error ||
+          err.response?.data?.message ||
           "Registration failed"
       );
     } finally {
@@ -134,7 +170,7 @@ export default function Register() {
         </div>
 
         {/* ==================================================
-            ERROR
+            ERROR MESSAGE
         ================================================== */}
 
         {error && (
@@ -150,7 +186,7 @@ export default function Register() {
         )}
 
         {/* ==================================================
-            SUCCESS
+            SUCCESS MESSAGE
         ================================================== */}
 
         {success && (
@@ -169,9 +205,7 @@ export default function Register() {
             FORM
         ================================================== */}
 
-        <form
-          onSubmit={handleSubmit}
-        >
+        <form onSubmit={handleSubmit}>
 
           {/* ================= NAME ================= */}
 
@@ -256,33 +290,6 @@ export default function Register() {
             <small className="register-help-text">
               Password must be at least 8 characters.
             </small>
-
-          </div>
-
-          {/* ================= TENANT ID ================= */}
-
-          <div className="register-form-group">
-
-            <label htmlFor="tenantId">
-              Tenant ID
-            </label>
-
-            <div className="register-input-wrapper">
-
-              <i className="fa-solid fa-building register-input-icon"></i>
-
-              <input
-                id="tenantId"
-                type="number"
-                name="tenantId"
-                value={form.tenantId}
-                onChange={handleChange}
-                placeholder="Enter tenant ID"
-                min="1"
-                required
-              />
-
-            </div>
 
           </div>
 
