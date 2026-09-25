@@ -14,8 +14,8 @@ async function resolveTenantId(req) {
   const host = req.headers.host || "";
 
   // Render deployment:
-  // campus-iq-kabt.onrender.com is NOT a tenant subdomain.
-  // Use the tenantId supplied by the frontend.
+  // campus-iq-kabt.onrender.com is the Render service URL,
+  // not a tenant subdomain.
   if (host.includes(".onrender.com")) {
     if (req.body.tenantId) {
       return Number(req.body.tenantId);
@@ -24,8 +24,7 @@ async function resolveTenantId(req) {
     return null;
   }
 
-  // Production/custom domain:
-  // school1.dpinfosystem.in -> resolve tenant using "school1"
+  // Custom domain / tenant subdomain
   const parts = host.split(".");
 
   if (parts.length >= 3) {
