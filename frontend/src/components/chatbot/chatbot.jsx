@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { chatWithBot } from "../../api/chatbot.api";
 import { STORAGE_KEYS } from "../../utils/constants";
-import "./Chatbot.css";
+import "./chatbot.css";
 
 export default function Chatbot() {
   const CHAT_STORAGE_KEY = "campusiq_chat_history";
