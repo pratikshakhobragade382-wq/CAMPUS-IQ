@@ -9,7 +9,7 @@ const prisma =
 const {
   notifyTeachersForClass,
 } =
-  require("../notification/teacherNotification");
+  require("../notification/teachernotification");
 
 const {
   createNotification,
