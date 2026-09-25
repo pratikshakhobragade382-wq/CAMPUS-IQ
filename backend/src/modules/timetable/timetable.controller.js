@@ -4,7 +4,7 @@ const timetableService =
 const {
   notifyTeacher,
 } =
-  require("../notification/teacherNotification");
+  require("../notification/teachernotification");
 
 const prisma =
   require("../../prisma/prismaClient");
