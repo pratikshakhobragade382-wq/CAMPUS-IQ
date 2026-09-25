@@ -7,7 +7,7 @@ const {
 
 const {
   notifyTeacher,
-} = require("../notification/teacherNotification");
+} = require("../notification/teachernotification")
 
 const notificationService =
   require("../notification/notification.service");
