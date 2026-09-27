@@ -11,7 +11,76 @@ const {
 
 const TRANSACTION_OPTIONS = {
   maxWait: 10000,
-  timeout: 15000,
+  timeout: 20000,
+};
+
+// =====================================================
+// HELPERS
+// =====================================================
+
+const cleanString = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const result = String(value).trim();
+
+  return result === "" ? null : result;
+};
+
+const parseIntegerOrNull = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const parsed = parseInt(value, 10);
+
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseFloatOrNull = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const parsed = parseFloat(value);
+
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseDateOrNull = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+};
+
+const parseBoolean = (value) => {
+  return (
+    value === true ||
+    value === "true" ||
+    value === 1 ||
+    value === "1"
+  );
 };
 
 // =====================================================
@@ -28,92 +97,139 @@ const maybeCreateParentUser = async (
     name,
   }
 ) => {
-  if (!email || !mobile) {
+  const normalizedEmail = cleanString(email)?.toLowerCase();
+  const normalizedMobile = cleanString(mobile);
+
+  // ===================================================
+  // PARENT LOGIN REQUIRES EMAIL
+  //
+  // Mobile is OPTIONAL.
+  // ===================================================
+
+  if (!normalizedEmail) {
     return null;
   }
 
-  const normalizedEmail =
-    String(email).trim().toLowerCase();
+  // ===================================================
+  // FIND EXISTING USER
+  // ===================================================
 
-  const existingUser =
-    await tx.user.findFirst({
-      where: {
-        email_tenantId: {
-          email: normalizedEmail,
-          tenantId,
-        },
-      },
-    });
+  const existingUser = await tx.user.findFirst({
+    where: {
+      email: normalizedEmail,
+      tenantId: Number(tenantId),
+    },
+  });
 
-  // ---------------------------------------------------
+  // ===================================================
   // EXISTING USER
-  // ---------------------------------------------------
+  // ===================================================
 
   if (existingUser) {
+    // Never convert another type of account into a parent.
     if (existingUser.identity !== "parent") {
       return null;
     }
 
-    await tx.studentParent.update({
+    // Link the existing parent account to this parent record.
+    await tx.user.update({
       where: {
-        id: studentParentId,
+        id: existingUser.id,
       },
+
       data: {
-        user: {
-          connect: {
-            id: existingUser.id,
-          },
-        },
+        parentId: studentParentId,
       },
     });
 
-    return null;
+    /*
+     * The old password cannot be displayed because only
+     * the bcrypt hash is stored in the database.
+     */
+    return {
+      email: normalizedEmail,
+      password: null,
+      userId: existingUser.id,
+      name:
+        cleanString(name) ||
+        normalizedEmail.split("@")[0],
+      existing: true,
+    };
   }
 
-  // ---------------------------------------------------
-  // CREATE NEW PARENT USER
-  // ---------------------------------------------------
+  // ===================================================
+  // GENERATE PASSWORD
+  // ===================================================
 
-  const rawPassword = String(mobile)
-    .replace(/\D/g, "")
-    .slice(-6);
+  /*
+   * If mobile is available:
+   *   use the last 6 digits.
+   *
+   * If mobile is not available:
+   *   use StudentParent ID + @123.
+   */
 
-  if (!rawPassword) {
-    return null;
-  }
+  const digitsOnly = normalizedMobile
+    ? normalizedMobile.replace(/\D/g, "")
+    : "";
 
-  const hashedPassword =
-    await bcrypt.hash(rawPassword, 10);
+  const rawPassword =
+    digitsOnly.length >= 6
+      ? digitsOnly.slice(-6)
+      : `${studentParentId}@123`;
 
-  const user =
-    await tx.user.create({
-      data: {
-        name:
-          name ||
-          normalizedEmail.split("@")[0],
+  // ===================================================
+  // HASH PASSWORD
+  // ===================================================
 
-        email: normalizedEmail,
+  const hashedPassword = await bcrypt.hash(
+    rawPassword,
+    10
+  );
 
-        password: hashedPassword,
+  // ===================================================
+  // CREATE PARENT USER
+  // ===================================================
 
-        tenantId,
+  const user = await tx.user.create({
+    data: {
+      name:
+        cleanString(name) ||
+        normalizedEmail.split("@")[0],
 
-        identity: "parent",
+      email: normalizedEmail,
 
-        mustChangePassword: true,
+      password: hashedPassword,
 
-        studentParent: {
-          connect: {
-            id: studentParentId,
-          },
-        },
-      },
-    });
+      tenantId: Number(tenantId),
+
+      identity: "parent",
+
+      parentId: studentParentId,
+
+      mustChangePassword: true,
+    },
+  });
+
+  // ===================================================
+  // RETURN PLAIN-TEXT CREDENTIALS
+  //
+  // These are returned only immediately after creation
+  // so StudentForm.jsx can display them.
+  // ===================================================
 
   return {
     email: normalizedEmail,
+
     password: rawPassword,
+
     userId: user.id,
+
+    name:
+      cleanString(name) ||
+      normalizedEmail.split("@")[0],
+
+    existing: false,
   };
 };
 
@@ -129,9 +245,9 @@ const maybeCreateStudentUser = async (
     return null;
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // CHECK EXISTING STUDENT USER
-  // ---------------------------------------------------
+  // ===================================================
 
   const existingStudentUser =
     await tx.user.findUnique({
@@ -141,18 +257,23 @@ const maybeCreateStudentUser = async (
     });
 
   if (existingStudentUser) {
-    return null;
+    return {
+      email: existingStudentUser.email,
+      password: null,
+      userId: existingStudentUser.id,
+    };
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // GET TENANT
-  // ---------------------------------------------------
+  // ===================================================
 
   const tenant =
     await tx.tenant.findUnique({
       where: {
         id: student.tenantId,
       },
+
       select: {
         subdomain: true,
       },
@@ -162,45 +283,48 @@ const maybeCreateStudentUser = async (
     tenant?.subdomain ||
     `tenant${student.tenantId}`;
 
-  // ---------------------------------------------------
+  // ===================================================
   // STUDENT LOGIN EMAIL
-  // ---------------------------------------------------
+  // ===================================================
 
   const loginEmail =
     `${student.admissionNo}@${subdomain}.student`
       .toLowerCase();
 
-  // ---------------------------------------------------
+  // ===================================================
   // CHECK EMAIL
-  // ---------------------------------------------------
+  // ===================================================
 
   const existingEmailUser =
     await tx.user.findFirst({
       where: {
-        email_tenantId: {
-          email: loginEmail,
-          tenantId: student.tenantId,
-        },
+        email: loginEmail,
+        tenantId: student.tenantId,
       },
     });
 
   if (existingEmailUser) {
-    return null;
+    return {
+      email: existingEmailUser.email,
+      password: null,
+      userId: existingEmailUser.id,
+    };
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // DEFAULT PASSWORD
   //
   // DOB -> DDMMYYYY
   // Otherwise -> admissionNo@123
-  // ---------------------------------------------------
+  // ===================================================
 
   let rawPassword =
     `${student.admissionNo}@123`;
 
   if (student.dateOfBirth) {
-    const dob =
-      new Date(student.dateOfBirth);
+    const dob = new Date(
+      student.dateOfBirth
+    );
 
     if (!Number.isNaN(dob.getTime())) {
       const day = String(
@@ -225,41 +349,45 @@ const maybeCreateStudentUser = async (
       10
     );
 
-  // ---------------------------------------------------
+  // ===================================================
   // CREATE STUDENT USER
-  // ---------------------------------------------------
+  // ===================================================
 
   const user =
     await tx.user.create({
       data: {
         name:
-          student.studentName ||
-          "Student",
+          cleanString(
+            student.studentName
+          ) || "Student",
 
         email: loginEmail,
 
-        password: hashedPassword,
+        password:
+          hashedPassword,
 
         tenantId:
           student.tenantId,
 
         identity: "student",
 
-        studentId: student.id,
+        studentId:
+          student.id,
 
-        mustChangePassword: true,
+        mustChangePassword:
+          true,
       },
     });
 
   return {
-    email: loginEmail,
+    email: user.email,
     password: rawPassword,
     userId: user.id,
   };
 };
 
 // =====================================================
-// GET STUDENTS FOR PARENT
+// GET STUDENT IDS FOR PARENT
 // =====================================================
 
 const getStudentIdsForParent = async (
@@ -270,213 +398,277 @@ const getStudentIdsForParent = async (
     return [];
   }
 
-  // 1. Direct check in StudentParent table via user relation
-  const studentParentsByUserId = await prisma.studentParent.findMany({
-    where: {
-      user: {
-        id: userId,
-      },
-      tenantId,
-    },
-    select: {
-      studentId: true,
-    },
-  });
+  // ===================================================
+  // 1. DIRECT STUDENT PARENT LINK
+  // ===================================================
 
-  if (studentParentsByUserId.length > 0) {
-    const ids = studentParentsByUserId.map((sp) => sp.studentId).filter(Boolean);
-    if (ids.length > 0) return ids;
+  const studentParentsByUserId =
+    await prisma.studentParent.findMany({
+      where: {
+        user: {
+          id: userId,
+        },
+
+        tenantId,
+      },
+
+      select: {
+        studentId: true,
+      },
+    });
+
+  if (
+    studentParentsByUserId.length > 0
+  ) {
+    const ids =
+      studentParentsByUserId
+        .map(
+          (item) => item.studentId
+        )
+        .filter(Boolean);
+
+    if (ids.length > 0) {
+      return ids;
+    }
   }
 
-  // 2. Check User record
-  const user = await prisma.user.findFirst({
-    where: {
-      id: userId,
-      tenantId,
-      identity: "parent",
-      isDeleted: false,
-    },
-    select: {
-      id: true,
-      parentId: true,
-      studentId: true,
-      email: true,
-      name: true,
-    },
-  });
+  // ===================================================
+  // 2. USER RECORD
+  // ===================================================
+
+  const user =
+    await prisma.user.findFirst({
+      where: {
+        id: userId,
+
+        tenantId,
+
+        identity: "parent",
+
+        isDeleted: false,
+      },
+
+      select: {
+        id: true,
+        parentId: true,
+        studentId: true,
+        email: true,
+        name: true,
+      },
+    });
 
   if (!user) {
     return [];
   }
 
+  // ===================================================
+  // DIRECT STUDENT ID
+  // ===================================================
+
   if (user.studentId) {
     return [user.studentId];
   }
 
+  // ===================================================
+  // PARENT ID
+  // ===================================================
+
   if (user.parentId) {
-    const parent = await prisma.studentParent.findFirst({
-      where: {
-        id: user.parentId,
-        tenantId,
-      },
-      select: {
-        studentId: true,
-      },
-    });
+    const parent =
+      await prisma.studentParent.findFirst({
+        where: {
+          id: user.parentId,
+
+          tenantId,
+        },
+
+        select: {
+          studentId: true,
+        },
+      });
+
     if (parent?.studentId) {
       return [parent.studentId];
     }
   }
-  return parent?.studentId
-    ? [parent.studentId]
-    : [];
 
-  // 3. Match by parent email in StudentParent
+  // ===================================================
+  // MATCH BY EMAIL
+  // ===================================================
+
   if (user.email) {
-    const matchByEmail = await prisma.studentParent.findFirst({
-      where: { email: user.email, tenantId },
-      select: { studentId: true, id: true },
-    });
+    const matchByEmail =
+      await prisma.studentParent.findFirst({
+        where: {
+          email: user.email,
 
-    if (matchByEmail?.studentId) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { parentId: matchByEmail.id },
-      }).catch(() => {});
-
-      return [matchByEmail.studentId];
-    }
-  }
-
-  // 4. Auto-link fallback: link parent user to the first available student in tenant so dashboard loads
-  const firstStudent = await prisma.student.findFirst({
-    where: { tenantId, isDeleted: false },
-    orderBy: { id: "asc" },
-    select: { id: true },
-  });
-
-  if (firstStudent) {
-    try {
-      const newSp = await prisma.studentParent.create({
-        data: {
-          studentId: firstStudent.id,
           tenantId,
-          name: user.name || "Parent",
-          email: user.email || null,
-          relation: "father",
+        },
+
+        select: {
+          studentId: true,
+          id: true,
         },
       });
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { parentId: newSp.id },
-      });
+    if (matchByEmail?.studentId) {
+      await prisma.user
+        .update({
+          where: {
+            id: userId,
+          },
 
-      return [firstStudent.id];
-    } catch (err) {
-      console.error("Auto-link parent error:", err);
-      return [firstStudent.id];
+          data: {
+            parentId:
+              matchByEmail.id,
+          },
+        })
+        .catch(() => {});
+
+      return [
+        matchByEmail.studentId,
+      ];
     }
   }
 
   return [];
-}
+};
 
-async function getStudentIdsForTeacher(
+// =====================================================
+// GET STUDENT IDS FOR TEACHER
+// =====================================================
+
+const getStudentIdsForTeacher = async (
   userId,
   tenantId
-) {
-  if (!userId) {
+) => {
+  if (!userId || !tenantId) {
     return [];
   }
 
+  // ===================================================
+  // FIND STAFF
+  // ===================================================
 
-  // Find logged in staff
-  const staff = await prisma.staff.findFirst({
+  const staff =
+    await prisma.staff.findFirst({
+      where: {
+        user: {
+          id: userId,
+        },
 
-    where: {
+        tenantId,
 
-      user: {
-        id: userId,
+        isDeleted: false,
       },
 
-      tenantId,
-
-      isDeleted:false,
-
-    },
-
-    select:{
-      id:true,
-    },
-
-  });
-
+      select: {
+        id: true,
+      },
+    });
 
   if (!staff) {
     return [];
   }
 
+  // ===================================================
+  // FIND TIMETABLE SECTIONS
+  // ===================================================
 
-  // Find sections from timetable where teacher is assigned
-  const timetableSections = await prisma.timetable.findMany({
+  const timetableSections =
+    await prisma.timetable.findMany({
+      where: {
+        staffId: staff.id,
 
-    where: {
-
-      staffId: staff.id,
-
-      tenantId,
-
-    },
-
-    select: {
-
-      sectionId:true,
-
-    },
-
-    distinct:["sectionId"],
-
-  });
-
-
-  const sectionIds = timetableSections.map(
-    item => item.sectionId
-  );
-
-
-  if(sectionIds.length === 0){
-    return [];
-  }
-
-
-  // Get students from those sections
-  const students = await prisma.student.findMany({
-
-    where: {
-
-      tenantId,
-
-      isDeleted:false,
-
-      sectionId:{
-        in:sectionIds,
+        tenantId,
       },
 
-    },
+      select: {
+        sectionId: true,
+        classId: true,
+      },
 
-    select:{
-      id:true,
-    },
+      distinct: [
+        "sectionId",
+        "classId",
+      ],
+    });
 
-  });
+  // ===================================================
+  // SECTION BASED STUDENTS
+  // ===================================================
 
+  const sectionIds =
+    timetableSections
+      .map(
+        (item) => item.sectionId
+      )
+      .filter(Boolean);
 
-  return students.map(
-    student => student.id
-  );
+  const classIds =
+    timetableSections
+      .map(
+        (item) => item.classId
+      )
+      .filter(Boolean);
 
-}
+  // ===================================================
+  // IF TEACHER HAS SECTION ASSIGNMENTS
+  // ===================================================
+
+  if (sectionIds.length > 0) {
+    const students =
+      await prisma.student.findMany({
+        where: {
+          tenantId,
+
+          isDeleted: false,
+
+          sectionId: {
+            in: sectionIds,
+          },
+        },
+
+        select: {
+          id: true,
+        },
+      });
+
+    return students.map(
+      (student) => student.id
+    );
+  }
+
+  // ===================================================
+  // FALLBACK TO CLASS ASSIGNMENTS
+  // ===================================================
+
+  if (classIds.length > 0) {
+    const students =
+      await prisma.student.findMany({
+        where: {
+          tenantId,
+
+          isDeleted: false,
+
+          classId: {
+            in: classIds,
+          },
+        },
+
+        select: {
+          id: true,
+        },
+      });
+
+    return students.map(
+      (student) => student.id
+    );
+  }
+
+  return [];
+};
+
 // =====================================================
 // CREATE STUDENT
 // =====================================================
@@ -485,82 +677,147 @@ const createStudent = async (
   data,
   tenantId
 ) => {
+  // ===================================================
+  // READ INPUT
+  // ===================================================
+
   const {
     admissionNo,
     feeNo,
     studentName,
+
     dateOfBirth,
     gender,
     bloodGroup,
     religion,
-    caste,
     category,
     nationality,
     motherTongue,
+    maritalStatus,
+
     aadharNo,
     grNo,
     rollNo,
+
     classId,
     sectionId,
+
     house,
-    transportRequired,
-    busRouteId,
-    address,
-    city,
-    state,
-    pincode,
-    previousSchool,
-    previousClass,
-    previousPercentage,
-    admissionDate,
-    medicalInfo,
-    notes,
+
+    studentEmail,
+    countryCode,
+    communicationMobile,
+    communicationEmail,
+
+    emergencyPhoneNo,
+
+    board,
+    medium,
+    boardRegistrationNo,
+
+    admissionType,
+    classAdmitted,
+
+    boardingCategory,
+
+    remark,
+    feeRemark,
+
+    uniqueNo,
+    rfidNo,
+
+    eNach,
+
+    bankName,
+    accountNo,
+    ifsc,
+    virtualAccountNo,
+
+    apaarId,
+    srnNo,
+
+    siblingAdmNo,
+    childLivingWith,
+
+    photoUrl,
+    signatureUrl,
+
+    stream,
+    feeGroup,
+    feePaymentStartFrom,
+
+    dateOfAdmission,
+    dateOfJoin,
+
+    fatherTitle,
     fatherName,
-    fatherEmail,
     fatherMobile,
+    fatherEmail,
     fatherOccupation,
+
+    motherTitle,
     motherName,
-    motherEmail,
     motherMobile,
+    motherEmail,
     motherOccupation,
+
     guardianName,
-    guardianEmail,
     guardianMobile,
+    guardianEmail,
     guardianOccupation,
+
     relation,
-  } = data;
+  } = data || {};
 
-  // ---------------------------------------------------
-  // REQUIRED FIELD VALIDATION
-  // ---------------------------------------------------
+  // ===================================================
+  // REQUIRED VALIDATION
+  // ===================================================
 
-  if (!admissionNo) {
+  const cleanAdmissionNo =
+    cleanString(admissionNo);
+
+  const cleanStudentName =
+    cleanString(studentName);
+
+  const parsedClassId =
+    parseIntegerOrNull(classId);
+
+  const parsedSectionId =
+    parseIntegerOrNull(sectionId);
+
+  if (!cleanAdmissionNo) {
     throw new Error(
       "Admission number is required"
     );
   }
 
-  if (!studentName) {
+  if (!cleanStudentName) {
     throw new Error(
       "Student name is required"
     );
   }
 
-  if (!classId) {
+  if (!parsedClassId) {
     throw new Error(
       "Class is required"
     );
   }
 
-  // ---------------------------------------------------
+  if (!tenantId) {
+    throw new Error(
+      "Tenant ID is required"
+    );
+  }
+
+  // ===================================================
   // DUPLICATE ADMISSION NUMBER
-  // ---------------------------------------------------
+  // ===================================================
 
   const existingStudent =
     await prisma.student.findFirst({
       where: {
         admissionNo:
-          String(admissionNo).trim(),
+          cleanAdmissionNo,
 
         tenantId,
 
@@ -574,16 +831,23 @@ const createStudent = async (
     );
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // VALIDATE CLASS
-  // ---------------------------------------------------
+  // ===================================================
 
   const classRecord =
     await prisma.class.findFirst({
       where: {
-        id: parseInt(classId, 10),
+        id: parsedClassId,
+
         tenantId,
+
         isDeleted: false,
+      },
+
+      select: {
+        id: true,
+        name: true,
       },
     });
 
@@ -593,253 +857,485 @@ const createStudent = async (
     );
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // VALIDATE SECTION
-  // ---------------------------------------------------
+  // ===================================================
 
-  if (sectionId) {
+  if (parsedSectionId) {
     const section =
       await prisma.section.findFirst({
         where: {
-          id: parseInt(sectionId, 10),
-          classId: parseInt(classId, 10),
+          id: parsedSectionId,
+
+          classId:
+            parsedClassId,
+
           tenantId,
+
           isDeleted: false,
+        },
+
+        select: {
+          id: true,
+          name: true,
         },
       });
 
     if (!section) {
       throw new Error(
-        "Section not found"
+        "Section not found for the selected class"
       );
     }
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // TRANSACTION
-  // ---------------------------------------------------
+  // ===================================================
 
   const result =
     await prisma.$transaction(
       async (tx) => {
-        // ---------------------------------------------
+        // =================================================
         // CREATE STUDENT
-        // ---------------------------------------------
+        // =================================================
 
         const student =
           await tx.student.create({
             data: {
+              // =============================================
+              // BASIC
+              // =============================================
+
               admissionNo:
-                String(admissionNo).trim(),
+                cleanAdmissionNo,
 
               feeNo:
-                feeNo ||
-                null,
+                cleanString(feeNo),
+
+              siblingAdmNo:
+                cleanString(
+                  siblingAdmNo
+                ),
 
               studentName:
-                String(studentName).trim(),
+                cleanStudentName,
+
+              childLivingWith:
+                cleanString(
+                  childLivingWith
+                ),
+
+              photoUrl:
+                cleanString(photoUrl),
+
+              signatureUrl:
+                cleanString(
+                  signatureUrl
+                ),
+
+              // =============================================
+              // PARENT FIELDS ON STUDENT
+              // =============================================
+
+              fatherTitle:
+                cleanString(
+                  fatherTitle
+                ),
+
+              fatherName:
+                cleanString(
+                  fatherName
+                ),
+
+              motherTitle:
+                cleanString(
+                  motherTitle
+                ),
+
+              motherName:
+                cleanString(
+                  motherName
+                ),
+
+              // =============================================
+              // REQUIRED CLASS RELATION
+              // =============================================
+
+              class: {
+                connect: {
+                  id: parsedClassId,
+                },
+              },
+
+              // =============================================
+              // OPTIONAL SECTION RELATION
+              // =============================================
+
+              ...(parsedSectionId
+                ? {
+                    section: {
+                      connect: {
+                        id:
+                          parsedSectionId,
+                      },
+                    },
+                  }
+                : {}),
+
+              // =============================================
+              // ACADEMIC
+              // =============================================
+
+              stream:
+                cleanString(stream),
+
+              feeGroup:
+                cleanString(
+                  feeGroup
+                ),
+
+              feePaymentStartFrom:
+                cleanString(
+                  feePaymentStartFrom
+                ),
 
               dateOfBirth:
-                dateOfBirth
-                  ? new Date(dateOfBirth)
-                  : null,
+                parseDateOrNull(
+                  dateOfBirth
+                ),
 
-              gender:
-                gender || null,
+              dateOfAdmission:
+                parseDateOrNull(
+                  dateOfAdmission
+                ),
 
-              bloodGroup:
-                bloodGroup || null,
-
-              religion:
-                religion || null,
-
-              caste:
-                caste || null,
-
-              category:
-                category || null,
-
-              nationality:
-                nationality || null,
-
-              motherTongue:
-                motherTongue || null,
-
-              aadharNo:
-                aadharNo || null,
-
-              grNo:
-                grNo || null,
+              dateOfJoin:
+                parseDateOrNull(
+                  dateOfJoin
+                ),
 
               rollNo:
-                rollNo || null,
+                cleanString(rollNo),
 
-              classId:
-                parseInt(classId, 10),
+              gender:
+                cleanString(gender),
 
-              sectionId:
-                sectionId
-                  ? parseInt(sectionId, 10)
-                  : null,
+              admissionType:
+                cleanString(
+                  admissionType
+                ) || "new",
+
+              classAdmitted:
+                cleanString(
+                  classAdmitted
+                ),
+
+              emergencyPhoneNo:
+                cleanString(
+                  emergencyPhoneNo
+                ),
 
               house:
-                house || null,
+                cleanString(house),
 
-              transportRequired:
-                transportRequired === true ||
-                transportRequired === "true",
+              boardingCategory:
+                cleanString(
+                  boardingCategory
+                ),
 
-              busRouteId:
-                busRouteId
-                  ? parseInt(busRouteId, 10)
-                  : null,
+              board:
+                cleanString(board),
 
-              address:
-                address || null,
+              medium:
+                cleanString(medium),
 
-              city:
-                city || null,
+              boardRegistrationNo:
+                cleanString(
+                  boardRegistrationNo
+                ),
 
-              state:
-                state || null,
+              // =============================================
+              // CONTACT
+              // =============================================
 
-              pincode:
-                pincode || null,
+              studentEmail:
+                cleanString(
+                  studentEmail
+                ),
 
-              previousSchool:
-                previousSchool || null,
+              countryCode:
+                cleanString(
+                  countryCode
+                ),
 
-              previousClass:
-                previousClass || null,
+              communicationMobile:
+                cleanString(
+                  communicationMobile
+                ),
 
-              previousPercentage:
-                previousPercentage !==
-                  undefined &&
-                previousPercentage !==
-                  null &&
-                previousPercentage !== ""
-                  ? parseFloat(
-                      previousPercentage
-                    )
-                  : null,
+              communicationEmail:
+                cleanString(
+                  communicationEmail
+                ),
 
-              admissionDate:
-                admissionDate
-                  ? new Date(admissionDate)
-                  : null,
+              // =============================================
+              // IDENTIFICATION
+              // =============================================
 
-              medicalInfo:
-                medicalInfo || null,
+              aadharNo:
+                cleanString(
+                  aadharNo
+                ),
 
-              notes:
-                notes || null,
+              remark:
+                cleanString(remark),
 
-              tenantId,
+              feeRemark:
+                cleanString(
+                  feeRemark
+                ),
+
+              uniqueNo:
+                cleanString(uniqueNo),
+
+              grNo:
+                cleanString(grNo),
+
+              rfidNo:
+                cleanString(rfidNo),
+
+              eNach:
+                cleanString(eNach),
+
+              bankName:
+                cleanString(bankName),
+
+              accountNo:
+                cleanString(accountNo),
+
+              ifsc:
+                cleanString(ifsc),
+
+              virtualAccountNo:
+                cleanString(
+                  virtualAccountNo
+                ),
+
+              apaarId:
+                cleanString(apaarId),
+
+              srnNo:
+                cleanString(srnNo),
+
+              // =============================================
+              // OTHER PERSONAL DETAILS
+              // =============================================
+
+              bloodGroup:
+                cleanString(
+                  bloodGroup
+                ),
+
+              religion:
+                cleanString(
+                  religion
+                ),
+
+              category:
+                cleanString(
+                  category
+                ),
+
+              motherTongue:
+                cleanString(
+                  motherTongue
+                ),
+
+              nationality:
+                cleanString(
+                  nationality
+                ),
+
+              maritalStatus:
+                cleanString(
+                  maritalStatus
+                ),
+
+              // =============================================
+              // REQUIRED TENANT RELATION
+              // =============================================
+
+              tenant: {
+                connect: {
+                  id: Number(tenantId),
+                },
+              },
 
               isDeleted: false,
             },
           });
 
-        // ---------------------------------------------
-        // CREATE PARENT RECORDS
-        // ---------------------------------------------
+        // =================================================
+        // PARENT CREDENTIALS
+        // =================================================
 
         const parentCredentials = [];
 
-        // ---------------------------------------------
+        // =================================================
         // FATHER
-        // ---------------------------------------------
+        // =================================================
 
         if (
           fatherName ||
           fatherEmail ||
           fatherMobile
         ) {
+          const fatherEmailClean =
+            cleanString(
+              fatherEmail
+            )?.toLowerCase();
+
+          const fatherMobileClean =
+            cleanString(
+              fatherMobile
+            );
+
           const parent =
             await tx.studentParent.create({
               data: {
-                studentId:
-                  student.id,
+                student: {
+                  connect: {
+                    id: student.id,
+                  },
+                },
 
-                tenantId,
+                tenantId:
+                  Number(tenantId),
 
-                relation: "father",
+                relation:
+                  "father",
 
                 name:
-                  fatherName ||
-                  "Father",
+                  cleanString(
+                    fatherName
+                  ) || "Father",
 
                 email:
-                  fatherEmail ||
-                  null,
+                  fatherEmailClean,
 
                 mobile:
-                  fatherMobile ||
-                  null,
+                  fatherMobileClean ||
+                  "",
 
                 occupation:
-                  fatherOccupation ||
-                  null,
+                  cleanString(
+                    fatherOccupation
+                  ),
               },
             });
 
+          // Parent credentials are generated when email exists.
           const credentials =
             await maybeCreateParentUser(
               tx,
               {
-                email: fatherEmail,
-                mobile: fatherMobile,
-                tenantId,
+                email:
+                  fatherEmailClean,
+
+                mobile:
+                  fatherMobileClean,
+
+                tenantId:
+                  Number(tenantId),
+
                 studentParentId:
                   parent.id,
+
                 name:
-                  fatherName ||
-                  "Father",
+                  cleanString(
+                    fatherName
+                  ) || "Father",
               }
             );
 
-          if (credentials) {
+          /*
+           * Only display credentials when a NEW account
+           * was actually created.
+           *
+           * Existing accounts have password: null.
+           */
+          if (
+            credentials &&
+            credentials.password
+          ) {
             parentCredentials.push({
               relation: "father",
-              ...credentials,
+              name:
+                credentials.name ||
+                cleanString(
+                  fatherName
+                ) ||
+                "Father",
+              email:
+                credentials.email,
+              password:
+                credentials.password,
+              userId:
+                credentials.userId,
             });
           }
         }
 
-        // ---------------------------------------------
+        // =================================================
         // MOTHER
-        // ---------------------------------------------
+        // =================================================
 
         if (
           motherName ||
           motherEmail ||
           motherMobile
         ) {
+          const motherEmailClean =
+            cleanString(
+              motherEmail
+            )?.toLowerCase();
+
+          const motherMobileClean =
+            cleanString(
+              motherMobile
+            );
+
           const parent =
             await tx.studentParent.create({
               data: {
-                studentId:
-                  student.id,
+                student: {
+                  connect: {
+                    id: student.id,
+                  },
+                },
 
-                tenantId,
+                tenantId:
+                  Number(tenantId),
 
-                relation: "mother",
+                relation:
+                  "mother",
 
                 name:
-                  motherName ||
-                  "Mother",
+                  cleanString(
+                    motherName
+                  ) || "Mother",
 
                 email:
-                  motherEmail ||
-                  null,
+                  motherEmailClean,
 
                 mobile:
-                  motherMobile ||
-                  null,
+                  motherMobileClean ||
+                  "",
 
                 occupation:
-                  motherOccupation ||
-                  null,
+                  cleanString(
+                    motherOccupation
+                  ),
               },
             });
 
@@ -847,61 +1343,99 @@ const createStudent = async (
             await maybeCreateParentUser(
               tx,
               {
-                email: motherEmail,
-                mobile: motherMobile,
-                tenantId,
+                email:
+                  motherEmailClean,
+
+                mobile:
+                  motherMobileClean,
+
+                tenantId:
+                  Number(tenantId),
+
                 studentParentId:
                   parent.id,
+
                 name:
-                  motherName ||
-                  "Mother",
+                  cleanString(
+                    motherName
+                  ) || "Mother",
               }
             );
 
-          if (credentials) {
+          if (
+            credentials &&
+            credentials.password
+          ) {
             parentCredentials.push({
               relation: "mother",
-              ...credentials,
+              name:
+                credentials.name ||
+                cleanString(
+                  motherName
+                ) ||
+                "Mother",
+              email:
+                credentials.email,
+              password:
+                credentials.password,
+              userId:
+                credentials.userId,
             });
           }
         }
 
-        // ---------------------------------------------
+        // =================================================
         // GUARDIAN
-        // ---------------------------------------------
+        // =================================================
 
         if (
           guardianName ||
           guardianEmail ||
           guardianMobile
         ) {
+          const guardianEmailClean =
+            cleanString(
+              guardianEmail
+            )?.toLowerCase();
+
+          const guardianMobileClean =
+            cleanString(
+              guardianMobile
+            );
+
           const parent =
             await tx.studentParent.create({
               data: {
-                studentId:
-                  student.id,
+                student: {
+                  connect: {
+                    id: student.id,
+                  },
+                },
 
-                tenantId,
+                tenantId:
+                  Number(tenantId),
 
                 relation:
-                  relation ||
-                  "guardian",
+                  cleanString(
+                    relation
+                  ) || "guardian",
 
                 name:
-                  guardianName ||
-                  "Guardian",
+                  cleanString(
+                    guardianName
+                  ) || "Guardian",
 
                 email:
-                  guardianEmail ||
-                  null,
+                  guardianEmailClean,
 
                 mobile:
-                  guardianMobile ||
-                  null,
+                  guardianMobileClean ||
+                  "",
 
                 occupation:
-                  guardianOccupation ||
-                  null,
+                  cleanString(
+                    guardianOccupation
+                  ),
               },
             });
 
@@ -909,30 +1443,57 @@ const createStudent = async (
             await maybeCreateParentUser(
               tx,
               {
-                email: guardianEmail,
-                mobile: guardianMobile,
-                tenantId,
+                email:
+                  guardianEmailClean,
+
+                mobile:
+                  guardianMobileClean,
+
+                tenantId:
+                  Number(tenantId),
+
                 studentParentId:
                   parent.id,
+
                 name:
-                  guardianName ||
-                  "Guardian",
+                  cleanString(
+                    guardianName
+                  ) || "Guardian",
               }
             );
 
-          if (credentials) {
+          if (
+            credentials &&
+            credentials.password
+          ) {
             parentCredentials.push({
               relation:
-                relation ||
-                "guardian",
-              ...credentials,
+                cleanString(
+                  relation
+                ) || "guardian",
+
+              name:
+                credentials.name ||
+                cleanString(
+                  guardianName
+                ) ||
+                "Guardian",
+
+              email:
+                credentials.email,
+
+              password:
+                credentials.password,
+
+              userId:
+                credentials.userId,
             });
           }
         }
 
-        // ---------------------------------------------
+        // =================================================
         // CREATE STUDENT LOGIN
-        // ---------------------------------------------
+        // =================================================
 
         const studentCredentials =
           await maybeCreateStudentUser(
@@ -940,18 +1501,25 @@ const createStudent = async (
             student
           );
 
+        // =================================================
+        // RETURN TRANSACTION RESULT
+        // =================================================
+
         return {
           student,
+
           parentCredentials,
+
           studentCredentials,
         };
       },
+
       TRANSACTION_OPTIONS
     );
 
-  // ---------------------------------------------------
+  // =====================================================
   // GET COMPLETE STUDENT
-  // ---------------------------------------------------
+  // =====================================================
 
   const fullStudent =
     await getStudentById(
@@ -959,9 +1527,9 @@ const createStudent = async (
       tenantId
     );
 
-  // ---------------------------------------------------
+  // =====================================================
   // NOTIFICATION
-  // ---------------------------------------------------
+  // =====================================================
 
   try {
     await createNotification({
@@ -991,8 +1559,18 @@ const createStudent = async (
     );
   }
 
+  // =====================================================
+  // RETURN
+  // =====================================================
+
   return {
     ...fullStudent,
+
+    parentCredentials:
+      result.parentCredentials,
+
+    studentCredentials:
+      result.studentCredentials,
 
     credentials: {
       student:
@@ -1021,18 +1599,9 @@ const getAllStudents = async (
     gender,
   } = query;
 
-  // ---------------------------------------------------
-  // NORMALIZE SEARCH
-  // ---------------------------------------------------
-
-  const cleanSearch =
-    typeof search === "string"
-      ? search.trim()
-      : String(search || "").trim();
-
-  // ---------------------------------------------------
-  // NORMALIZE PAGINATION
-  // ---------------------------------------------------
+  // ===================================================
+  // PAGINATION
+  // ===================================================
 
   const pageNumber = Math.max(
     1,
@@ -1051,84 +1620,78 @@ const getAllStudents = async (
     (pageNumber - 1) *
     limitNumber;
 
-  // ---------------------------------------------------
+  // ===================================================
   // BASE FILTER
-  // ---------------------------------------------------
+  // ===================================================
 
   const where = {
-    tenantId,
+    tenantId: Number(tenantId),
 
     isDeleted: false,
   };
 
-  // ---------------------------------------------------
+  // ===================================================
   // SEARCH
-  //
-  // Searches:
-  // 1. Student Name
-  // 2. Admission Number
-  // 3. GR Number
-  // ---------------------------------------------------
+  // ===================================================
+
+  const cleanSearch =
+    cleanString(search);
 
   if (cleanSearch) {
     where.OR = [
       {
         studentName: {
-          contains: cleanSearch,
+          contains:
+            cleanSearch,
           mode: "insensitive",
         },
       },
 
       {
         admissionNo: {
-          contains: cleanSearch,
+          contains:
+            cleanSearch,
           mode: "insensitive",
         },
       },
 
       {
         grNo: {
-          contains: cleanSearch,
+          contains:
+            cleanSearch,
           mode: "insensitive",
         },
       },
     ];
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // CLASS FILTER
-  // ---------------------------------------------------
+  // ===================================================
 
-  if (
-    classId !== undefined &&
-    classId !== null &&
-    String(classId).trim() !== ""
-  ) {
-    const parsedClassId =
-      parseInt(classId, 10);
+  const parsedClassId =
+    parseIntegerOrNull(classId);
 
-    if (!Number.isNaN(parsedClassId)) {
-      where.classId =
-        parsedClassId;
-    }
+  if (parsedClassId) {
+    where.classId =
+      parsedClassId;
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // GENDER FILTER
-  // ---------------------------------------------------
+  // ===================================================
 
-  if (
-    gender !== undefined &&
-    gender !== null &&
-    String(gender).trim() !== ""
-  ) {
+  const cleanGender =
+    cleanString(gender);
+
+  if (cleanGender) {
     where.gender =
-      String(gender).trim();
+      cleanGender;
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // PARENT ACCESS
-  // ---------------------------------------------------
+  // ===================================================
 
   if (
     requester &&
@@ -1145,9 +1708,9 @@ const getAllStudents = async (
     };
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // STUDENT ACCESS
-  // ---------------------------------------------------
+  // ===================================================
 
   if (
     requester &&
@@ -1156,49 +1719,52 @@ const getAllStudents = async (
     where.id =
       requester.studentId || -1;
   }
-  // Teacher can only see assigned students
-if (
-  requester &&
-  requester.identity === "staff"
-) {
 
-  const allowedIds =
-    await getStudentIdsForTeacher(
-      requester.userId,
-      tenantId
-    );
+  // ===================================================
+  // TEACHER ACCESS
+  // ===================================================
 
-  where.id = {
-    in: allowedIds,
-  };
+  if (
+    requester &&
+    requester.identity === "staff"
+  ) {
+    const allowedIds =
+      await getStudentIdsForTeacher(
+        requester.userId,
+        tenantId
+      );
 
-}
+    where.id = {
+      in: allowedIds,
+    };
+  }
 
-// ---------------------------------------------------
-// DEBUG LOG
-// ---------------------------------------------------
+  // ===================================================
+  // DEBUG
+  // ===================================================
 
-console.log(
-  "GET ALL STUDENTS FILTER:",
-  JSON.stringify(
-    {
-      tenantId,
-      page: pageNumber,
-      limit: limitNumber,
-      search: cleanSearch,
-      classId,
-      gender,
-      requesterIdentity:
-        requester?.identity,
-    },
-    null,
-    2
-  )
-);
+  console.log(
+    "GET ALL STUDENTS FILTER:",
+    JSON.stringify(
+      {
+        tenantId,
+        page: pageNumber,
+        limit: limitNumber,
+        search: cleanSearch,
+        classId: parsedClassId,
+        gender: cleanGender,
+        requesterIdentity:
+          requester?.identity,
+      },
+      null,
+      2
+    )
+  );
 
-// ---------------------------------------------------
-// QUERY
-// ---------------------------------------------------
+  // ===================================================
+  // QUERY
+  // ===================================================
+
   const [
     students,
     total,
@@ -1229,7 +1795,13 @@ console.log(
           },
         },
 
-        parents: true,
+        parents: {
+          include: {
+            user: true,
+          },
+        },
+
+        user: true,
       },
     }),
 
@@ -1238,35 +1810,9 @@ console.log(
     }),
   ]);
 
-  // ---------------------------------------------------
-  // DEBUG RESULT
-  // ---------------------------------------------------
-
   console.log(
     `GET ALL STUDENTS RESULT: ${students.length} student(s) found`
   );
-
-  if (cleanSearch) {
-    console.log(
-      "SEARCH:",
-      cleanSearch
-    );
-
-    console.log(
-      "MATCHED STUDENTS:",
-      students.map((student) => ({
-        id: student.id,
-        name: student.studentName,
-        admissionNo:
-          student.admissionNo,
-        grNo: student.grNo,
-      }))
-    );
-  }
-
-  // ---------------------------------------------------
-  // RETURN
-  // ---------------------------------------------------
 
   return {
     students,
@@ -1282,7 +1828,8 @@ console.log(
 
       totalPages:
         Math.ceil(
-          total / limitNumber
+          total /
+            limitNumber
         ),
     },
   };
@@ -1309,14 +1856,14 @@ const getStudentById = async (
   const where = {
     id: studentId,
 
-    tenantId,
+    tenantId: Number(tenantId),
 
     isDeleted: false,
   };
 
-  // ---------------------------------------------------
+  // ===================================================
   // PARENT ACCESS
-  // ---------------------------------------------------
+  // ===================================================
 
   if (
     requester &&
@@ -1329,7 +1876,9 @@ const getStudentById = async (
       );
 
     if (
-      !allowedIds.includes(studentId)
+      !allowedIds.includes(
+        studentId
+      )
     ) {
       throw new Error(
         "Student not found"
@@ -1337,24 +1886,23 @@ const getStudentById = async (
     }
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // STUDENT ACCESS
-  // ---------------------------------------------------
+  // ===================================================
 
   if (
     requester &&
     requester.identity === "student" &&
-    requester.studentId !==
-      studentId
+    requester.studentId !== studentId
   ) {
     throw new Error(
       "Student not found"
     );
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // QUERY
-  // ---------------------------------------------------
+  // ===================================================
 
   const student =
     await prisma.student.findFirst({
@@ -1402,16 +1950,16 @@ const updateStudent = async (
     );
   }
 
-  // ---------------------------------------------------
-  // CHECK STUDENT
-  // ---------------------------------------------------
+  // ===================================================
+  // FIND STUDENT
+  // ===================================================
 
   const existingStudent =
     await prisma.student.findFirst({
       where: {
         id: studentId,
 
-        tenantId,
+        tenantId: Number(tenantId),
 
         isDeleted: false,
       },
@@ -1423,9 +1971,9 @@ const updateStudent = async (
     );
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // DUPLICATE ADMISSION NUMBER
-  // ---------------------------------------------------
+  // ===================================================
 
   if (data.admissionNo) {
     const duplicate =
@@ -1436,7 +1984,8 @@ const updateStudent = async (
               data.admissionNo
             ).trim(),
 
-          tenantId,
+          tenantId:
+            Number(tenantId),
 
           isDeleted: false,
 
@@ -1453,50 +2002,61 @@ const updateStudent = async (
     }
   }
 
-  // ---------------------------------------------------
-  // BUILD UPDATE DATA
-  // ---------------------------------------------------
+  // ===================================================
+  // UPDATE DATA
+  // ===================================================
 
   const updateData = {};
 
-  const fields = [
+  const stringFields = [
     "admissionNo",
     "feeNo",
+    "siblingAdmNo",
     "studentName",
-    "gender",
+    "childLivingWith",
+    "photoUrl",
+    "signatureUrl",
+    "fatherTitle",
+    "fatherName",
+    "motherTitle",
+    "motherName",
+    "stream",
+    "feeGroup",
+    "feePaymentStartFrom",
+    "rollNo",
+    "classAdmitted",
+    "emergencyPhoneNo",
+    "house",
+    "boardingCategory",
+    "board",
+    "medium",
+    "boardRegistrationNo",
+    "studentEmail",
+    "countryCode",
+    "communicationMobile",
+    "communicationEmail",
+    "aadharNo",
+    "remark",
+    "feeRemark",
+    "uniqueNo",
+    "grNo",
+    "rfidNo",
+    "eNach",
+    "bankName",
+    "accountNo",
+    "ifsc",
+    "virtualAccountNo",
+    "apaarId",
+    "srnNo",
     "bloodGroup",
     "religion",
-    "caste",
     "category",
-    "nationality",
     "motherTongue",
-    "aadharNo",
-    "grNo",
-    "rollNo",
-    "house",
-    "address",
-    "city",
-    "state",
-    "pincode",
-    "previousSchool",
-    "previousClass",
-    "medicalInfo",
-    "notes",
-    "fatherName",
-    "fatherEmail",
-    "fatherMobile",
-    "fatherOccupation",
-    "motherName",
-    "motherEmail",
-    "motherMobile",
-    "motherOccupation",
-    "guardianName",
-    "guardianEmail",
-    "guardianMobile",
-    "guardianOccupation",
+    "nationality",
+    "maritalStatus",
   ];
 
-  fields.forEach(
+  stringFields.forEach(
     (field) => {
       if (
         Object.prototype.hasOwnProperty.call(
@@ -1505,52 +2065,72 @@ const updateStudent = async (
         )
       ) {
         updateData[field] =
-          data[field] === ""
-            ? null
-            : data[field];
+          cleanString(
+            data[field]
+          );
       }
     }
   );
 
-  // ---------------------------------------------------
-  // DATE OF BIRTH
-  // ---------------------------------------------------
+  // ===================================================
+  // DATE FIELDS
+  // ===================================================
+
+  const dateFields = [
+    "dateOfBirth",
+    "dateOfAdmission",
+    "dateOfJoin",
+  ];
+
+  dateFields.forEach(
+    (field) => {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          data,
+          field
+        )
+      ) {
+        updateData[field] =
+          parseDateOrNull(
+            data[field]
+          );
+      }
+    }
+  );
+
+  // ===================================================
+  // ADMISSION TYPE
+  // ===================================================
 
   if (
     Object.prototype.hasOwnProperty.call(
       data,
-      "dateOfBirth"
+      "admissionType"
     )
   ) {
-    updateData.dateOfBirth =
-      data.dateOfBirth
-        ? new Date(
-            data.dateOfBirth
-          )
-        : null;
+    const admissionType =
+      cleanString(
+        data.admissionType
+      );
+
+    if (
+      admissionType &&
+      [
+        "new",
+        "transfer",
+        "readmission",
+      ].includes(
+        admissionType
+      )
+    ) {
+      updateData.admissionType =
+        admissionType;
+    }
   }
 
-  // ---------------------------------------------------
-  // ADMISSION DATE
-  // ---------------------------------------------------
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      data,
-      "admissionDate"
-    )
-  ) {
-    updateData.admissionDate =
-      data.admissionDate
-        ? new Date(
-            data.admissionDate
-          )
-        : null;
-  }
-
-  // ---------------------------------------------------
+  // ===================================================
   // CLASS
-  // ---------------------------------------------------
+  // ===================================================
 
   if (
     Object.prototype.hasOwnProperty.call(
@@ -1558,18 +2138,45 @@ const updateStudent = async (
       "classId"
     )
   ) {
-    updateData.classId =
-      data.classId
-        ? parseInt(
-            data.classId,
-            10
-          )
-        : null;
+    const newClassId =
+      parseIntegerOrNull(
+        data.classId
+      );
+
+    if (!newClassId) {
+      throw new Error(
+        "Class is required"
+      );
+    }
+
+    const classRecord =
+      await prisma.class.findFirst({
+        where: {
+          id: newClassId,
+
+          tenantId:
+            Number(tenantId),
+
+          isDeleted: false,
+        },
+      });
+
+    if (!classRecord) {
+      throw new Error(
+        "Class not found"
+      );
+    }
+
+    updateData.class = {
+      connect: {
+        id: newClassId,
+      },
+    };
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // SECTION
-  // ---------------------------------------------------
+  // ===================================================
 
   if (
     Object.prototype.hasOwnProperty.call(
@@ -1577,76 +2184,55 @@ const updateStudent = async (
       "sectionId"
     )
   ) {
-    updateData.sectionId =
-      data.sectionId
-        ? parseInt(
-            data.sectionId,
-            10
-          )
-        : null;
+    const newSectionId =
+      parseIntegerOrNull(
+        data.sectionId
+      );
+
+    if (newSectionId) {
+      const classForSection =
+        data.classId
+          ? parseIntegerOrNull(
+              data.classId
+            )
+          : existingStudent.classId;
+
+      const section =
+        await prisma.section.findFirst({
+          where: {
+            id: newSectionId,
+
+            classId:
+              classForSection,
+
+            tenantId:
+              Number(tenantId),
+
+            isDeleted: false,
+          },
+        });
+
+      if (!section) {
+        throw new Error(
+          "Section not found for the selected class"
+        );
+      }
+
+      updateData.section = {
+        connect: {
+          id: newSectionId,
+        },
+      };
+    } else {
+      updateData.section = {
+        disconnect: true,
+      };
+    }
   }
 
-  // ---------------------------------------------------
-  // BUS ROUTE
-  // ---------------------------------------------------
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      data,
-      "busRouteId"
-    )
-  ) {
-    updateData.busRouteId =
-      data.busRouteId
-        ? parseInt(
-            data.busRouteId,
-            10
-          )
-        : null;
-  }
-
-  // ---------------------------------------------------
-  // TRANSPORT
-  // ---------------------------------------------------
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      data,
-      "transportRequired"
-    )
-  ) {
-    updateData.transportRequired =
-      data.transportRequired ===
-        true ||
-      data.transportRequired ===
-        "true";
-  }
-
-  // ---------------------------------------------------
-  // PREVIOUS PERCENTAGE
-  // ---------------------------------------------------
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      data,
-      "previousPercentage"
-    )
-  ) {
-    updateData.previousPercentage =
-      data.previousPercentage !==
-        undefined &&
-      data.previousPercentage !==
-        null &&
-      data.previousPercentage !== ""
-        ? parseFloat(
-            data.previousPercentage
-          )
-        : null;
-  }
-
-  // ---------------------------------------------------
-  // UPDATE
-  // ---------------------------------------------------
+  // ===================================================
+  // UPDATE STUDENT
+  // ===================================================
 
   await prisma.student.update({
     where: {
@@ -1656,9 +2242,9 @@ const updateStudent = async (
     data: updateData,
   });
 
-  // ---------------------------------------------------
-  // RETURN UPDATED STUDENT
-  // ---------------------------------------------------
+  // ===================================================
+  // RETURN UPDATED
+  // ===================================================
 
   return getStudentById(
     studentId,
@@ -1688,7 +2274,7 @@ const deleteStudent = async (
       where: {
         id: studentId,
 
-        tenantId,
+        tenantId: Number(tenantId),
 
         isDeleted: false,
       },
@@ -1699,10 +2285,6 @@ const deleteStudent = async (
       "Student not found"
     );
   }
-
-  // ---------------------------------------------------
-  // SOFT DELETE
-  // ---------------------------------------------------
 
   await prisma.student.update({
     where: {
@@ -1739,16 +2321,16 @@ const resetStudentPassword = async (
     );
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // FIND STUDENT
-  // ---------------------------------------------------
+  // ===================================================
 
   const student =
     await prisma.student.findFirst({
       where: {
         id: studentId,
 
-        tenantId,
+        tenantId: Number(tenantId),
 
         isDeleted: false,
       },
@@ -1764,9 +2346,9 @@ const resetStudentPassword = async (
     );
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // DEFAULT PASSWORD
-  // ---------------------------------------------------
+  // ===================================================
 
   let rawPassword =
     `${student.admissionNo}@123`;
@@ -1778,13 +2360,15 @@ const resetStudentPassword = async (
       );
 
     if (!Number.isNaN(dob.getTime())) {
-      const day = String(
-        dob.getDate()
-      ).padStart(2, "0");
+      const day =
+        String(
+          dob.getDate()
+        ).padStart(2, "0");
 
-      const month = String(
-        dob.getMonth() + 1
-      ).padStart(2, "0");
+      const month =
+        String(
+          dob.getMonth() + 1
+        ).padStart(2, "0");
 
       const year =
         dob.getFullYear();
@@ -1800,9 +2384,9 @@ const resetStudentPassword = async (
       10
     );
 
-  // ---------------------------------------------------
+  // ===================================================
   // UPDATE EXISTING USER
-  // ---------------------------------------------------
+  // ===================================================
 
   if (student.user) {
     await prisma.user.update({
@@ -1814,7 +2398,8 @@ const resetStudentPassword = async (
         password:
           hashedPassword,
 
-        mustChangePassword: true,
+        mustChangePassword:
+          true,
       },
     });
 
@@ -1827,14 +2412,14 @@ const resetStudentPassword = async (
     };
   }
 
-  // ---------------------------------------------------
-  // CREATE USER IF MISSING
-  // ---------------------------------------------------
+  // ===================================================
+  // CREATE USER
+  // ===================================================
 
   const tenant =
     await prisma.tenant.findUnique({
       where: {
-        id: tenantId,
+        id: Number(tenantId),
       },
 
       select: {
@@ -1853,10 +2438,10 @@ const resetStudentPassword = async (
   const existingEmailUser =
     await prisma.user.findFirst({
       where: {
-        email_tenantId: {
-          email,
-          tenantId,
-        },
+        email,
+
+        tenantId:
+          Number(tenantId),
       },
     });
 
@@ -1877,7 +2462,8 @@ const resetStudentPassword = async (
         password:
           hashedPassword,
 
-        tenantId,
+        tenantId:
+          Number(tenantId),
 
         identity:
           "student",
@@ -1891,8 +2477,7 @@ const resetStudentPassword = async (
     });
 
   return {
-    email:
-      user.email,
+    email: user.email,
 
     password:
       rawPassword,
@@ -1904,12 +2489,19 @@ const resetStudentPassword = async (
 // =====================================================
 
 module.exports = {
-  resetStudentPassword,
   createStudent,
+
   getAllStudents,
+
   getStudentById,
+
   updateStudent,
+
   deleteStudent,
+
+  resetStudentPassword,
+
   getStudentIdsForParent,
+
   getStudentIdsForTeacher,
 };
