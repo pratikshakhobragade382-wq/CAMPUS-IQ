@@ -64,10 +64,19 @@ export default function Chatbot() {
     if (t.includes("holiday"))
       return ["Exams", "Today's Timetable"];
 
-    if (t.includes("fee"))
+        if (t.includes("fee"))
       return ["Attendance", "Today's Timetable"];
 
     return [];
+  };
+
+  const handleFeedback = (index, type) => {
+    setMessages((prev) => {
+      if (prev[index]?.feedback) return prev;
+      const updated = [...prev];
+      updated[index] = { ...updated[index], feedback: type };
+      return updated;
+    });
   };
 
   const sendMessage = async (text) => {
@@ -246,15 +255,29 @@ export default function Chatbot() {
 
                     <div className="feedback-actions">
 
-                      <button className="feedback-btn">
+                      <button
+                        className="feedback-btn"
+                        onClick={() => handleFeedback(index, "up")}
+                        disabled={!!msg.feedback}
+                      >
                         👍
                       </button>
 
-                      <button className="feedback-btn">
+                      <button
+                        className="feedback-btn"
+                        onClick={() => handleFeedback(index, "down")}
+                        disabled={!!msg.feedback}
+                      >
                         👎
                       </button>
 
-                    </div>
+                                        </div>
+
+                    {msg.feedback && (
+                      <span style={{ fontSize: "11px", opacity: 0.65 }}>
+                        Feedback submitted
+                      </span>
+                    )}
 
                     {getFollowUps(msg.text).length > 0 && (
                       <div className="follow-up-actions">

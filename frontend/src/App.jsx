@@ -176,6 +176,8 @@ function AppContent() {
   "/parent-login",
   "/student-login",
   "/student/login",
+  "/about",
+  "/features",
 ].includes(location.pathname);
 
   return (
