@@ -47,7 +47,7 @@ const mainMenu = [
     icon: FileText,
   },
   {
-    label: "Performance",
+    label: "Ai Perfomance Predictor",
     path: "/student/performance",
     icon: BarChart3,
   },
