@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw, UserRound, Wallet, CreditCard, CalendarDays, ShieldCheck, ReceiptText, Calculator } from 'lucide-react';
 
 import {
   Card,
@@ -94,14 +94,11 @@ function buildStudentOptions(students) {
 ========================================================= */
 
 export default function Fee() {
-  const [categories, setCategories] =
-    useState([]);
+  const [categories, setCategories] = useState([]);
 
-  const [structures, setStructures] =
-    useState([]);
+  const [structures, setStructures] = useState([]);
 
-  const [classes, setClasses] =
-    useState([]);
+  const [classes, setClasses] = useState([]);
 
   const [academicYears, setAcademicYears] =
     useState([]);
@@ -181,12 +178,9 @@ export default function Fee() {
 
   const loadCategories = async () => {
     try {
-      const data =
-        await getCategories();
+      const data = await getCategories();
 
-      setCategories(
-        data || []
-      );
+      setCategories(data || []);
     } catch (err) {
       console.error(
         'Failed to load fee categories:',
@@ -201,12 +195,9 @@ export default function Fee() {
 
   const loadStructures = async () => {
     try {
-      const data =
-        await getStructures();
+      const data = await getStructures();
 
-      setStructures(
-        data || []
-      );
+      setStructures(data || []);
     } catch (err) {
       console.error(
         'Failed to load fee structures:',
@@ -220,59 +211,56 @@ export default function Fee() {
   ========================================================= */
 
   useEffect(() => {
-    const loadInitialData =
-      async () => {
-        try {
-          const [
-            categoriesData,
-            structuresData,
-            classesResponse,
-            academicYearsResponse,
-          ] = await Promise.all([
-            getCategories(),
-            getStructures(),
+    const loadInitialData = async () => {
+      try {
+        const [
+          categoriesData,
+          structuresData,
+          classesResponse,
+          academicYearsResponse,
+        ] = await Promise.all([
+          getCategories(),
+          getStructures(),
 
-            (async () => {
-              const api =
-                await import(
-                  '../../api/class.api'
-                );
+          (async () => {
+            const api = await import(
+              '../../api/class.api'
+            );
 
-              return api.getClasses();
-            })(),
+            return api.getClasses();
+          })(),
 
-            (async () => {
-              const api =
-                await import(
-                  '../../api/academicYear.api'
-                );
+          (async () => {
+            const api = await import(
+              '../../api/academicYear.api'
+            );
 
-              return api.getAcademicYears();
-            })(),
-          ]);
+            return api.getAcademicYears();
+          })(),
+        ]);
 
-          setCategories(
-            categoriesData || []
-          );
+        setCategories(
+          categoriesData || []
+        );
 
-          setStructures(
-            structuresData || []
-          );
+        setStructures(
+          structuresData || []
+        );
 
-          setClasses(
-            classesResponse?.data || []
-          );
+        setClasses(
+          classesResponse?.data || []
+        );
 
-          setAcademicYears(
-            academicYearsResponse?.data || []
-          );
-        } catch (err) {
-          console.error(
-            'Failed to load fee module data:',
-            err
-          );
-        }
-      };
+        setAcademicYears(
+          academicYearsResponse?.data || []
+        );
+      } catch (err) {
+        console.error(
+          'Failed to load fee module data:',
+          err
+        );
+      }
+    };
 
     loadInitialData();
   }, []);
@@ -281,276 +269,231 @@ export default function Fee() {
      SEARCH STUDENTS
   ========================================================= */
 
-  const searchForStudents =
-    async (query) => {
-      const search =
-        query?.trim() || '';
+  const searchForStudents = async (query) => {
+    const search =
+      query?.trim() || '';
 
-      setStudentSearchError('');
+    setStudentSearchError('');
 
-      if (!search) {
-        setStudentOptions([]);
-        return;
-      }
+    if (!search) {
+      setStudentOptions([]);
+      return;
+    }
 
-      try {
-        setStudentLoading(true);
+    try {
+      setStudentLoading(true);
 
-        console.log(
-          'Searching students:',
-          search
-        );
+      const response = await getStudents({
+        page: 1,
+        limit: 50,
+        search,
+      });
 
-        const response =
-          await getStudents({
-            page: 1,
-            limit: 50,
-            search,
-          });
+      const students =
+        extractStudents(response);
 
-        console.log(
-          'Student search response:',
-          response
-        );
-
-        const students =
-          extractStudents(
-            response
-          );
-
-        console.log(
-          'Students found:',
+      const options =
+        buildStudentOptions(
           students
         );
 
-        const options =
-          buildStudentOptions(
-            students
-          );
+      setStudentOptions(options);
 
-        setStudentOptions(
-          options
+      if (options.length === 0) {
+        setStudentSearchError(
+          `No student found for "${search}"`
         );
-
-        if (
-          options.length === 0
-        ) {
-          setStudentSearchError(
-            `No student found for "${search}"`
-          );
-        }
-      } catch (err) {
-        console.error(
-          'Student search failed:',
-          err
-        );
-
-        const status =
-          err?.response?.status;
-
-        const message =
-          err?.response?.data
-            ?.message ||
-          err?.response?.data
-            ?.error ||
-          err?.message ||
-          'Unable to search students';
-
-        if (status === 403) {
-          setStudentSearchError(
-            'You are not authorized to access the student list. Please login again as Admin.'
-          );
-        } else {
-          setStudentSearchError(
-            message
-          );
-        }
-
-        setStudentOptions([]);
-      } finally {
-        setStudentLoading(false);
       }
-    };
+    } catch (err) {
+      console.error(
+        'Student search failed:',
+        err
+      );
+
+      const status =
+        err?.response?.status;
+
+      const message =
+        err?.response?.data
+          ?.message ||
+        err?.response?.data
+          ?.error ||
+        err?.message ||
+        'Unable to search students';
+
+      if (status === 403) {
+        setStudentSearchError(
+          'You are not authorized to access the student list. Please login again as Admin.'
+        );
+      } else {
+        setStudentSearchError(
+          message
+        );
+      }
+
+      setStudentOptions([]);
+    } finally {
+      setStudentLoading(false);
+    }
+  };
 
   /* =========================================================
      LOAD INITIAL STUDENTS
   ========================================================= */
 
-  const loadInitialStudents =
-    async () => {
-      try {
-        setStudentLoading(true);
-        setStudentSearchError('');
+  const loadInitialStudents = async () => {
+    try {
+      setStudentLoading(true);
+      setStudentSearchError('');
 
-        const response =
-          await getStudents({
-            page: 1,
-            limit: 50,
-          });
+      const response = await getStudents({
+        page: 1,
+        limit: 50,
+      });
 
-        console.log(
-          'Initial students response:',
-          response
+      const students =
+        extractStudents(response);
+
+      const options =
+        buildStudentOptions(
+          students
         );
 
-        const students =
-          extractStudents(
-            response
-          );
+      setStudentOptions(options);
 
-        const options =
-          buildStudentOptions(
-            students
-          );
-
-        setStudentOptions(
-          options
+      if (options.length === 0) {
+        setStudentSearchError(
+          'No students are available.'
         );
-
-        if (
-          options.length === 0
-        ) {
-          setStudentSearchError(
-            'No students are available.'
-          );
-        }
-      } catch (err) {
-        console.error(
-          'Failed to load students:',
-          err
-        );
-
-        const status =
-          err?.response?.status;
-
-        if (status === 403) {
-          setStudentSearchError(
-            'You are not authorized to access students. Please login again as Admin.'
-          );
-        } else {
-          setStudentSearchError(
-            err?.response?.data
-              ?.message ||
-              err?.message ||
-              'Failed to load students'
-          );
-        }
-
-        setStudentOptions([]);
-      } finally {
-        setStudentLoading(false);
       }
-    };
+    } catch (err) {
+      console.error(
+        'Failed to load students:',
+        err
+      );
+
+      const status =
+        err?.response?.status;
+
+      if (status === 403) {
+        setStudentSearchError(
+          'You are not authorized to access students. Please login again as Admin.'
+        );
+      } else {
+        setStudentSearchError(
+          err?.response?.data
+            ?.message ||
+            err?.message ||
+            'Failed to load students'
+        );
+      }
+
+      setStudentOptions([]);
+    } finally {
+      setStudentLoading(false);
+    }
+  };
 
   /* =========================================================
      OPEN COLLECT MODAL
   ========================================================= */
 
-  const openCollectModal =
-    () => {
-      setCollectForm({
-        studentId: '',
-        feeStructureId: '',
-        academicYearId: '',
-        amount: '',
-        discount: '',
-        fine: '',
-        paymentMode: 'cash',
-        paymentDate:
-          new Date()
-            .toISOString()
-            .split('T')[0],
-        chequeNo: '',
-        bankName: '',
-        transactionId: '',
-        remark: '',
-      });
+  const openCollectModal = () => {
+    setCollectForm({
+      studentId: '',
+      feeStructureId: '',
+      academicYearId: '',
+      amount: '',
+      discount: '',
+      fine: '',
+      paymentMode: 'cash',
 
-      setStudentQuery('');
-      setStudentOptions([]);
-      setStudentSearchError('');
+      paymentDate:
+        new Date()
+          .toISOString()
+          .split('T')[0],
 
-      setCollectModalOpen(
-        true
-      );
+      chequeNo: '',
+      bankName: '',
+      transactionId: '',
+      remark: '',
+    });
 
-      loadInitialStudents();
-    };
+    setStudentQuery('');
+    setStudentOptions([]);
+    setStudentSearchError('');
+
+    setCollectModalOpen(true);
+
+    loadInitialStudents();
+  };
 
   /* =========================================================
      CREATE CATEGORY
   ========================================================= */
 
-  const handleCreateCategory =
-    async () => {
-      if (
-        !catForm.name.trim()
-      ) {
-        alert(
-          'Please enter fee category name'
-        );
+  const handleCreateCategory = async () => {
+    if (!catForm.name.trim()) {
+      alert(
+        'Please enter fee category name'
+      );
 
-        return;
-      }
+      return;
+    }
 
-      try {
-        await createCategory(
-          catForm
-        );
+    try {
+      await createCategory(catForm);
 
-        setCatForm({
-          name: '',
-          description: '',
-        });
+      setCatForm({
+        name: '',
+        description: '',
+      });
 
-        setCatModalOpen(
-          false
-        );
+      setCatModalOpen(false);
 
-        await loadCategories();
-      } catch (err) {
-        console.error(err);
+      await loadCategories();
+    } catch (err) {
+      console.error(err);
 
-        alert(
-          err.response?.data
-            ?.message ||
-            err.message ||
-            'Failed to save category'
-        );
-      }
-    };
+      alert(
+        err.response?.data
+          ?.message ||
+          err.message ||
+          'Failed to save category'
+      );
+    }
+  };
 
   /* =========================================================
      DELETE CATEGORY
   ========================================================= */
 
-  const handleDeleteCategory =
-    async (id) => {
-      if (
-        !confirm(
-          'Deactivate this category?'
-        )
-      ) {
-        return;
-      }
+  const handleDeleteCategory = async (
+    id
+  ) => {
+    if (
+      !confirm(
+        'Deactivate this category?'
+      )
+    ) {
+      return;
+    }
 
-      try {
-        await deleteCategory(
-          id
-        );
+    try {
+      await deleteCategory(id);
 
-        await loadCategories();
-      } catch (err) {
-        console.error(err);
+      await loadCategories();
+    } catch (err) {
+      console.error(err);
 
-        alert(
-          err.response?.data
-            ?.message ||
-            err.message ||
-            'Failed to deactivate category'
-        );
-      }
-    };
+      alert(
+        err.response?.data
+          ?.message ||
+          err.message ||
+          'Failed to deactivate category'
+      );
+    }
+  };
 
   /* =========================================================
      CREATE FEE STRUCTURE
@@ -695,179 +638,174 @@ export default function Fee() {
      COLLECT FEE
   ========================================================= */
 
-  const handleCollect =
-    async () => {
-      if (
-        !collectForm.studentId ||
-        !collectForm.feeStructureId ||
-        !collectForm.academicYearId ||
-        !collectForm.amount ||
-        !collectForm.paymentMode ||
-        !collectForm.paymentDate
-      ) {
-        alert(
-          'Please fill student, fee structure, academic year, amount, payment mode and payment date'
-        );
+  const handleCollect = async () => {
+    if (
+      !collectForm.studentId ||
+      !collectForm.feeStructureId ||
+      !collectForm.academicYearId ||
+      !collectForm.amount ||
+      !collectForm.paymentMode ||
+      !collectForm.paymentDate
+    ) {
+      alert(
+        'Please fill student, fee structure, academic year, amount, payment mode and payment date'
+      );
 
-        return;
-      }
+      return;
+    }
 
-      const amount =
-        parseFloat(
-          collectForm.amount
-        );
+    const amount =
+      parseFloat(
+        collectForm.amount
+      );
 
-      const discount =
-        collectForm.discount
-          ? parseFloat(
-              collectForm.discount
-            )
-          : 0;
+    const discount =
+      collectForm.discount
+        ? parseFloat(
+            collectForm.discount
+          )
+        : 0;
 
-      const fine =
-        collectForm.fine
-          ? parseFloat(
-              collectForm.fine
-            )
-          : 0;
+    const fine =
+      collectForm.fine
+        ? parseFloat(
+            collectForm.fine
+          )
+        : 0;
 
-      if (
-        Number.isNaN(amount) ||
-        amount <= 0
-      ) {
-        alert(
-          'Amount must be a number greater than 0'
-        );
+    if (
+      Number.isNaN(amount) ||
+      amount <= 0
+    ) {
+      alert(
+        'Amount must be a number greater than 0'
+      );
 
-        return;
-      }
+      return;
+    }
 
-      if (
-        Number.isNaN(discount) ||
-        discount < 0
-      ) {
-        alert(
-          'Discount cannot be negative'
-        );
+    if (
+      Number.isNaN(discount) ||
+      discount < 0
+    ) {
+      alert(
+        'Discount cannot be negative'
+      );
 
-        return;
-      }
+      return;
+    }
 
-      if (
-        Number.isNaN(fine) ||
-        fine < 0
-      ) {
-        alert(
-          'Fine cannot be negative'
-        );
+    if (
+      Number.isNaN(fine) ||
+      fine < 0
+    ) {
+      alert(
+        'Fine cannot be negative'
+      );
 
-        return;
-      }
+      return;
+    }
 
-      const netAmount =
-        amount -
-        discount +
-        fine;
+    const netAmount =
+      amount -
+      discount +
+      fine;
 
-      if (netAmount <= 0) {
-        alert(
-          'Net amount must be greater than 0. Please check amount, discount and fine.'
-        );
+    if (netAmount <= 0) {
+      alert(
+        'Net amount must be greater than 0. Please check amount, discount and fine.'
+      );
 
-        return;
-      }
+      return;
+    }
 
-      const payload = {
-        studentId:
-          parseInt(
-            collectForm.studentId,
-            10
-          ),
+    const payload = {
+      studentId:
+        parseInt(
+          collectForm.studentId,
+          10
+        ),
 
-        feeStructureId:
-          parseInt(
-            collectForm.feeStructureId,
-            10
-          ),
+      feeStructureId:
+        parseInt(
+          collectForm.feeStructureId,
+          10
+        ),
 
-        academicYearId:
-          parseInt(
-            collectForm.academicYearId,
-            10
-          ),
+      academicYearId:
+        parseInt(
+          collectForm.academicYearId,
+          10
+        ),
 
-        amount,
-        discount,
-        fine,
+      amount,
+      discount,
+      fine,
 
-        paymentMode:
-          collectForm.paymentMode,
+      paymentMode:
+        collectForm.paymentMode,
 
-        paymentDate:
-          collectForm.paymentDate,
+      paymentDate:
+        collectForm.paymentDate,
 
-        chequeNo:
-          collectForm.chequeNo?.trim() ||
-          undefined,
+      chequeNo:
+        collectForm.chequeNo?.trim() ||
+        undefined,
 
-        bankName:
-          collectForm.bankName?.trim() ||
-          undefined,
+      bankName:
+        collectForm.bankName?.trim() ||
+        undefined,
 
-        transactionId:
-          collectForm.transactionId?.trim() ||
-          undefined,
+      transactionId:
+        collectForm.transactionId?.trim() ||
+        undefined,
 
-        remark:
-          collectForm.remark?.trim() ||
-          undefined,
-      };
-
-      try {
-        await collectFee(
-          payload
-        );
-
-        setCollectForm({
-          studentId: '',
-          feeStructureId: '',
-          academicYearId: '',
-          amount: '',
-          discount: '',
-          fine: '',
-          paymentMode: 'cash',
-          paymentDate: '',
-          chequeNo: '',
-          bankName: '',
-          transactionId: '',
-          remark: '',
-        });
-
-        setStudentQuery('');
-        setStudentOptions([]);
-        setStudentSearchError('');
-
-        setCollectModalOpen(
-          false
-        );
-
-        alert(
-          'Payment recorded successfully.'
-        );
-      } catch (err) {
-        console.error(
-          'Fee collection failed:',
-          err
-        );
-
-        alert(
-          err.response?.data
-            ?.message ||
-            err.message ||
-            'Failed to record payment'
-        );
-      }
+      remark:
+        collectForm.remark?.trim() ||
+        undefined,
     };
+
+    try {
+      await collectFee(payload);
+
+      setCollectForm({
+        studentId: '',
+        feeStructureId: '',
+        academicYearId: '',
+        amount: '',
+        discount: '',
+        fine: '',
+        paymentMode: 'cash',
+        paymentDate: '',
+        chequeNo: '',
+        bankName: '',
+        transactionId: '',
+        remark: '',
+      });
+
+      setStudentQuery('');
+      setStudentOptions([]);
+      setStudentSearchError('');
+
+      setCollectModalOpen(false);
+
+      alert(
+        'Payment recorded successfully.'
+      );
+    } catch (err) {
+      console.error(
+        'Fee collection failed:',
+        err
+      );
+
+      alert(
+        err.response?.data
+          ?.message ||
+          err.message ||
+          'Failed to record payment'
+      );
+    }
+  };
 
   /* =========================================================
      CATEGORY COLUMNS
@@ -1350,7 +1288,7 @@ export default function Fee() {
   ========================================================= */
 
   return (
-    <div className="space-y-6">
+    <div className="fee-page space-y-6">
 
       {/* PAGE HEADER */}
 
@@ -1452,534 +1390,362 @@ export default function Fee() {
       </Modal>
 
       {/* =====================================================
-          COLLECT PAYMENT MODAL
+          PROFESSIONAL RECORD FEE PAYMENT MODAL
       ===================================================== */}
 
       <Modal
-        isOpen={
-          isCollectModalOpen
-        }
-        onClose={() =>
-          setCollectModalOpen(
-            false
-          )
-        }
+        isOpen={isCollectModalOpen}
+        onClose={() => setCollectModalOpen(false)}
         title="Record Fee Payment"
+        size="2xl"
+        className="!max-w-6xl !p-0 overflow-hidden rounded-3xl border border-slate-200 shadow-2xl"
       >
-        <ModalBody>
+        <ModalBody className="max-h-[82vh] overflow-y-auto !p-0">
+          <div className="bg-slate-50">
 
-          <div className="space-y-4">
+            {/* HEADER */}
+            <div className="border-b border-slate-200 bg-white px-6 py-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-100">
+                    <ReceiptText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                      Record Fee Payment
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Collect and record a student's fee payment securely.
+                    </p>
+                  </div>
+                </div>
 
-            {/* STUDENT SEARCH */}
-
-            <div>
-
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search Student
-              </label>
-
-              <div className="relative">
-
-                <Input
-                  placeholder="Enter student name or admission number"
-                  value={
-                    studentQuery
-                  }
-                  onChange={(e) => {
-                    const value =
-                      e.target
-                        .value;
-
-                    setStudentQuery(
-                      value
-                    );
-
-                    searchForStudents(
-                      value
-                    );
-                  }}
-                />
-
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-
+                <div className="flex items-center gap-2 self-start rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 lg:self-auto">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Payment Entry
+                </div>
               </div>
-
-              <p className="text-xs text-gray-500 mt-1">
-                Search using
-                Admission No,
-                Student Name or
-                GR No.
-              </p>
-
             </div>
 
-            {/* SEARCH ERROR */}
+            <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_310px] lg:p-6">
 
-            {studentSearchError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+              {/* LEFT: FORM */}
+              <div className="space-y-5">
 
-                <p className="text-xs text-red-700">
-                  {
-                    studentSearchError
-                  }
-                </p>
+                {/* STUDENT */}
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                      <UserRound className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Student Information</h3>
+                      <p className="mt-0.5 text-xs text-slate-500">Select the student whose fee account will be credited.</p>
+                    </div>
+                  </div>
 
+                  <div className="space-y-4 p-5">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Search Student
+                      </label>
+                      <div className="relative">
+                        <Input
+                          placeholder="Name, Admission No or GR No"
+                          value={studentQuery}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setStudentQuery(value);
+                            searchForStudents(value);
+                          }}
+                          className="h-12 border-slate-300 pl-4 pr-11 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      </div>
+                      <div className="mt-2 flex justify-between gap-3">
+                        <p className="text-xs text-slate-400">Search by name, admission number or GR number.</p>
+                        {studentLoading && <p className="text-xs font-semibold text-blue-600">Searching...</p>}
+                      </div>
+                    </div>
+
+                    {studentSearchError && (
+                      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-red-700">
+                        {studentSearchError}
+                      </div>
+                    )}
+
+                    <Select
+                      label="Select Student"
+                      required
+                      value={collectForm.studentId}
+                      onChange={(e) => setCollectForm({ ...collectForm, studentId: e.target.value })}
+                      options={studentOptions}
+                      placeholder={studentLoading ? 'Searching students...' : studentOptions.length ? 'Select the student' : 'No students found'}
+                      disabled={studentLoading}
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    {collectForm.studentId && (() => {
+                      const selectedStudent = studentOptions.find(
+                        (option) => String(option.value) === String(collectForm.studentId)
+                      )?.student;
+                      if (!selectedStudent) return null;
+                      const studentName = selectedStudent.studentName || selectedStudent.name || 'Student';
+                      return (
+                        <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                              {studentName.trim().charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Selected Student</p>
+                              <p className="truncate text-sm font-bold text-slate-900">{studentName}</p>
+                            </div>
+                            <div className="hidden text-right sm:block">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Admission No</p>
+                              <p className="text-xs font-bold text-slate-700">{selectedStudent.admissionNo || '—'}</p>
+                            </div>
+                            <div className="hidden text-right sm:block">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">GR No</p>
+                              <p className="text-xs font-bold text-slate-700">{selectedStudent.grNo || '—'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </section>
+
+                {/* FEE */}
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                      <Wallet className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Fee Details</h3>
+                      <p className="mt-0.5 text-xs text-slate-500">Choose the fee structure and enter the amount being collected.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+                    <Select
+                      label="Fee Structure"
+                      required
+                      value={collectForm.feeStructureId}
+                      onChange={handleFeeStructureChange}
+                      options={structures.map((structure) => ({
+                        value: String(structure.id),
+                        label: `${structure.class?.name || 'Class'} — ${structure.feeCategory?.name || 'Category'} — ₹${structure.amount}`,
+                      }))}
+                      placeholder="Select fee structure"
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    <Select
+                      label="Academic Year"
+                      required
+                      value={collectForm.academicYearId}
+                      onChange={(e) => setCollectForm({ ...collectForm, academicYearId: e.target.value })}
+                      options={academicYears.map((year) => ({
+                        value: String(year.id),
+                        label: year.name || `${new Date(year.startDate).getFullYear()}-${new Date(year.endDate).getFullYear()}`,
+                      }))}
+                      placeholder="Select academic year"
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    <Input
+                      label="Amount"
+                      required
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={collectForm.amount}
+                      onChange={(e) => setCollectForm({ ...collectForm, amount: e.target.value })}
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    <Input
+                      label="Discount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={collectForm.discount}
+                      onChange={(e) => setCollectForm({ ...collectForm, discount: e.target.value })}
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    <Input
+                      label="Fine"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={collectForm.fine}
+                      onChange={(e) => setCollectForm({ ...collectForm, fine: e.target.value })}
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                </section>
+
+                {/* PAYMENT */}
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Payment Information</h3>
+                      <p className="mt-0.5 text-xs text-slate-500">Select the payment method and provide transaction details where required.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+                    <Select
+                      label="Payment Mode"
+                      required
+                      value={collectForm.paymentMode}
+                      onChange={(e) => setCollectForm({ ...collectForm, paymentMode: e.target.value })}
+                      options={[
+                        { value: 'cash', label: 'Cash' },
+                        { value: 'cheque', label: 'Cheque' },
+                        { value: 'online', label: 'Online' },
+                        { value: 'card', label: 'Card' },
+                        { value: 'bank_transfer', label: 'Bank Transfer' },
+                        { value: 'upi', label: 'UPI' },
+                      ]}
+                      placeholder="Select payment mode"
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    <Input
+                      label="Payment Date"
+                      required
+                      type="date"
+                      value={collectForm.paymentDate}
+                      onChange={(e) => setCollectForm({ ...collectForm, paymentDate: e.target.value })}
+                      className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+
+                    {collectForm.paymentMode === 'cheque' && (
+                      <>
+                        <Input label="Cheque Number" value={collectForm.chequeNo} onChange={(e) => setCollectForm({ ...collectForm, chequeNo: e.target.value })} placeholder="Enter cheque number" className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                        <Input label="Bank Name" value={collectForm.bankName} onChange={(e) => setCollectForm({ ...collectForm, bankName: e.target.value })} placeholder="Enter bank name" className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                      </>
+                    )}
+
+                    {collectForm.paymentMode === 'bank_transfer' && (
+                      <>
+                        <Input label="Bank Name" value={collectForm.bankName} onChange={(e) => setCollectForm({ ...collectForm, bankName: e.target.value })} placeholder="Enter bank name" className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                        <Input label="Transaction ID" value={collectForm.transactionId} onChange={(e) => setCollectForm({ ...collectForm, transactionId: e.target.value })} placeholder="Enter transaction ID" className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                      </>
+                    )}
+
+                    {['online', 'upi', 'card'].includes(collectForm.paymentMode) && (
+                      <Input
+                        label="Transaction ID"
+                        value={collectForm.transactionId}
+                        onChange={(e) => setCollectForm({ ...collectForm, transactionId: e.target.value })}
+                        placeholder="Enter transaction ID"
+                        className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    )}
+
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Remark"
+                        placeholder="Optional note about this payment"
+                        value={collectForm.remark}
+                        onChange={(e) => setCollectForm({ ...collectForm, remark: e.target.value })}
+                        className="h-12 border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </section>
               </div>
-            )}
 
-            {/* STUDENT SELECT */}
+              {/* RIGHT: PAYMENT SUMMARY */}
+              <aside className="lg:sticky lg:top-0 lg:self-start">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 p-5 text-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+                        <Calculator className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-wider">Summary</span>
+                    </div>
+                    <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">Net Payable</p>
+                    <p className="mt-1 text-4xl font-extrabold tracking-tight">
+                      ₹{((parseFloat(collectForm.amount) || 0) - (parseFloat(collectForm.discount) || 0) + (parseFloat(collectForm.fine) || 0)).toFixed(2)}
+                    </p>
+                    <p className="mt-2 text-xs text-blue-100">Amount − Discount + Fine</p>
+                  </div>
 
-            <div>
+                  <div className="space-y-4 p-5">
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Gross Amount</span>
+                        <span className="font-semibold text-slate-800">₹{(parseFloat(collectForm.amount) || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Discount</span>
+                        <span className="font-semibold text-emerald-600">− ₹{(parseFloat(collectForm.discount) || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Fine</span>
+                        <span className="font-semibold text-red-600">+ ₹{(parseFloat(collectForm.fine) || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="border-t border-dashed border-slate-200 pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">Total</span>
+                          <span className="text-lg font-extrabold text-blue-700">₹{((parseFloat(collectForm.amount) || 0) - (parseFloat(collectForm.discount) || 0) + (parseFloat(collectForm.fine) || 0)).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
 
-              <Select
-                label="Select Student"
-                required
-                value={
-                  collectForm.studentId
-                }
-                onChange={(e) =>
-                  setCollectForm(
-                    {
-                      ...collectForm,
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-slate-500" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Payment Method</span>
+                      </div>
+                      <p className="mt-2 text-sm font-bold capitalize text-slate-800">
+                        {(collectForm.paymentMode || 'cash').replace('_', ' ')}
+                      </p>
+                    </div>
 
-                      studentId:
-                        e.target
-                          .value,
-                    }
-                  )
-                }
-                options={
-                  studentOptions
-                }
-                placeholder={
-                  studentLoading
-                    ? 'Searching students...'
-                    : studentOptions.length
-                      ? 'Select student'
-                      : 'No students found'
-                }
-                disabled={
-                  studentLoading
-                }
-              />
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                      <div className="flex items-start gap-3">
+                        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                        <div>
+                          <p className="text-xs font-bold text-blue-900">Before submitting</p>
+                          <p className="mt-1 text-xs leading-5 text-blue-700">
+                            Verify the student, academic year, fee structure, amount and payment method. The payment will be recorded against the selected student's fee account.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-              {!studentLoading &&
-                !studentSearchError &&
-                studentQuery.trim() &&
-                studentOptions.length ===
-                  0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    No matching
-                    student found.
-                  </p>
-                )}
-
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <CalendarDays className="h-4 w-4" />
+                      <span>{collectForm.paymentDate || 'Payment date not selected'}</span>
+                    </div>
+                  </div>
+                </div>
+              </aside>
             </div>
-
-            {/* FEE STRUCTURE */}
-
-            <Select
-              label="Fee Structure"
-              required
-              value={
-                collectForm.feeStructureId
-              }
-              onChange={
-                handleFeeStructureChange
-              }
-              options={structures.map(
-                (structure) => ({
-                  value:
-                    String(
-                      structure.id
-                    ),
-
-                  label: `${
-                    structure
-                      .class
-                      ?.name ||
-                    'Class'
-                  } — ${
-                    structure
-                      .feeCategory
-                      ?.name ||
-                    'Category'
-                  } — ₹${
-                    structure.amount
-                  }`,
-                })
-              )}
-              placeholder="Select fee structure"
-            />
-
-            {/* ACADEMIC YEAR */}
-
-            <Select
-              label="Academic Year"
-              required
-              value={
-                collectForm.academicYearId
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  academicYearId:
-                    e.target
-                      .value,
-                })
-              }
-              options={academicYears.map(
-                (year) => ({
-                  value:
-                    String(
-                      year.id
-                    ),
-
-                  label:
-                    year.name ||
-                    `${new Date(
-                      year.startDate
-                    ).getFullYear()}-${new Date(
-                      year.endDate
-                    ).getFullYear()}`,
-                })
-              )}
-              placeholder="Select academic year"
-            />
-
-            {/* AMOUNT */}
-
-            <Input
-              label="Amount"
-              required
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Amount"
-              value={
-                collectForm.amount
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  amount:
-                    e.target
-                      .value,
-                })
-              }
-            />
-
-            {/* DISCOUNT */}
-
-            <Input
-              label="Discount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Discount"
-              value={
-                collectForm.discount
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  discount:
-                    e.target
-                      .value,
-                })
-              }
-            />
-
-            {/* FINE */}
-
-            <Input
-              label="Fine"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Fine"
-              value={
-                collectForm.fine
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  fine:
-                    e.target
-                      .value,
-                })
-              }
-            />
-
-            {/* NET AMOUNT */}
-
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-
-              <div className="flex justify-between items-center">
-
-                <span className="text-sm font-medium text-gray-600">
-                  Net Amount
-                </span>
-
-                <span className="text-lg font-semibold text-gray-900">
-
-                  ₹
-                  {(
-                    (parseFloat(
-                      collectForm.amount
-                    ) || 0) -
-                    (parseFloat(
-                      collectForm.discount
-                    ) || 0) +
-                    (parseFloat(
-                      collectForm.fine
-                    ) || 0)
-                  ).toFixed(2)}
-
-                </span>
-
-              </div>
-
-            </div>
-
-            {/* PAYMENT MODE */}
-
-            <Select
-              label="Payment Mode"
-              required
-              value={
-                collectForm.paymentMode
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  paymentMode:
-                    e.target
-                      .value,
-                })
-              }
-              options={[
-                {
-                  value: 'cash',
-                  label: 'Cash',
-                },
-
-                {
-                  value: 'cheque',
-                  label: 'Cheque',
-                },
-
-                {
-                  value: 'online',
-                  label: 'Online',
-                },
-
-                {
-                  value: 'card',
-                  label: 'Card',
-                },
-
-                {
-                  value:
-                    'bank_transfer',
-                  label:
-                    'Bank Transfer',
-                },
-
-                {
-                  value: 'upi',
-                  label: 'UPI',
-                },
-              ]}
-              placeholder="Select payment mode"
-            />
-
-            {/* CHEQUE */}
-
-            {collectForm.paymentMode ===
-              'cheque' && (
-              <>
-
-                <Input
-                  label="Cheque Number"
-                  value={
-                    collectForm.chequeNo
-                  }
-                  onChange={(e) =>
-                    setCollectForm({
-                      ...collectForm,
-
-                      chequeNo:
-                        e.target
-                          .value,
-                    })
-                  }
-                  placeholder="Enter cheque number"
-                />
-
-                <Input
-                  label="Bank Name"
-                  value={
-                    collectForm.bankName
-                  }
-                  onChange={(e) =>
-                    setCollectForm({
-                      ...collectForm,
-
-                      bankName:
-                        e.target
-                          .value,
-                    })
-                  }
-                  placeholder="Enter bank name"
-                />
-
-              </>
-            )}
-
-            {/* BANK TRANSFER */}
-
-            {collectForm.paymentMode ===
-              'bank_transfer' && (
-              <>
-
-                <Input
-                  label="Bank Name"
-                  value={
-                    collectForm.bankName
-                  }
-                  onChange={(e) =>
-                    setCollectForm({
-                      ...collectForm,
-
-                      bankName:
-                        e.target
-                          .value,
-                    })
-                  }
-                  placeholder="Enter bank name"
-                />
-
-                <Input
-                  label="Transaction ID"
-                  value={
-                    collectForm.transactionId
-                  }
-                  onChange={(e) =>
-                    setCollectForm({
-                      ...collectForm,
-
-                      transactionId:
-                        e.target
-                          .value,
-                    })
-                  }
-                  placeholder="Enter transaction ID"
-                />
-
-              </>
-            )}
-
-            {/* ONLINE / UPI / CARD */}
-
-            {[
-              'online',
-              'upi',
-              'card',
-            ].includes(
-              collectForm.paymentMode
-            ) && (
-              <Input
-                label="Transaction ID"
-                value={
-                  collectForm.transactionId
-                }
-                onChange={(e) =>
-                  setCollectForm({
-                    ...collectForm,
-
-                    transactionId:
-                      e.target
-                        .value,
-                  })
-                }
-                placeholder="Enter transaction ID"
-              />
-            )}
-
-            {/* PAYMENT DATE */}
-
-            <Input
-              label="Payment Date"
-              required
-              type="date"
-              value={
-                collectForm.paymentDate
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  paymentDate:
-                    e.target
-                      .value,
-                })
-              }
-            />
-
-            {/* REMARK */}
-
-            <Input
-              label="Remark"
-              placeholder="Optional remark"
-              value={
-                collectForm.remark
-              }
-              onChange={(e) =>
-                setCollectForm({
-                  ...collectForm,
-
-                  remark:
-                    e.target
-                      .value,
-                })
-              }
-            />
-
           </div>
-
         </ModalBody>
 
-        <ModalFooter>
-
-          <Button
-            onClick={() =>
-              setCollectModalOpen(
-                false
-              )
-            }
-            variant="outline"
-          >
+        <ModalFooter className="!mt-0 border-t border-slate-200 bg-white px-6 py-4">
+          <Button onClick={() => setCollectModalOpen(false)} variant="outline">
             Cancel
           </Button>
-
-          <Button
-            onClick={
-              handleCollect
-            }
-            disabled={
-              studentLoading ||
-              !collectForm.studentId
-            }
-          >
+          <Button onClick={handleCollect} disabled={studentLoading || !collectForm.studentId}>
             Submit Payment
           </Button>
-
         </ModalFooter>
       </Modal>
     </div>
@@ -2083,11 +1849,6 @@ function StudentStatus() {
             search,
           });
 
-        console.log(
-          'Student Status search response:',
-          response
-        );
-
         const students =
           extractStudents(
             response
@@ -2148,22 +1909,12 @@ function StudentStatus() {
         setLoading(true);
         setError('');
 
-        console.log(
-          'Fetching fee status for student:',
-          selectedStudentId
-        );
-
         const data =
           await getStudentFeeStatus(
             selectedStudentId,
             academicYearId ||
               undefined
           );
-
-        console.log(
-          'Student fee status:',
-          data
-        );
 
         setStatus(data);
       } catch (err) {
