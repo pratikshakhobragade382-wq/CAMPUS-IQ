@@ -1,11 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  ImagePlus,
+  Upload,
+  X,
+} from "lucide-react";
 
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
-import { Modal, ModalFooter } from "../../components/modal/Modal";
+import {
+  Modal,
+  ModalFooter,
+} from "../../components/modal/Modal";
+
+import axiosClient from "../../api/axios";
 
 import {
   createStudent,
@@ -14,6 +33,7 @@ import {
 } from "../../api/student.api";
 
 import { getClasses } from "../../api/class.api";
+
 import {
   getAllSections,
   getSectionsByClass,
@@ -26,8 +46,8 @@ import {
   saveCustomFieldValues,
 } from "../../api/customFields.api";
 
-import { CUSTOM_FIELD_CONTROLS } from "../../utils/constants";
 import {
+  CUSTOM_FIELD_CONTROLS,
   BLOOD_GROUP,
   CATEGORIES,
   RELIGIONS,
@@ -40,10 +60,30 @@ import "./Student.css";
 ========================================================= */
 
 function normalizeList(res) {
-  if (Array.isArray(res)) return res;
-  if (Array.isArray(res?.data)) return res.data;
-  if (Array.isArray(res?.data?.classes)) return res.data.classes;
-  if (Array.isArray(res?.data?.sections)) return res.data.sections;
+  if (Array.isArray(res)) {
+    return res;
+  }
+
+  if (Array.isArray(res?.data)) {
+    return res.data;
+  }
+
+  if (
+    Array.isArray(
+      res?.data?.classes
+    )
+  ) {
+    return res.data.classes;
+  }
+
+  if (
+    Array.isArray(
+      res?.data?.sections
+    )
+  ) {
+    return res.data.sections;
+  }
+
   return [];
 }
 
@@ -53,7 +93,16 @@ const EMPTY_FORM = {
   siblingAdmNo: "",
   studentName: "",
   childLivingWith: "",
+
+  /*
+   * IMPORTANT:
+   * This now stores the uploaded server path.
+   *
+   * Example:
+   * /uploads/students/student-123.jpg
+   */
   photoUrl: "",
+
   signatureUrl: "",
 
   fatherTitle: "",
@@ -145,10 +194,15 @@ const EMPTY_FORM = {
 };
 
 function toDateInput(value) {
-  if (!value) return "";
+  if (!value) {
+    return "";
+  }
 
   try {
-    return String(value).slice(0, 10);
+    return String(value).slice(
+      0,
+      10
+    );
   } catch {
     return "";
   }
@@ -156,7 +210,8 @@ function toDateInput(value) {
 
 function cleanValue(value) {
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    const trimmed =
+      value.trim();
 
     return trimmed === ""
       ? undefined
@@ -176,7 +231,13 @@ const STUDENT_FIELDS = [
   "siblingAdmNo",
   "studentName",
   "childLivingWith",
+
+  /*
+   * photoUrl remains part of the
+   * normal student payload.
+   */
   "photoUrl",
+
   "signatureUrl",
 
   "fatherTitle",
@@ -242,21 +303,30 @@ const STUDENT_FIELDS = [
 ========================================================= */
 
 function buildParentPayload(parent) {
-  if (!parent) return undefined;
+  if (!parent) {
+    return undefined;
+  }
 
-  const name = cleanValue(parent.name);
+  const name =
+    cleanValue(
+      parent.name
+    );
 
-  /*
-   * Parent email/mobile are important because they are
-   * used to create the parent login.
-   *
-   * We intentionally allow email/mobile even if the
-   * parent name is empty.
-   */
-  const email = cleanValue(parent.email);
-  const mobile = cleanValue(parent.mobile);
+  const email =
+    cleanValue(
+      parent.email
+    );
 
-  if (!name && !email && !mobile) {
+  const mobile =
+    cleanValue(
+      parent.mobile
+    );
+
+  if (
+    !name &&
+    !email &&
+    !mobile
+  ) {
     return undefined;
   }
 
@@ -264,19 +334,35 @@ function buildParentPayload(parent) {
     name: name || "",
     mobile,
     email,
-    occupation: cleanValue(parent.occupation),
-    qualification: cleanValue(parent.qualification),
-    aadharNo: cleanValue(parent.aadharNo),
+    occupation:
+      cleanValue(
+        parent.occupation
+      ),
+    qualification:
+      cleanValue(
+        parent.qualification
+      ),
+    aadharNo:
+      cleanValue(
+        parent.aadharNo
+      ),
   };
 
   if (
-    parent.annualIncome !== "" &&
+    parent.annualIncome !==
+      "" &&
     parent.annualIncome != null
   ) {
-    const income = Number(parent.annualIncome);
+    const income =
+      Number(
+        parent.annualIncome
+      );
 
-    if (!Number.isNaN(income)) {
-      payload.annualIncome = income;
+    if (
+      !Number.isNaN(income)
+    ) {
+      payload.annualIncome =
+        income;
     }
   }
 
@@ -287,14 +373,33 @@ function buildParentPayload(parent) {
    GUARDIAN PAYLOAD
 ========================================================= */
 
-function buildGuardianPayload(guardian) {
-  if (!guardian) return undefined;
+function buildGuardianPayload(
+  guardian
+) {
+  if (!guardian) {
+    return undefined;
+  }
 
-  const name = cleanValue(guardian.name);
-  const mobile = cleanValue(guardian.mobile);
-  const email = cleanValue(guardian.email);
+  const name =
+    cleanValue(
+      guardian.name
+    );
 
-  if (!name && !mobile && !email) {
+  const mobile =
+    cleanValue(
+      guardian.mobile
+    );
+
+  const email =
+    cleanValue(
+      guardian.email
+    );
+
+  if (
+    !name &&
+    !mobile &&
+    !email
+  ) {
     return undefined;
   }
 
@@ -303,8 +408,9 @@ function buildGuardianPayload(guardian) {
     mobile,
     email,
     relation:
-      cleanValue(guardian.relation) ||
-      "guardian",
+      cleanValue(
+        guardian.relation
+      ) || "guardian",
   };
 }
 
@@ -312,54 +418,59 @@ function buildGuardianPayload(guardian) {
    BUILD STUDENT PAYLOAD
 ========================================================= */
 
-function buildStudentPayload(form) {
+function buildStudentPayload(
+  form
+) {
   const payload = {};
 
-  /* -------------------------------------------------------
-     Student fields
-  ------------------------------------------------------- */
+  STUDENT_FIELDS.forEach(
+    (key) => {
+      const cleaned =
+        cleanValue(
+          form[key]
+        );
 
-  STUDENT_FIELDS.forEach((key) => {
-    const cleaned = cleanValue(form[key]);
-
-    if (cleaned !== undefined) {
-      payload[key] = cleaned;
+      if (
+        cleaned !==
+        undefined
+      ) {
+        payload[key] =
+          cleaned;
+      }
     }
-  });
+  );
 
-  /* -------------------------------------------------------
-     Class
-  ------------------------------------------------------- */
-
-  payload.classId = Number(form.classId);
-
-  /* -------------------------------------------------------
-     Section
-  ------------------------------------------------------- */
-
-  if (form.sectionId) {
-    payload.sectionId = Number(form.sectionId);
+  /*
+   * Class
+   */
+  if (form.classId) {
+    payload.classId =
+      Number(
+        form.classId
+      );
   }
 
-  /* =======================================================
-     FATHER
-     
-     IMPORTANT:
-     Send BOTH nested parent data AND top-level fields.
-     
-     Backend uses:
-       fatherName
-       fatherEmail
-       fatherMobile
-     
-     This was the missing part.
-  ======================================================= */
+  /*
+   * Section
+   */
+  if (form.sectionId) {
+    payload.sectionId =
+      Number(
+        form.sectionId
+      );
+  }
 
+  /*
+   * Father
+   */
   const fatherPayload =
-    buildParentPayload(form.father);
+    buildParentPayload(
+      form.father
+    );
 
   if (fatherPayload) {
-    payload.father = fatherPayload;
+    payload.father =
+      fatherPayload;
 
     payload.fatherName =
       fatherPayload.name ||
@@ -394,17 +505,17 @@ function buildStudentPayload(form) {
     }
   }
 
-  /* =======================================================
-     MOTHER
-     
-     Same fix for mother.
-  ======================================================= */
-
+  /*
+   * Mother
+   */
   const motherPayload =
-    buildParentPayload(form.mother);
+    buildParentPayload(
+      form.mother
+    );
 
   if (motherPayload) {
-    payload.mother = motherPayload;
+    payload.mother =
+      motherPayload;
 
     payload.motherName =
       motherPayload.name ||
@@ -439,10 +550,9 @@ function buildStudentPayload(form) {
     }
   }
 
-  /* =======================================================
-     GUARDIAN
-  ======================================================= */
-
+  /*
+   * Guardian
+   */
   const guardianPayload =
     buildGuardianPayload(
       form.guardian
@@ -481,13 +591,17 @@ async function loadCustomFieldsGrouped() {
     await getCustomFieldForms();
 
   const formNames =
-    Array.isArray(formsRes?.data)
+    Array.isArray(
+      formsRes?.data
+    )
       ? formsRes.data
       : [];
 
   const groups = [];
 
-  for (const formName of formNames) {
+  for (
+    const formName of formNames
+  ) {
     try {
       const fieldsRes =
         await getCustomFieldsByForm(
@@ -501,7 +615,9 @@ async function loadCustomFieldsGrouped() {
           ? fieldsRes.data
           : [];
 
-      if (fields.length > 0) {
+      if (
+        fields.length > 0
+      ) {
         groups.push({
           formName,
           fields,
@@ -527,16 +643,21 @@ function mapCustomFieldValues(
 ) {
   const values = {};
 
-  list.forEach((item) => {
-    const fieldId =
-      item.customFieldId ??
-      item.customField?.id;
+  list.forEach(
+    (item) => {
+      const fieldId =
+        item.customFieldId ??
+        item.customField?.id;
 
-    if (fieldId != null) {
-      values[fieldId] =
-        item.value ?? "";
+      if (
+        fieldId != null
+      ) {
+        values[fieldId] =
+          item.value ??
+          "";
+      }
     }
-  });
+  );
 
   return values;
 }
@@ -545,28 +666,37 @@ function mapCustomFieldValues(
    STUDENT -> FORM
 ========================================================= */
 
-function mapStudentToForm(student) {
+function mapStudentToForm(
+  student
+) {
   const parents =
-    student.parents || [];
+    student.parents ||
+    [];
 
   const father =
     parents.find(
       (p) =>
-        String(p.relation).toLowerCase() ===
+        String(
+          p.relation
+        ).toLowerCase() ===
         "father"
     );
 
   const mother =
     parents.find(
       (p) =>
-        String(p.relation).toLowerCase() ===
+        String(
+          p.relation
+        ).toLowerCase() ===
         "mother"
     );
 
   const guardian =
     parents.find(
       (p) =>
-        String(p.relation).toLowerCase() ===
+        String(
+          p.relation
+        ).toLowerCase() ===
         "guardian"
     );
 
@@ -574,28 +704,40 @@ function mapStudentToForm(student) {
     ...EMPTY_FORM,
 
     admissionNo:
-      student.admissionNo || "",
+      student.admissionNo ||
+      "",
 
     feeNo:
-      student.feeNo || "",
+      student.feeNo ||
+      "",
 
     siblingAdmNo:
-      student.siblingAdmNo || "",
+      student.siblingAdmNo ||
+      "",
 
     studentName:
-      student.studentName || "",
+      student.studentName ||
+      "",
 
     childLivingWith:
-      student.childLivingWith || "",
+      student.childLivingWith ||
+      "",
 
+    /*
+     * Existing photo is loaded
+     * directly into StudentPhoto.
+     */
     photoUrl:
-      student.photoUrl || "",
+      student.photoUrl ||
+      "",
 
     signatureUrl:
-      student.signatureUrl || "",
+      student.signatureUrl ||
+      "",
 
     fatherTitle:
-      student.fatherTitle || "",
+      student.fatherTitle ||
+      "",
 
     fatherName:
       student.fatherName ||
@@ -603,7 +745,8 @@ function mapStudentToForm(student) {
       "",
 
     motherTitle:
-      student.motherTitle || "",
+      student.motherTitle ||
+      "",
 
     motherName:
       student.motherName ||
@@ -612,22 +755,29 @@ function mapStudentToForm(student) {
 
     classId:
       student.classId
-        ? String(student.classId)
+        ? String(
+            student.classId
+          )
         : "",
 
     sectionId:
       student.sectionId
-        ? String(student.sectionId)
+        ? String(
+            student.sectionId
+          )
         : "",
 
     stream:
-      student.stream || "",
+      student.stream ||
+      "",
 
     feeGroup:
-      student.feeGroup || "",
+      student.feeGroup ||
+      "",
 
     feePaymentStartFrom:
-      student.feePaymentStartFrom || "",
+      student.feePaymentStartFrom ||
+      "",
 
     dateOfBirth:
       toDateInput(
@@ -645,41 +795,52 @@ function mapStudentToForm(student) {
       ),
 
     rollNo:
-      student.rollNo || "",
+      student.rollNo ||
+      "",
 
     gender:
-      student.gender || "",
+      student.gender ||
+      "",
 
     admissionType:
-      student.admissionType || "",
+      student.admissionType ||
+      "",
 
     classAdmitted:
-      student.classAdmitted || "",
+      student.classAdmitted ||
+      "",
 
     emergencyPhoneNo:
-      student.emergencyPhoneNo || "",
+      student.emergencyPhoneNo ||
+      "",
 
     house:
-      student.house || "",
+      student.house ||
+      "",
 
     boardingCategory:
-      student.boardingCategory || "",
+      student.boardingCategory ||
+      "",
 
     board:
-      student.board || "",
+      student.board ||
+      "",
 
     medium:
-      student.medium || "",
+      student.medium ||
+      "",
 
     boardRegistrationNo:
       student.boardRegistrationNo ||
       "",
 
     studentEmail:
-      student.studentEmail || "",
+      student.studentEmail ||
+      "",
 
     countryCode:
-      student.countryCode || "",
+      student.countryCode ||
+      "",
 
     communicationMobile:
       student.communicationMobile ||
@@ -690,61 +851,80 @@ function mapStudentToForm(student) {
       "",
 
     aadharNo:
-      student.aadharNo || "",
+      student.aadharNo ||
+      "",
 
     remark:
-      student.remark || "",
+      student.remark ||
+      "",
 
     feeRemark:
-      student.feeRemark || "",
+      student.feeRemark ||
+      "",
 
     uniqueNo:
-      student.uniqueNo || "",
+      student.uniqueNo ||
+      "",
 
     grNo:
-      student.grNo || "",
+      student.grNo ||
+      "",
 
     rfidNo:
-      student.rfidNo || "",
+      student.rfidNo ||
+      "",
 
     eNach:
-      student.eNach || "",
+      student.eNach ||
+      "",
 
     bankName:
-      student.bankName || "",
+      student.bankName ||
+      "",
 
     accountNo:
-      student.accountNo || "",
+      student.accountNo ||
+      "",
 
     ifsc:
-      student.ifsc || "",
+      student.ifsc ||
+      "",
 
     virtualAccountNo:
-      student.virtualAccountNo || "",
+      student.virtualAccountNo ||
+      "",
 
     apaarId:
-      student.apaarId || "",
+      student.apaarId ||
+      "",
 
     srnNo:
-      student.srnNo || "",
+      student.srnNo ||
+      "",
 
     bloodGroup:
-      student.bloodGroup || "",
+      student.bloodGroup ||
+      "",
 
     religion:
-      student.religion || "",
+      student.religion ||
+      "",
 
     category:
-      student.category || "",
+      student.category ||
+      "",
 
     motherTongue:
-      student.motherTongue || "",
+      student.motherTongue ||
+      "",
 
     nationality:
-      student.nationality || "",
+      student.nationality ||
+      "",
 
     maritalStatus:
-      student.maritalStatus || "",
+      student.maritalStatus ||
+      "",
 
     father: {
       name:
@@ -753,23 +933,28 @@ function mapStudentToForm(student) {
         "",
 
       mobile:
-        father?.mobile || "",
+        father?.mobile ||
+        "",
 
       email:
-        father?.email || "",
+        father?.email ||
+        "",
 
       occupation:
-        father?.occupation || "",
+        father?.occupation ||
+        "",
 
       qualification:
         father?.qualification ||
         "",
 
       aadharNo:
-        father?.aadharNo || "",
+        father?.aadharNo ||
+        "",
 
       annualIncome:
-        father?.annualIncome != null
+        father?.annualIncome !=
+          null
           ? String(
               father.annualIncome
             )
@@ -783,23 +968,28 @@ function mapStudentToForm(student) {
         "",
 
       mobile:
-        mother?.mobile || "",
+        mother?.mobile ||
+        "",
 
       email:
-        mother?.email || "",
+        mother?.email ||
+        "",
 
       occupation:
-        mother?.occupation || "",
+        mother?.occupation ||
+        "",
 
       qualification:
         mother?.qualification ||
         "",
 
       aadharNo:
-        mother?.aadharNo || "",
+        mother?.aadharNo ||
+        "",
 
       annualIncome:
-        mother?.annualIncome != null
+        mother?.annualIncome !=
+          null
           ? String(
               mother.annualIncome
             )
@@ -808,16 +998,20 @@ function mapStudentToForm(student) {
 
     guardian: {
       name:
-        guardian?.name || "",
+        guardian?.name ||
+        "",
 
       mobile:
-        guardian?.mobile || "",
+        guardian?.mobile ||
+        "",
 
       relation:
-        guardian?.relation || "",
+        guardian?.relation ||
+        "",
 
       email:
-        guardian?.email || "",
+        guardian?.email ||
+        "",
     },
   };
 }
@@ -827,7 +1021,8 @@ function mapStudentToForm(student) {
 ========================================================= */
 
 export default function StudentForm() {
-  const { id } = useParams();
+  const { id } =
+    useParams();
 
   const isEdit =
     Boolean(id);
@@ -836,7 +1031,9 @@ export default function StudentForm() {
     useNavigate();
 
   const [form, setForm] =
-    useState(EMPTY_FORM);
+    useState(
+      EMPTY_FORM
+    );
 
   const [classes, setClasses] =
     useState([]);
@@ -881,6 +1078,15 @@ export default function StudentForm() {
     setSavedStudentId,
   ] = useState(null);
 
+  const [selectedPhoto, setSelectedPhoto] =
+    useState(null);
+
+  const [photoPreview, setPhotoPreview] =
+    useState("");
+
+  const [photoUploading, setPhotoUploading] =
+    useState(false);
+
   /* =======================================================
      CUSTOM FIELDS
   ======================================================= */
@@ -911,7 +1117,9 @@ export default function StudentForm() {
             String(
               section.classId
             ) ===
-            String(form.classId)
+            String(
+              form.classId
+            )
         );
 
       if (
@@ -924,7 +1132,9 @@ export default function StudentForm() {
         classes.find(
           (c) =>
             String(c.id) ===
-            String(form.classId)
+            String(
+              form.classId
+            )
         );
 
       return (
@@ -942,147 +1152,152 @@ export default function StudentForm() {
   ======================================================= */
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setBootLoading(true);
-        setError("");
-
-        /* -------------------------------------------------
-           CLASSES
-        ------------------------------------------------- */
-
-        let classList = [];
-
+    const load =
+      async () => {
         try {
-          const classesRes =
-            await getClasses();
-
-          classList =
-            normalizeList(
-              classesRes
-            );
-
-          setClasses(
-            classList
-          );
-        } catch (classErr) {
-          setClasses([]);
-
-          setError(
-            classErr.response
-              ?.data?.error ||
-              classErr.response
-                ?.data?.message ||
-              "Failed to load classes. Open the Class page and create classes first."
-          );
-        }
-
-        /* -------------------------------------------------
-           EMBEDDED SECTIONS
-        ------------------------------------------------- */
-
-        const embeddedSections =
-          classList.flatMap(
-            (c) =>
-              (
-                c.sections ||
-                []
-              ).map((s) => ({
-                ...s,
-                classId:
-                  s.classId ??
-                  c.id,
-              }))
+          setBootLoading(
+            true
           );
 
-        /* -------------------------------------------------
-           SECTIONS
-        ------------------------------------------------- */
+          setError("");
 
-        try {
-          const sectionsRes =
-            await getAllSections();
-
-          const sectionList =
-            normalizeList(
-              sectionsRes
-            );
-
-          setSections(
-            sectionList.length >
-              0
-              ? sectionList
-              : embeddedSections
-          );
-        } catch {
-          setSections(
-            embeddedSections
-          );
-        }
-
-        /* -------------------------------------------------
-           CUSTOM FIELDS
-        ------------------------------------------------- */
-
-        try {
-          const groups =
-            await loadCustomFieldsGrouped();
-
-          setCustomFieldGroups(
-            groups
-          );
-        } catch (cfErr) {
-          console.error(
-            "Failed to load custom fields:",
-            cfErr
-          );
-
-          setCustomFieldGroups(
-            []
-          );
-        }
-
-        /* -------------------------------------------------
-           EDIT MODE
-        ------------------------------------------------- */
-
-        if (isEdit) {
-          const studentRes =
-            await getStudentById(
-              id
-            );
-
-          const student =
-            studentRes?.data || {};
-
-          setForm(
-            mapStudentToForm(
-              student
-            )
-          );
+          let classList =
+            [];
 
           try {
-            const valuesRes =
-              await getCustomFieldValues(
+            const classesRes =
+              await getClasses();
+
+            classList =
+              normalizeList(
+                classesRes
+              );
+
+            setClasses(
+              classList
+            );
+          } catch (
+            classErr
+          ) {
+            setClasses([]);
+
+            setError(
+              classErr
+                ?.response
+                ?.data
+                ?.error ||
+                classErr
+                  ?.response
+                  ?.data
+                  ?.message ||
+                "Failed to load classes. Open the Class page and create classes first."
+            );
+          }
+
+          const embeddedSections =
+            classList.flatMap(
+              (c) =>
+                (
+                  c.sections ||
+                  []
+                ).map(
+                  (s) => ({
+                    ...s,
+                    classId:
+                      s.classId ??
+                      c.id,
+                  })
+                )
+            );
+
+          try {
+            const sectionsRes =
+              await getAllSections();
+
+            const sectionList =
+              normalizeList(
+                sectionsRes
+              );
+
+            setSections(
+              sectionList.length >
+                0
+                ? sectionList
+                : embeddedSections
+            );
+          } catch {
+            setSections(
+              embeddedSections
+            );
+          }
+
+          try {
+            const groups =
+              await loadCustomFieldsGrouped();
+
+            setCustomFieldGroups(
+              groups
+            );
+          } catch (
+            customFieldError
+          ) {
+            console.error(
+              "Failed to load custom fields:",
+              customFieldError
+            );
+
+            setCustomFieldGroups(
+              []
+            );
+          }
+
+          if (isEdit) {
+            const studentRes =
+              await getStudentById(
                 id
               );
 
-            const fromApi =
-              Array.isArray(
-                valuesRes?.data
-              )
-                ? valuesRes.data
-                : [];
+            const student =
+              studentRes?.data ||
+              {};
 
-            if (
-              fromApi.length > 0
-            ) {
-              setCustomValues(
-                mapCustomFieldValues(
-                  fromApi
+            setForm(
+              mapStudentToForm(
+                student
+              )
+            );
+
+            try {
+              const valuesRes =
+                await getCustomFieldValues(
+                  id
+                );
+
+              const fromApi =
+                Array.isArray(
+                  valuesRes?.data
                 )
-              );
-            } else {
+                  ? valuesRes.data
+                  : [];
+
+              if (
+                fromApi.length >
+                0
+              ) {
+                setCustomValues(
+                  mapCustomFieldValues(
+                    fromApi
+                  )
+                );
+              } else {
+                setCustomValues(
+                  mapCustomFieldValues(
+                    student.customFieldValues ||
+                      []
+                  )
+                );
+              }
+            } catch {
               setCustomValues(
                 mapCustomFieldValues(
                   student.customFieldValues ||
@@ -1090,35 +1305,34 @@ export default function StudentForm() {
                 )
               );
             }
-          } catch {
-            setCustomValues(
-              mapCustomFieldValues(
-                student.customFieldValues ||
-                  []
-              )
-            );
           }
-        }
-      } catch (err) {
-        console.error(
-          "Student form loading error:",
-          err
-        );
+        } catch (err) {
+          console.error(
+            "Student form loading error:",
+            err
+          );
 
-        setError(
-          err.response
-            ?.data?.error ||
-            err.response
-              ?.data?.message ||
-            "Failed to load form data."
-        );
-      } finally {
-        setBootLoading(false);
-      }
-    };
+          setError(
+            err?.response
+              ?.data
+              ?.error ||
+              err?.response
+                ?.data
+                ?.message ||
+              "Failed to load form data."
+          );
+        } finally {
+          setBootLoading(
+            false
+          );
+        }
+      };
 
     load();
-  }, [id, isEdit]);
+  }, [
+    id,
+    isEdit,
+  ]);
 
   /* =======================================================
      NORMAL INPUT CHANGE
@@ -1142,6 +1356,65 @@ export default function StudentForm() {
         (prev) => ({
           ...prev,
           [name]: "",
+        })
+      );
+    };
+
+  /* =======================================================
+     PHOTO CHANGE
+  ======================================================= */
+
+  const handlePhotoChange =
+    (e) => {
+      const file =
+        e.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      if (!String(file.type || "").startsWith("image/")) {
+        setError(
+          "Please select an image file such as JPG, JPEG, PNG, WEBP, GIF or another supported image format."
+        );
+        e.target.value = "";
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        setError(
+          "Student photo must be smaller than 10 MB."
+        );
+        e.target.value = "";
+        return;
+      }
+
+      setError("");
+      setSuccess("");
+      setSelectedPhoto(file);
+
+      const localPreview =
+        URL.createObjectURL(file);
+
+      setPhotoPreview(localPreview);
+
+      e.target.value = "";
+    };
+
+  const removePhoto =
+    () => {
+      setSelectedPhoto(null);
+
+      if (photoPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreview);
+      }
+
+      setPhotoPreview("");
+
+      setForm(
+        (previous) => ({
+          ...previous,
+          photoUrl: "",
         })
       );
     };
@@ -1202,9 +1475,7 @@ export default function StudentForm() {
       setForm(
         (prev) => ({
           ...prev,
-
           classId: value,
-
           sectionId: "",
         })
       );
@@ -1229,12 +1500,14 @@ export default function StudentForm() {
         const list =
           normalizeList(
             res
-          ).map((s) => ({
-            ...s,
-            classId:
-              s.classId ??
-              Number(value),
-          }));
+          ).map(
+            (s) => ({
+              ...s,
+              classId:
+                s.classId ??
+                Number(value),
+            })
+          );
 
         if (
           list.length > 0
@@ -1258,7 +1531,9 @@ export default function StudentForm() {
           );
         }
       } catch {
-        // Keep existing sections.
+        /*
+         * Keep existing sections.
+         */
       }
     };
 
@@ -1289,16 +1564,6 @@ export default function StudentForm() {
         nextErrors.classId =
           "Class is required.";
       }
-
-      /*
-       * Parent email validation.
-       *
-       * If a parent name is entered but email is empty,
-       * we do not block student creation because parent
-       * login is optional.
-       *
-       * If email exists, it must be valid.
-       */
 
       const emailRegex =
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1356,7 +1621,9 @@ export default function StudentForm() {
   ======================================================= */
 
   const saveStudentCustomValues =
-    async (studentId) => {
+    async (
+      studentId
+    ) => {
       if (
         !studentId ||
         allCustomFields.length ===
@@ -1390,7 +1657,6 @@ export default function StudentForm() {
             Number(
               studentId
             ),
-
           values,
         }
       );
@@ -1398,49 +1664,23 @@ export default function StudentForm() {
 
   /* =======================================================
      EXTRACT PARENT CREDENTIALS
-     
-     Supports multiple backend response shapes.
   ======================================================= */
 
   const extractParentCredentials =
     (response) => {
-      console.log(
-        "CREATE/UPDATE STUDENT RESPONSE:",
-        response
-      );
-
       const data =
         response?.data;
-
-      /* -----------------------------------------------
-         Shape 1
-         {
-           data: {
-             parentCredentials: [...]
-           }
-         }
-      ------------------------------------------------ */
 
       if (
         Array.isArray(
           data?.parentCredentials
         ) &&
-        data.parentCredentials
+        data
+          .parentCredentials
           .length > 0
       ) {
         return data.parentCredentials;
       }
-
-      /* -----------------------------------------------
-         Shape 2
-         {
-           data: {
-             credentials: {
-               parents: [...]
-             }
-           }
-         }
-      ------------------------------------------------ */
 
       if (
         Array.isArray(
@@ -1450,29 +1690,19 @@ export default function StudentForm() {
         data.credentials.parents
           .length > 0
       ) {
-        return data.credentials
-          .parents;
+        return data.credentials.parents;
       }
-
-      /* -----------------------------------------------
-         Shape 3
-         response.parentCredentials
-      ------------------------------------------------ */
 
       if (
         Array.isArray(
           response?.parentCredentials
         ) &&
-        response.parentCredentials
+        response
+          .parentCredentials
           .length > 0
       ) {
         return response.parentCredentials;
       }
-
-      /* -----------------------------------------------
-         Shape 4
-         response.credentials.parents
-      ------------------------------------------------ */
 
       if (
         Array.isArray(
@@ -1482,8 +1712,7 @@ export default function StudentForm() {
         response.credentials.parents
           .length > 0
       ) {
-        return response.credentials
-          .parents;
+        return response.credentials.parents;
       }
 
       return [];
@@ -1511,59 +1740,15 @@ export default function StudentForm() {
       try {
         setLoading(true);
 
-        /* -----------------------------------------------
-           BUILD PAYLOAD
-        ------------------------------------------------ */
-
         const payload =
           buildStudentPayload(
             form
           );
 
-        /*
-         * Debugging information.
-         *
-         * This is especially useful to verify that
-         * fatherEmail/fatherMobile and motherEmail/
-         * motherMobile are actually being sent.
-         */
-
         console.log(
           "STUDENT PAYLOAD:",
           payload
         );
-
-        console.log(
-          "FATHER LOGIN DATA:",
-          {
-            name:
-              payload.fatherName,
-
-            email:
-              payload.fatherEmail,
-
-            mobile:
-              payload.fatherMobile,
-          }
-        );
-
-        console.log(
-          "MOTHER LOGIN DATA:",
-          {
-            name:
-              payload.motherName,
-
-            email:
-              payload.motherEmail,
-
-            mobile:
-              payload.motherMobile,
-          }
-        );
-
-        /* -----------------------------------------------
-           API
-        ------------------------------------------------ */
 
         const response =
           isEdit
@@ -1575,41 +1760,19 @@ export default function StudentForm() {
                 payload
               );
 
-        /*
-         * VERY IMPORTANT:
-         *
-         * student.api.js returns response.data.
-         *
-         * Therefore:
-         *
-         * response.data = created student object
-         */
-
         const saved =
-          response?.data || {};
+          response?.data ||
+          {};
 
         console.log(
           "SAVED STUDENT DATA:",
           saved
         );
 
-        /* -----------------------------------------------
-           PARENT CREDENTIALS
-        ------------------------------------------------ */
-
         const parentCredentials =
           extractParentCredentials(
             response
           );
-
-        console.log(
-          "PARENT CREDENTIALS FOUND:",
-          parentCredentials
-        );
-
-        /* -----------------------------------------------
-           STUDENT ID
-        ------------------------------------------------ */
 
         const nextId =
           saved?.id ||
@@ -1619,9 +1782,74 @@ export default function StudentForm() {
             ? Number(id)
             : null);
 
-        /* -----------------------------------------------
-           CUSTOM FIELDS
-        ------------------------------------------------ */
+        /*
+         * Upload the selected photo only after the student has an ID.
+         * The browser preview is temporary; this stores the permanent
+         * /uploads/students/... URL in the Student record.
+         */
+        if (selectedPhoto && nextId) {
+          try {
+            setPhotoUploading(true);
+
+            const photoFormData =
+              new FormData();
+
+            photoFormData.append(
+              "photo",
+              selectedPhoto,
+              selectedPhoto.name
+            );
+
+            const photoResponse =
+              await axiosClient.post(
+                "/students/upload-photo",
+                photoFormData,
+                {
+                  timeout: 120000,
+                }
+              );
+
+            const uploadedUrl =
+              photoResponse?.data?.data?.photoUrl ||
+              photoResponse?.data?.photoUrl ||
+              photoResponse?.data?.data?.url ||
+              photoResponse?.data?.url;
+
+            if (!uploadedUrl) {
+              throw new Error(
+                "Photo uploaded, but the server did not return a photo URL."
+              );
+            }
+
+            await updateStudent(
+              nextId,
+              {
+                photoUrl: uploadedUrl,
+              }
+            );
+
+            setForm((previous) => ({
+              ...previous,
+              photoUrl: uploadedUrl,
+            }));
+
+            if (photoPreview?.startsWith("blob:")) {
+              URL.revokeObjectURL(photoPreview);
+            }
+
+            setPhotoPreview(uploadedUrl);
+            setSelectedPhoto(null);
+          } catch (photoError) {
+            throw new Error(
+              photoError?.response?.data?.error ||
+                photoError?.response?.data?.message ||
+                photoError.message ||
+                "Student was saved, but the photo upload failed."
+            );
+          } finally {
+            setPhotoUploading(false);
+          }
+        }
 
         if (
           nextId &&
@@ -1632,17 +1860,23 @@ export default function StudentForm() {
             await saveStudentCustomValues(
               nextId
             );
-          } catch (cfErr) {
+          } catch (
+            customFieldError
+          ) {
             console.error(
               "Failed to save custom field values:",
-              cfErr
+              customFieldError
             );
 
             setError(
-              cfErr.response
-                ?.data?.error ||
-                cfErr.response
-                  ?.data?.message ||
+              customFieldError
+                ?.response
+                ?.data
+                ?.error ||
+                customFieldError
+                  ?.response
+                  ?.data
+                  ?.message ||
                 "Student saved, but custom field values failed to save."
             );
 
@@ -1652,10 +1886,6 @@ export default function StudentForm() {
           }
         }
 
-        /* -----------------------------------------------
-           SUCCESS MESSAGE
-        ------------------------------------------------ */
-
         setSuccess(
           response?.message ||
             (isEdit
@@ -1663,18 +1893,10 @@ export default function StudentForm() {
               : "Student created successfully")
         );
 
-        /* -----------------------------------------------
-           SHOW PARENT CREDENTIAL MODAL
-        ------------------------------------------------ */
-
         if (
           parentCredentials.length >
           0
         ) {
-          console.log(
-            "OPENING PARENT CREDENTIAL MODAL"
-          );
-
           setSavedStudentId(
             nextId
           );
@@ -1685,14 +1907,6 @@ export default function StudentForm() {
 
           return;
         }
-
-        /* -----------------------------------------------
-           NO CREDENTIALS
-        ------------------------------------------------ */
-
-        console.log(
-          "NO NEW PARENT CREDENTIALS RETURNED"
-        );
 
         if (nextId) {
           setTimeout(
@@ -1718,11 +1932,13 @@ export default function StudentForm() {
         );
 
         setError(
-          err.response
-            ?.data?.error ||
-            err.response
-              ?.data?.message ||
-            err.message ||
+          err?.response
+            ?.data
+            ?.error ||
+            err?.response
+              ?.data
+              ?.message ||
+            err?.message ||
             "Failed to save student."
         );
       } finally {
@@ -1756,6 +1972,7 @@ export default function StudentForm() {
       =================================================== */}
 
       <div className="student-form-header">
+
         <div>
           <h1>
             {isEdit
@@ -1785,6 +2002,7 @@ export default function StudentForm() {
 
           Back to list
         </Button>
+
       </div>
 
       {/* ===================================================
@@ -1819,6 +2037,7 @@ export default function StudentForm() {
         ================================================= */}
 
         <section className="student-form-section">
+
           <h3>
             1. Basic Information
           </h3>
@@ -1919,17 +2138,173 @@ export default function StudentForm() {
               ]}
             />
 
-            <Input
-              label="Photo URL"
-              name="photoUrl"
-              value={
-                form.photoUrl
-              }
-              onChange={
-                handleChange
-              }
-              placeholder="https://..."
-            />
+          </div>
+
+          {/* =================================================
+              STUDENT PHOTO
+          ================================================= */}
+
+          <div
+            className="student-photo-upload-field"
+            style={{
+              marginTop: "24px",
+              gridColumn: "1 / -1",
+            }}
+          >
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: 600,
+                marginBottom: "10px",
+              }}
+            >
+              Student Photo
+            </label>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
+                padding: "18px",
+                border: "1px solid #e2e8f0",
+                borderRadius: "12px",
+                background: "#f8fafc",
+              }}
+            >
+              {photoPreview || form.photoUrl ? (
+                <img
+                  src={photoPreview || form.photoUrl}
+                  alt={form.studentName || "Student"}
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "3px solid #e2e8f0",
+                    background: "#ffffff",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: "50%",
+                    background: "#e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ImagePlus
+                    size={32}
+                    color="#64748b"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="student-photo-input"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: photoUploading ? "not-allowed" : "pointer",
+                    background: "#0ea5e9",
+                    color: "#ffffff",
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    opacity: photoUploading ? 0.6 : 1,
+                  }}
+                >
+                  <Upload size={17} />
+                  {photoUploading ? "Uploading..." : "Choose Photo"}
+                </label>
+
+                <input
+                  id="student-photo-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  disabled={photoUploading || loading}
+                  style={{ display: "none" }}
+                />
+
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#64748b",
+                    fontSize: "13px",
+                  }}
+                >
+                  Select an image from your device. Maximum 10 MB.
+                </p>
+
+                {selectedPhoto && (
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      color: "#0369a1",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Selected: {selectedPhoto.name}
+                  </p>
+                )}
+
+                {(selectedPhoto || form.photoUrl) && (
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    disabled={photoUploading || loading}
+                    style={{
+                      marginTop: "8px",
+                      border: "none",
+                      background: "transparent",
+                      color: "#dc2626",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: 0,
+                    }}
+                  >
+                    <X size={14} />
+                    Remove photo
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {errors.photoUrl && (
+              <div
+                style={{
+                  marginTop: "6px",
+                  color: "#dc2626",
+                  fontSize: "13px",
+                }}
+              >
+                {errors.photoUrl}
+              </div>
+            )}
+          </div>
+
+          <div
+            className="student-form-grid"
+            style={{
+              marginTop:
+                "24px",
+            }}
+          >
 
             <Input
               label="Signature URL"
@@ -1940,10 +2315,11 @@ export default function StudentForm() {
               onChange={
                 handleChange
               }
-              placeholder="https://..."
+              placeholder="Optional"
             />
 
           </div>
+
         </section>
 
         {/* =================================================
@@ -1951,6 +2327,7 @@ export default function StudentForm() {
         ================================================= */}
 
         <section className="student-form-section">
+
           <h3>
             2. Academic Information
           </h3>
@@ -1963,6 +2340,7 @@ export default function StudentForm() {
           <div className="student-form-grid three">
 
             <div>
+
               <Select
                 label="Class"
                 name="classId"
@@ -2001,9 +2379,11 @@ export default function StudentForm() {
                   here and refresh.
                 </p>
               )}
+
             </div>
 
             <div>
+
               <Select
                 label="Section"
                 name="sectionId"
@@ -2044,6 +2424,7 @@ export default function StudentForm() {
                     then refresh.
                   </p>
                 )}
+
             </div>
 
             <Input
@@ -2101,10 +2482,8 @@ export default function StudentForm() {
               }
               options={[
                 {
-                  value:
-                    "new",
-                  label:
-                    "New",
+                  value: "new",
+                  label: "New",
                 },
                 {
                   value:
@@ -2188,6 +2567,7 @@ export default function StudentForm() {
             />
 
           </div>
+
         </section>
 
         {/* =================================================
@@ -2195,6 +2575,7 @@ export default function StudentForm() {
         ================================================= */}
 
         <section className="student-form-section">
+
           <h3>
             3. Personal Information
           </h3>
@@ -2253,10 +2634,8 @@ export default function StudentForm() {
               }
               options={[
                 {
-                  value:
-                    "male",
-                  label:
-                    "Male",
+                  value: "male",
+                  label: "Male",
                 },
                 {
                   value:
@@ -2265,10 +2644,8 @@ export default function StudentForm() {
                     "Female",
                 },
                 {
-                  value:
-                    "other",
-                  label:
-                    "Other",
+                  value: "other",
+                  label: "Other",
                 },
               ]}
             />
@@ -2358,6 +2735,7 @@ export default function StudentForm() {
             />
 
           </div>
+
         </section>
 
         {/* =================================================
@@ -2389,16 +2767,12 @@ export default function StudentForm() {
               }
               options={[
                 {
-                  value:
-                    "MR.",
-                  label:
-                    "MR.",
+                  value: "MR.",
+                  label: "MR.",
                 },
                 {
-                  value:
-                    "DR.",
-                  label:
-                    "DR.",
+                  value: "DR.",
+                  label: "DR.",
                 },
                 {
                   value:
@@ -2461,7 +2835,8 @@ export default function StudentForm() {
               label="Occupation"
               name="occupation"
               value={
-                form.father.occupation
+                form.father
+                  .occupation
               }
               onChange={(e) =>
                 handleNestedChange(
@@ -2490,7 +2865,8 @@ export default function StudentForm() {
               label="Aadhar No"
               name="aadharNo"
               value={
-                form.father.aadharNo
+                form.father
+                  .aadharNo
               }
               onChange={(e) =>
                 handleNestedChange(
@@ -2560,22 +2936,16 @@ export default function StudentForm() {
               }
               options={[
                 {
-                  value:
-                    "MRS.",
-                  label:
-                    "MRS.",
+                  value: "MRS.",
+                  label: "MRS.",
                 },
                 {
-                  value:
-                    "MS.",
-                  label:
-                    "MS.",
+                  value: "MS.",
+                  label: "MS.",
                 },
                 {
-                  value:
-                    "DR.",
-                  label:
-                    "DR.",
+                  value: "DR.",
+                  label: "DR.",
                 },
                 {
                   value:
@@ -3195,6 +3565,7 @@ export default function StudentForm() {
                     )}
 
                   </div>
+
                 </div>
               )
             )}
@@ -3223,7 +3594,9 @@ export default function StudentForm() {
           <Button
             type="submit"
             variant="primary"
-            loading={loading}
+            loading={
+              loading
+            }
           >
             {isEdit
               ? "Update Student"
@@ -3296,7 +3669,10 @@ export default function StudentForm() {
               credentials ||
               []
             ).map(
-              (cred, index) => (
+              (
+                cred,
+                index
+              ) => (
                 <tr
                   key={
                     `${cred.relation}-${cred.email}-${index}`

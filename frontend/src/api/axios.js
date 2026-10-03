@@ -31,6 +31,14 @@ const axiosClient = axios.create({
    */
   timeout: 60000,
 
+  /*
+   * Default content type for normal JSON requests.
+   *
+   * IMPORTANT:
+   * For FormData requests, the request interceptor below
+   * removes this header so the browser can automatically
+   * create the correct multipart/form-data boundary.
+   */
   headers: {
     "Content-Type": "application/json",
   },
@@ -44,6 +52,9 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
   (config) => {
+    /*
+     * Attach JWT token.
+     */
     const token = localStorage.getItem("token");
 
     if (token) {
@@ -51,6 +62,50 @@ axiosClient.interceptors.request.use(
 
       config.headers.Authorization =
         `Bearer ${token}`;
+    }
+
+    /*
+     * ======================================================
+     * IMPORTANT FOR FILE UPLOADS
+     * ======================================================
+     *
+     * Student photos are sent using FormData.
+     *
+     * We MUST NOT manually set:
+     *
+     * Content-Type: multipart/form-data
+     *
+     * because the browser needs to add:
+     *
+     * multipart/form-data; boundary=....
+     *
+     * Without the boundary, multer may receive:
+     *
+     * req.file === undefined
+     *
+     * which causes:
+     *
+     * "Please select an image to upload."
+     */
+
+    if (
+      typeof FormData !== "undefined" &&
+      config.data instanceof FormData
+    ) {
+      if (config.headers) {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      }
+    } else {
+      /*
+       * Normal API requests continue using JSON.
+       */
+      config.headers = config.headers || {};
+
+      if (!config.headers["Content-Type"]) {
+        config.headers["Content-Type"] =
+          "application/json";
+      }
     }
 
     return config;
@@ -91,21 +146,38 @@ axiosClient.interceptors.response.use(
      * - 404
      * - 500
      */
-    const requestUrl = String(error?.config?.url || "");
+    const requestUrl =
+      String(error?.config?.url || "");
+
     const isAuthCall =
       requestUrl.includes("/auth/login") ||
-      requestUrl.includes("/auth/change-password");
+      requestUrl.includes(
+        "/auth/change-password"
+      );
 
+    /*
+     * Password change required.
+     */
     if (
       error?.response?.status === 403 &&
-      error?.response?.data?.code === "PASSWORD_CHANGE_REQUIRED" &&
-      window.location.pathname !== "/change-password"
+      error?.response?.data?.code ===
+        "PASSWORD_CHANGE_REQUIRED" &&
+      window.location.pathname !==
+        "/change-password"
     ) {
-      window.location.href = "/change-password";
+      window.location.href =
+        "/change-password";
+
       return Promise.reject(error);
     }
 
-    if (error?.response?.status === 401 && !isAuthCall) {
+    /*
+     * Real unauthorized request.
+     */
+    if (
+      error?.response?.status === 401 &&
+      !isAuthCall
+    ) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
@@ -113,12 +185,16 @@ axiosClient.interceptors.response.use(
         window.location.pathname;
 
       if (
-        currentPath.startsWith("/teacher")
+        currentPath.startsWith(
+          "/teacher"
+        )
       ) {
         window.location.href =
           "/teacher-login";
       } else if (
-        currentPath.startsWith("/parent")
+        currentPath.startsWith(
+          "/parent"
+        )
       ) {
         window.location.href =
           "/parent-login";
