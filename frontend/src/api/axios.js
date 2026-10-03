@@ -5,19 +5,19 @@ import axios from "axios";
  CAMPUS-IQ AXIOS CLIENT
 ============================================================
 
- Default local backend:
- http://localhost:8000/api/v1
+ Production (Render/same-origin deployment):
+   VITE_API_URL is NOT needed — relative "/api/v1" is used
+   automatically because the frontend is served by the backend.
 
- You can override it with:
-
- VITE_API_URL=http://localhost:8000/api/v1
+ Local development override:
+   VITE_API_URL=http://localhost:8000/api/v1
 
 ============================================================
 */
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "http://localhost:8000/api/v1";
+  "/api/v1";
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,

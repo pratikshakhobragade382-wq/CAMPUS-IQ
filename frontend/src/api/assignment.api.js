@@ -205,6 +205,9 @@ export const getFileUrl = (url) => {
    * served from:
    *
    * /uploads/...
+   *
+   * In production (same-origin), window.location.origin
+   * is used so /uploads/... resolves correctly.
    */
   const configuredApiUrl =
     import.meta.env.VITE_API_URL;
@@ -214,7 +217,7 @@ export const getFileUrl = (url) => {
         /\/api\/v1\/?$/,
         ''
       )
-    : 'http://localhost:8000';
+    : window.location.origin;
 
   return `${baseUrl}${
     cleanUrl.startsWith('/') ? '' : '/'
