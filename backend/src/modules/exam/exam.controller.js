@@ -654,6 +654,73 @@ const getStudentReportCard =
 
 
 /* ============================================================
+   SUBJECT SCHEDULE — UPSERT
+============================================================ */
+
+const upsertExamSubjectSchedules = async (req, res, next) => {
+  try {
+    const data = await examService.upsertExamSubjectSchedules(
+      req.user.tenantId,
+      req.params.examId,
+      req.user,
+      req.body.schedules
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Subject schedules saved successfully",
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ============================================================
+   SUBJECT SCHEDULE — GET
+============================================================ */
+
+const getExamSubjectSchedules = async (req, res, next) => {
+  try {
+    const data = await examService.getExamSubjectSchedules(
+      req.user.tenantId,
+      req.params.examId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Subject schedules fetched successfully",
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ============================================================
+   SUBJECT SCHEDULE — DELETE ONE
+============================================================ */
+
+const deleteExamSubjectSchedule = async (req, res, next) => {
+  try {
+    const data = await examService.deleteExamSubjectSchedule(
+      req.user.tenantId,
+      req.params.examId,
+      req.params.subjectId,
+      req.user
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: data.message,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+/* ============================================================
    EXPORT
 ============================================================ */
 
@@ -673,4 +740,10 @@ module.exports = {
   getExamMarks,
 
   getStudentReportCard,
-};
+
+  upsertExamSubjectSchedules,
+
+  getExamSubjectSchedules,
+
+  deleteExamSubjectSchedule,
+};

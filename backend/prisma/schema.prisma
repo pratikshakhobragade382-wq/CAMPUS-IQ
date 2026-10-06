@@ -30,6 +30,7 @@ model Tenant {
   departments         Department[]
   exams               Exam[]
   examMarks           ExamMark[]
+  examSubjectSchedules ExamSubjectSchedule[]
   feeCategories       FeeCategory[]
   feeCollections      FeeCollection[]
   feeStructures       FeeStructure[]
@@ -171,6 +172,7 @@ model Subject {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   examMarks  ExamMark[]
+  examSubjectSchedules ExamSubjectSchedule[]
   staff      StaffSubject[]
   tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   timetables Timetable[]
@@ -707,6 +709,7 @@ model Exam {
   tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   marks              ExamMark[]
   resultPublications ResultPublication[]
+  subjectSchedules   ExamSubjectSchedule[]
 
   @@index([tenantId, academicYearId])
 }
@@ -735,6 +738,24 @@ model ExamMark {
   @@unique([examId, studentId, subjectId])
   @@index([tenantId, examId])
   @@index([tenantId, studentId])
+}
+
+model ExamSubjectSchedule {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int
+  examId     Int
+  subjectId  Int
+  examDate   DateTime @db.Date
+  startTime  String?
+  endTime    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, subjectId])
+  @@index([tenantId, examId])
 }
 
 model Holiday {

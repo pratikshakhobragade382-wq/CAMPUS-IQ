@@ -245,4 +245,83 @@ router.get('/:examId(\\d+)/marks', authorize('admin', 'teacher'), controller.get
  */
 router.get('/students/:studentId(\\d+)/report', authorize('admin', 'teacher'), controller.getStudentReportCard);
 
+/**
+ * @swagger
+ * /exams/{examId}/subject-schedule:
+ *   get:
+ *     summary: Get subject-wise exam schedule (dates per subject) for an exam
+ *     tags: [Exams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: examId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Subject schedules fetched successfully
+ */
+router.get('/:examId(\\d+)/subject-schedule', controller.getExamSubjectSchedules);
+
+/**
+ * @swagger
+ * /exams/{examId}/subject-schedule:
+ *   post:
+ *     summary: Upsert subject-wise exam schedule (admin only)
+ *     tags: [Exams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: examId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [schedules]
+ *             properties:
+ *               schedules:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [subjectId, examDate]
+ *                   properties:
+ *                     subjectId: { type: integer }
+ *                     examDate: { type: string, format: date }
+ *                     startTime: { type: string, example: "10:00" }
+ *                     endTime: { type: string, example: "12:00" }
+ *     responses:
+ *       200:
+ *         description: Subject schedules saved successfully
+ */
+router.post('/:examId(\\d+)/subject-schedule', authorize('admin'), controller.upsertExamSubjectSchedules);
+
+/**
+ * @swagger
+ * /exams/{examId}/subject-schedule/{subjectId}:
+ *   delete:
+ *     summary: Delete a subject from exam schedule (admin only)
+ *     tags: [Exams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: examId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: path
+ *         name: subjectId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Schedule entry deleted
+ */
+router.delete('/:examId(\\d+)/subject-schedule/:subjectId(\\d+)', authorize('admin'), controller.deleteExamSubjectSchedule);
+
 module.exports = router;

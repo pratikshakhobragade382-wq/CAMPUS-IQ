@@ -7,6 +7,13 @@ import {
   ClipboardList,
   RefreshCw,
   Search,
+  Calendar,
+  BookOpen,
+  Sparkles,
+  Clock,
+  Printer,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -32,6 +39,9 @@ import {
   bulkEnterMarks,
   getExamMarks,
   getStudentReportCard,
+  getExamSubjectSchedules,
+  upsertExamSubjectSchedules,
+  deleteExamSubjectSchedule,
 } from '../../api/exam.api';
 
 /* =====================================================
@@ -91,6 +101,36 @@ function formatIndianDate(date) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+function formatWeekday(date) {
+  const dateOnly = toDateOnly(date);
+  if (!dateOnly) return '';
+  const dateObj = new Date(`${dateOnly}T00:00:00`);
+  if (Number.isNaN(dateObj.getTime())) return '';
+  return dateObj.toLocaleDateString('en-IN', { weekday: 'short' });
+}
+
+function formatFullWeekday(date) {
+  const dateOnly = toDateOnly(date);
+  if (!dateOnly) return '';
+  const dateObj = new Date(`${dateOnly}T00:00:00`);
+  if (Number.isNaN(dateObj.getTime())) return '';
+  return dateObj.toLocaleDateString('en-IN', { weekday: 'long' });
+}
+
+const formatShortWeekday = formatWeekday;
+
+function formatTimeDisplay(timeStr) {
+  if (!timeStr) return '—';
+  const parts = String(timeStr).split(':');
+  if (parts.length < 2) return timeStr;
+  let hour = parseInt(parts[0], 10);
+  const minute = parts[1];
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  hour = hour ? hour : 12;
+  return `${hour}:${minute} ${ampm}`;
 }
 
 function examTypeLabel(type) {
@@ -165,6 +205,18 @@ export default function Exam() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
+
+  // Subject schedule state
+  const [subjectSchedules, setSubjectSchedules] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleRows, setScheduleRows] = useState([]); // rows being edited
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleMsg, setScheduleMsg] = useState('');
+  const [scheduleErr, setScheduleErr] = useState('');
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleActiveExam, setScheduleActiveExam] = useState(null);
+  const [scheduleTab, setScheduleTab] = useState('manage'); // 'manage' | 'datesheet'
+  const [scheduleSearch, setScheduleSearch] = useState('');
 
   // Marks state
   const [marksExamId, setMarksExamId] = useState('');
@@ -361,9 +413,28 @@ export default function Exam() {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetailData(null);
+    setSubjectSchedules([]);
+    setScheduleRows([]);
+    setScheduleMsg('');
+    setScheduleErr('');
     try {
-      const response = await getExamById(exam.id, { includeInactive: !exam.isActive });
-      setDetailData(response?.data || null);
+      const [detailRes, schedRes] = await Promise.all([
+        getExamById(exam.id, { includeInactive: !exam.isActive }),
+        getExamSubjectSchedules(exam.id).catch(() => ({ data: [] })),
+      ]);
+      setDetailData(detailRes?.data || null);
+      const schedList = Array.isArray(schedRes?.data) ? schedRes.data : [];
+      setSubjectSchedules(schedList);
+      // Pre-fill edit rows from saved schedules
+      setScheduleRows(
+        schedList.map((s) => ({
+          subjectId: String(s.subject?.id || s.subjectId),
+          subjectName: s.subject?.name || '—',
+          examDate: toDateOnly(s.examDate),
+          startTime: s.startTime || '',
+          endTime: s.endTime || '',
+        }))
+      );
     } catch (error) {
       console.error('Failed to load exam details', error);
       alert(getApiError(error, 'Failed to load exam details'));
@@ -594,6 +665,167 @@ export default function Exam() {
     }
   };
 
+  /* ---------- Subject Schedule helpers ---------- */
+
+  const openScheduleModal = async (exam) => {
+    setScheduleActiveExam(exam);
+    setScheduleModalOpen(true);
+    setScheduleLoading(true);
+    setScheduleMsg('');
+    setScheduleErr('');
+    setScheduleTab('manage');
+    setScheduleSearch('');
+    try {
+      const schedRes = await getExamSubjectSchedules(exam.id).catch(() => ({ data: [] }));
+      const schedList = Array.isArray(schedRes?.data) ? schedRes.data : [];
+      setSubjectSchedules(schedList);
+
+      const existingMap = new Map();
+      schedList.forEach((s) => {
+        existingMap.set(String(s.subject?.id || s.subjectId), s);
+      });
+
+      // If already scheduled subjects exist, show them; also provide one-click populate for all class subjects
+      if (schedList.length > 0) {
+        setScheduleRows(
+          schedList.map((s) => ({
+            subjectId: String(s.subject?.id || s.subjectId),
+            subjectName: s.subject?.name || '',
+            subjectCode: s.subject?.code || '',
+            examDate: toDateOnly(s.examDate),
+            startTime: s.startTime || '',
+            endTime: s.endTime || '',
+            isSaved: true,
+          }))
+        );
+      } else {
+        // Pre-load all available subjects for this class so the user immediately gets the full class subject list!
+        const initialRows = subjects.map((subj) => ({
+          subjectId: String(subj.id),
+          subjectName: subj.name,
+          subjectCode: subj.code || '',
+          examDate: '',
+          startTime: '',
+          endTime: '',
+          isSaved: false,
+        }));
+        setScheduleRows(initialRows);
+      }
+    } catch (err) {
+      console.error('Failed to load subject schedules', err);
+      setScheduleErr(getApiError(err, 'Failed to load subject schedules'));
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  const populateAllClassSubjects = () => {
+    const currentMap = new Map();
+    scheduleRows.forEach((r) => {
+      if (r.subjectId) currentMap.set(String(r.subjectId), r);
+    });
+
+    const newRows = subjects.map((subj) => {
+      const existing = currentMap.get(String(subj.id));
+      if (existing) return existing;
+      return {
+        subjectId: String(subj.id),
+        subjectName: subj.name,
+        subjectCode: subj.code || '',
+        examDate: '',
+        startTime: '',
+        endTime: '',
+        isSaved: false,
+      };
+    });
+
+    setScheduleRows(newRows);
+    setScheduleMsg(`Loaded all ${subjects.length} subjects for this class. Select exam date & time for each subject and click Save.`);
+    setScheduleErr('');
+  };
+
+  const addScheduleRow = () => {
+    setScheduleRows((prev) => [
+      ...prev,
+      { subjectId: '', subjectName: '', subjectCode: '', examDate: '', startTime: '', endTime: '', isSaved: false },
+    ]);
+  };
+
+  const updateScheduleRow = (idx, field, value) => {
+    setScheduleRows((prev) =>
+      prev.map((row, i) => {
+        if (i !== idx) return row;
+        const updated = { ...row, [field]: value };
+        if (field === 'subjectId') {
+          const found = subjects.find((s) => String(s.id) === String(value));
+          updated.subjectName = found?.name || '';
+          updated.subjectCode = found?.code || '';
+        }
+        return updated;
+      })
+    );
+  };
+
+  const removeScheduleRow = (idx) => {
+    setScheduleRows((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveSchedule = async () => {
+    setScheduleMsg('');
+    setScheduleErr('');
+    const currentExamId = scheduleActiveExam?.id || detailData?.exam?.id;
+    if (!currentExamId) return;
+
+    const valid = scheduleRows.filter((r) => r.subjectId && r.examDate);
+    if (valid.length === 0) {
+      setScheduleErr('Please select an exam date for at least one subject before saving.');
+      return;
+    }
+
+    try {
+      setScheduleSaving(true);
+      await upsertExamSubjectSchedules(
+        currentExamId,
+        valid.map((r) => ({
+          subjectId: parseInt(r.subjectId, 10),
+          examDate: r.examDate,
+          startTime: r.startTime || undefined,
+          endTime: r.endTime || undefined,
+        }))
+      );
+      const schedRes = await getExamSubjectSchedules(currentExamId);
+      const schedList = Array.isArray(schedRes?.data) ? schedRes.data : [];
+      setSubjectSchedules(schedList);
+      setScheduleMsg(`Successfully scheduled ${valid.length} subject(s)! ✨`);
+      await loadExams();
+    } catch (error) {
+      setScheduleErr(getApiError(error, 'Failed to save schedule'));
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  const handleDeleteScheduleEntry = async (subjectId) => {
+    if (!window.confirm('Remove this subject from the schedule?')) return;
+    const currentExamId = scheduleActiveExam?.id || detailData?.exam?.id;
+    if (!currentExamId) return;
+
+    try {
+      await deleteExamSubjectSchedule(currentExamId, subjectId);
+      setSubjectSchedules((prev) => prev.filter((s) => s.subjectId !== subjectId && s.subject?.id !== subjectId));
+      setScheduleRows((prev) =>
+        prev.map((r) =>
+          String(r.subjectId) === String(subjectId)
+            ? { ...r, examDate: '', startTime: '', endTime: '', isSaved: false }
+            : r
+        )
+      );
+      await loadExams();
+    } catch (error) {
+      alert(getApiError(error, 'Failed to delete schedule entry'));
+    }
+  };
+
   /* ---------- Columns ---------- */
 
   const examColumns = [
@@ -604,7 +836,11 @@ export default function Exam() {
     },
     {
       header: 'Class',
-      render: (row) => row.class?.name || '—',
+      render: (row) => (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+          {row.class?.name || '—'}
+        </span>
+      ),
     },
     {
       header: 'Academic Year',
@@ -619,6 +855,27 @@ export default function Exam() {
       render: (row) => formatIndianDate(row.endDate),
     },
     {
+      header: 'Subject Schedule',
+      render: (row) => {
+        const count = Array.isArray(row.subjectSchedules) ? row.subjectSchedules.length : 0;
+        return (
+          <button
+            type="button"
+            onClick={() => openScheduleModal(row)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors shadow-sm ${
+              count > 0
+                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+            }`}
+            title="Click to view & manage full class subject schedule"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{count > 0 ? `${count} Subjects Scheduled` : '⚡ Set Class Schedule'}</span>
+          </button>
+        );
+      },
+    },
+    {
       header: 'Status',
       render: (row) => (
         <Badge variant={row.isActive ? 'green' : 'gray'}>
@@ -629,7 +886,16 @@ export default function Exam() {
     {
       header: 'Actions',
       render: (row) => (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openScheduleModal(row)}
+            title="Class Subject Schedule / Timetable"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <Calendar className="w-4 h-4" />
+          </Button>
           <Button variant="outline" size="sm" onClick={() => openExamDetails(row)} title="View details">
             <Eye className="w-4 h-4" />
           </Button>
@@ -1223,8 +1489,9 @@ export default function Exam() {
         <ModalBody>
           {detailLoading && <p className="text-sm text-gray-500">Loading details...</p>}
           {!detailLoading && detailData && (
-            <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2 text-sm">
+            <>
+              <div className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-2 text-sm">
                 <p>
                   <span className="text-gray-500">Name:</span>{' '}
                   <span className="font-medium text-gray-900">{detailData.exam?.name}</span>
@@ -1278,8 +1545,191 @@ export default function Exam() {
                 </div>
               </div>
             </div>
+
+            {/* ── Subject-wise Schedule Section ── */}
+            <div className="mt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Subject-wise Exam Schedule
+                  </h3>
+                  {subjectSchedules.length > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      {subjectSchedules.length} / {subjects.length} subjects scheduled
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={populateAllClassSubjects}
+                        className="text-xs text-blue-700 bg-blue-50 hover:bg-blue-100"
+                        title="Load all available subjects for this class"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 mr-1" />
+                        Load All Class Subjects
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={addScheduleRow} className="text-xs">
+                        <Plus className="w-3 h-3 mr-1" /> Add Subject
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDetailOpen(false);
+                      openScheduleModal(detailData.exam);
+                    }}
+                    className="text-xs text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                  >
+                    Open Full Manager ↗
+                  </Button>
+                </div>
+              </div>
+
+              {scheduleErr && (
+                <div className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{scheduleErr}</div>
+              )}
+              {scheduleMsg && (
+                <div className="mb-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">{scheduleMsg}</div>
+              )}
+
+              {scheduleRows.length === 0 && subjectSchedules.length === 0 ? (
+                <p className="text-xs text-gray-400 py-2 text-center">
+                  {isAdmin ? 'No schedule set. Click "Add Subject" to add subject-wise exam dates.' : 'No subject schedule set yet.'}
+                </p>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase">Subject</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase">Exam Date</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase">Start Time</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase">End Time</th>
+                        {isAdmin && <th className="px-3 py-2 text-left font-semibold text-gray-500 uppercase">Action</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {isAdmin
+                        ? scheduleRows.map((row, idx) => (
+                            <tr key={idx}>
+                              <td className="px-3 py-2">
+                                <select
+                                  value={row.subjectId}
+                                  onChange={(e) => updateScheduleRow(idx, 'subjectId', e.target.value)}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                >
+                                  <option value="">-- Select Subject --</option>
+                                  {subjects.map((s) => (
+                                    <option key={s.id} value={String(s.id)}>
+                                      {s.name}{s.code ? ` (${s.code})` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="date"
+                                  value={row.examDate}
+                                  min={toDateOnly(detailData?.exam?.startDate)}
+                                  max={toDateOnly(detailData?.exam?.endDate)}
+                                  onChange={(e) => updateScheduleRow(idx, 'examDate', e.target.value)}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="time"
+                                  value={row.startTime}
+                                  onChange={(e) => updateScheduleRow(idx, 'startTime', e.target.value)}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="time"
+                                  value={row.endTime}
+                                  onChange={(e) => updateScheduleRow(idx, 'endTime', e.target.value)}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex gap-1">
+                                  {row.subjectId && subjectSchedules.some((s) => String(s.subject?.id || s.subjectId) === String(row.subjectId)) && (
+                                    <button
+                                      onClick={() => handleDeleteScheduleEntry(parseInt(row.subjectId, 10))}
+                                      className="text-red-500 hover:text-red-700 p-1"
+                                      title="Remove from schedule"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => removeScheduleRow(idx)}
+                                    className="text-gray-400 hover:text-gray-600 p-1"
+                                    title="Remove row"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        : subjectSchedules.map((s) => (
+                            <tr key={s.id}>
+                              <td className="px-3 py-2 font-medium text-gray-900">
+                                {s.subject?.name || '—'}
+                                {s.subject?.code ? <span className="ml-1 text-gray-400">({s.subject.code})</span> : null}
+                              </td>
+                              <td className="px-3 py-2 text-gray-700">{formatIndianDate(s.examDate)}</td>
+                              <td className="px-3 py-2 text-gray-600">{s.startTime || '—'}</td>
+                              <td className="px-3 py-2 text-gray-600">{s.endTime || '—'}</td>
+                            </tr>
+                          ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {isAdmin && scheduleRows.length > 0 && (
+                <div className="mt-3 flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setScheduleRows(
+                        subjectSchedules.map((s) => ({
+                          subjectId: String(s.subject?.id || s.subjectId),
+                          examDate: toDateOnly(s.examDate),
+                          startTime: s.startTime || '',
+                          endTime: s.endTime || '',
+                        }))
+                      );
+                      setScheduleMsg('');
+                      setScheduleErr('');
+                    }}
+                    disabled={scheduleSaving}
+                  >
+                    Reset
+                  </Button>
+                  <Button size="sm" onClick={handleSaveSchedule} disabled={scheduleSaving} loading={scheduleSaving}>
+                    Save Schedule
+                  </Button>
+                </div>
+              )}
+            </div>
+            </>
           )}
         </ModalBody>
+
         <ModalFooter>
           <Button variant="outline" onClick={() => setDetailOpen(false)}>
             Close
@@ -1290,6 +1740,516 @@ export default function Exam() {
                 setMarksExamId(String(detailData.exam.id));
                 setActiveTab(1);
                 setDetailOpen(false);
+              }}
+            >
+              Go to Marks
+            </Button>
+          )}
+        </ModalFooter>
+      </Modal>
+
+      {/* ════════════════════════════════════════════════════════════
+          DEDICATED SUBJECT-WISE SCHEDULE & DATE SHEET MODAL
+      ════════════════════════════════════════════════════════════ */}
+      <Modal
+        isOpen={scheduleModalOpen}
+        onClose={() => setScheduleModalOpen(false)}
+        title={
+          scheduleActiveExam
+            ? `📅 Subject Schedule — ${scheduleActiveExam.name} (${scheduleActiveExam.class?.name || 'Class'})`
+            : 'Subject Schedule'
+        }
+        size="xl"
+      >
+        <ModalBody>
+          {scheduleLoading && (
+            <div className="flex items-center justify-center py-12 text-sm text-gray-500">
+              <RefreshCw className="w-5 h-5 animate-spin mr-2 text-blue-600" />
+              Loading exam subject schedule...
+            </div>
+          )}
+
+          {!scheduleLoading && scheduleActiveExam && (
+            <div className="space-y-4">
+              {/* Header Info Banner */}
+              <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/70 to-indigo-50/50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 text-base">
+                        {scheduleActiveExam.name}
+                      </span>
+                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                        Class: {scheduleActiveExam.class?.name || '—'}
+                      </span>
+                      <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                        {examTypeLabel(scheduleActiveExam.examType)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 flex items-center gap-2">
+                      <span>
+                        🗓️ Window: <strong>{formatIndianDate(scheduleActiveExam.startDate)}</strong> to{' '}
+                        <strong>{formatIndianDate(scheduleActiveExam.endDate)}</strong>
+                      </span>
+                      <span>•</span>
+                      <span>Academic Year: {scheduleActiveExam.academicYear?.name || '—'}</span>
+                    </p>
+                  </div>
+
+                  {/* Summary Metric Badges */}
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-lg bg-white px-3 py-1.5 shadow-sm border border-gray-200 text-center">
+                      <p className="text-[10px] uppercase font-bold text-gray-400">Class Subjects</p>
+                      <p className="text-sm font-bold text-gray-800">{subjects.length}</p>
+                    </div>
+                    <div className="rounded-lg bg-green-50 px-3 py-1.5 shadow-sm border border-green-200 text-center">
+                      <p className="text-[10px] uppercase font-bold text-green-700">Scheduled</p>
+                      <p className="text-sm font-bold text-green-800">{subjectSchedules.length}</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 px-3 py-1.5 shadow-sm border border-amber-200 text-center">
+                      <p className="text-[10px] uppercase font-bold text-amber-700">Pending</p>
+                      <p className="text-sm font-bold text-amber-800">
+                        {Math.max(0, subjects.length - subjectSchedules.length)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* View Switcher & Action Toolbar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-b border-gray-200 pb-2">
+                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setScheduleTab('manage')}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                      scheduleTab === 'manage'
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    ⚙️ Manage Schedule (Editor)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduleTab('datesheet')}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                      scheduleTab === 'datesheet'
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    📋 View Full Date Sheet ({subjectSchedules.length})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {scheduleTab === 'manage' && isAdmin && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={populateAllClassSubjects}
+                        title="Auto-fill full list of subjects for this class"
+                        className="text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 mr-1 text-blue-600" />
+                        Load All Class Subjects ({subjects.length})
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addScheduleRow}
+                        className="text-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        Add Row
+                      </Button>
+                    </>
+                  )}
+                  {scheduleTab === 'datesheet' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.print()}
+                      className="text-xs"
+                    >
+                      <Printer className="w-3.5 h-3.5 mr-1" />
+                      Print Date Sheet
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Status alerts */}
+              {scheduleErr && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{scheduleErr}</span>
+                </div>
+              )}
+              {scheduleMsg && (
+                <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{scheduleMsg}</span>
+                </div>
+              )}
+
+              {/* TAB 1: MANAGE SCHEDULE (EDITOR) */}
+              {scheduleTab === 'manage' && (
+                <div className="space-y-3">
+                  {/* Quick Search inside subject list */}
+                  {scheduleRows.length > 5 && (
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search subjects in list..."
+                        value={scheduleSearch}
+                        onChange={(e) => setScheduleSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      />
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto rounded-lg border border-gray-200 max-h-[420px]">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase">#</th>
+                          <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase">Subject</th>
+                          <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase">Exam Date</th>
+                          <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase">Start Time</th>
+                          <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase">End Time</th>
+                          <th className="px-3 py-2 text-left font-semibold text-gray-600 uppercase">Status</th>
+                          {isAdmin && (
+                            <th className="px-3 py-2 text-center font-semibold text-gray-600 uppercase">Action</th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {scheduleRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="px-3 py-8 text-center text-gray-400">
+                              No subjects listed yet. Click{' '}
+                              <strong className="text-blue-600 cursor-pointer" onClick={populateAllClassSubjects}>
+                                "Load All Class Subjects"
+                              </strong>{' '}
+                              to view all subjects of this class.
+                            </td>
+                          </tr>
+                        ) : (
+                          scheduleRows
+                            .map((row, idx) => ({ row, idx }))
+                            .filter(({ row }) => {
+                              if (!scheduleSearch.trim()) return true;
+                              const q = scheduleSearch.toLowerCase();
+                              return (
+                                (row.subjectName && row.subjectName.toLowerCase().includes(q)) ||
+                                (row.subjectCode && row.subjectCode.toLowerCase().includes(q))
+                              );
+                            })
+                            .map(({ row, idx }, displayIdx) => {
+                              const isDateOutside =
+                                row.examDate &&
+                                ((scheduleActiveExam.startDate &&
+                                  row.examDate < toDateOnly(scheduleActiveExam.startDate)) ||
+                                  (scheduleActiveExam.endDate &&
+                                    row.examDate > toDateOnly(scheduleActiveExam.endDate)));
+
+                              return (
+                                <tr
+                                  key={idx}
+                                  className={`hover:bg-gray-50/80 transition-colors ${
+                                    row.examDate ? 'bg-blue-50/20' : ''
+                                  }`}
+                                >
+                                  <td className="px-3 py-2 text-gray-400 font-medium">{displayIdx + 1}</td>
+                                  <td className="px-3 py-2 min-w-[200px]">
+                                    {isAdmin ? (
+                                      <select
+                                        value={row.subjectId}
+                                        onChange={(e) => updateScheduleRow(idx, 'subjectId', e.target.value)}
+                                        className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                                      >
+                                        <option value="">-- Choose Subject --</option>
+                                        {subjects.map((s) => (
+                                          <option key={s.id} value={String(s.id)}>
+                                            {s.name} {s.code ? `(${s.code})` : ''}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    ) : (
+                                      <span className="font-medium text-gray-900">
+                                        {row.subjectName || '—'}{' '}
+                                        {row.subjectCode ? (
+                                          <span className="text-gray-400 font-normal">({row.subjectCode})</span>
+                                        ) : null}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 min-w-[170px]">
+                                    {isAdmin ? (
+                                      <div>
+                                        <input
+                                          type="date"
+                                          value={row.examDate}
+                                          min={toDateOnly(scheduleActiveExam.startDate)}
+                                          max={toDateOnly(scheduleActiveExam.endDate)}
+                                          onChange={(e) => updateScheduleRow(idx, 'examDate', e.target.value)}
+                                          className={`w-full rounded border px-2 py-1 text-xs focus:outline-none focus:ring-1 ${
+                                            isDateOutside
+                                              ? 'border-red-400 bg-red-50 focus:ring-red-400'
+                                              : 'border-gray-300 focus:ring-blue-400'
+                                          }`}
+                                        />
+                                        {row.examDate && (
+                                          <div className="flex items-center gap-1.5 mt-0.5">
+                                            <span className="text-[10px] text-blue-600 font-medium">
+                                              {formatWeekday(row.examDate)}
+                                            </span>
+                                            {isDateOutside && (
+                                              <span className="text-[10px] text-red-600 font-medium">
+                                                (Outside exam window!)
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <span className="text-gray-800 font-medium">
+                                          {formatIndianDate(row.examDate)}
+                                        </span>
+                                        {row.examDate && (
+                                          <span className="ml-1.5 text-[10px] text-gray-500">
+                                            ({formatWeekday(row.examDate)})
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {isAdmin ? (
+                                      <input
+                                        type="time"
+                                        value={row.startTime}
+                                        onChange={(e) => updateScheduleRow(idx, 'startTime', e.target.value)}
+                                        className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                      />
+                                    ) : (
+                                      <span className="text-gray-700">{formatTimeDisplay(row.startTime)}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {isAdmin ? (
+                                      <input
+                                        type="time"
+                                        value={row.endTime}
+                                        onChange={(e) => updateScheduleRow(idx, 'endTime', e.target.value)}
+                                        className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                      />
+                                    ) : (
+                                      <span className="text-gray-700">{formatTimeDisplay(row.endTime)}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {row.examDate ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-800">
+                                        <CheckCircle2 className="w-3 h-3 text-green-600" />
+                                        Scheduled
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500">
+                                        Pending
+                                      </span>
+                                    )}
+                                  </td>
+                                  {isAdmin && (
+                                    <td className="px-3 py-2 text-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        {row.subjectId &&
+                                          subjectSchedules.some(
+                                            (s) => String(s.subject?.id || s.subjectId) === String(row.subjectId)
+                                          ) && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDeleteScheduleEntry(parseInt(row.subjectId, 10))}
+                                              className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                              title="Delete saved schedule for this subject"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        <button
+                                          type="button"
+                                          onClick={() => removeScheduleRow(idx)}
+                                          className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+                                          title="Remove row from view"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              );
+                            })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-500">
+                        Tip: Click <strong>"Save Schedule"</strong> to store all configured subject dates.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setScheduleRows(
+                              subjectSchedules.map((s) => ({
+                                subjectId: String(s.subject?.id || s.subjectId),
+                                subjectName: s.subject?.name || '—',
+                                subjectCode: s.subject?.code || '',
+                                examDate: toDateOnly(s.examDate),
+                                startTime: s.startTime || '',
+                                endTime: s.endTime || '',
+                                isSaved: true,
+                              }))
+                            );
+                            setScheduleMsg('');
+                            setScheduleErr('');
+                          }}
+                          disabled={scheduleSaving}
+                        >
+                          Reset
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleSaveSchedule}
+                          disabled={scheduleSaving}
+                          loading={scheduleSaving}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          Save Schedule
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: FULL DATE SHEET / TIMETABLE ROUTINE VIEW */}
+              {scheduleTab === 'datesheet' && (
+                <div className="space-y-4">
+                  {subjectSchedules.length === 0 ? (
+                    <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                      <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-gray-600">No subjects scheduled yet for this exam.</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Switch to <strong>Manage Schedule</strong> tab to add dates for each class subject.
+                      </p>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setScheduleTab('manage')}
+                          className="mt-3 text-xs"
+                        >
+                          Go to Schedule Editor
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 text-white flex items-center justify-between">
+                          <div>
+                            <h4 className="font-bold text-sm tracking-wide uppercase">Official Examination Date Sheet</h4>
+                            <p className="text-xs text-blue-100">
+                              {scheduleActiveExam.name} • Class: {scheduleActiveExam.class?.name || '—'}
+                            </p>
+                          </div>
+                          <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">
+                            {subjectSchedules.length} Papers Scheduled
+                          </span>
+                        </div>
+
+                        <div className="divide-y divide-gray-100 bg-white">
+                          {subjectSchedules.map((item, idx) => (
+                            <div
+                              key={item.id || idx}
+                              className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-blue-50/30 transition-colors"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex flex-col items-center justify-center text-blue-700 flex-shrink-0">
+                                  <span className="text-[10px] font-bold uppercase leading-none">
+                                    {formatShortWeekday(item.examDate)}
+                                  </span>
+                                  <span className="text-base font-extrabold leading-tight">
+                                    {item.examDate ? new Date(`${toDateOnly(item.examDate)}T00:00:00`).getDate() : '—'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h5 className="font-semibold text-gray-900 text-sm">
+                                    {item.subject?.name || 'Subject'}
+                                  </h5>
+                                  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+                                    {item.subject?.code && (
+                                      <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-mono text-[10px]">
+                                        Code: {item.subject.code}
+                                      </span>
+                                    )}
+                                    <span>•</span>
+                                    <span className="font-medium text-gray-700">
+                                      {formatIndianDate(item.examDate)} ({formatFullWeekday(item.examDate)})
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 sm:text-right">
+                                <div className="text-xs">
+                                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Timing</span>
+                                  <span className="font-medium text-gray-800">
+                                    {item.startTime ? formatTimeDisplay(item.startTime) : '—'}
+                                    {item.endTime ? ` - ${formatTimeDisplay(item.endTime)}` : ''}
+                                  </span>
+                                </div>
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                                  Confirmed
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </ModalBody>
+
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setScheduleModalOpen(false)}>
+            Close
+          </Button>
+          {marksAllowed && scheduleActiveExam?.id && (
+            <Button
+              onClick={() => {
+                setMarksExamId(String(scheduleActiveExam.id));
+                setActiveTab(1);
+                setScheduleModalOpen(false);
               }}
             >
               Go to Marks

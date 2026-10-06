@@ -1164,6 +1164,21 @@ const getAllExams = async (
           name: true,
         },
       },
+
+      subjectSchedules: {
+        include: {
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          examDate: "asc",
+        },
+      },
     },
 
     orderBy: {
@@ -1204,6 +1219,21 @@ const getExamById = async (
           select: {
             id: true,
             name: true,
+          },
+        },
+
+        subjectSchedules: {
+          include: {
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+          orderBy: {
+            examDate: "asc",
           },
         },
       },
@@ -2431,6 +2461,115 @@ const getStudentReportCard =
   };
 
 // ============================================================
+// EXAM SUBJECT SCHEDULE — UPSERT
+// ============================================================
+
+const upsertExamSubjectSchedules = async (
+  tenantId,
+  examId,
+  actingUser,
+  schedules
+) => {
+  assertIsAdmin(actingUser);
+
+  const parsedExamId = parseInt(examId, 10);
+
+  const exam = await prisma.exam.findFirst({
+    where: { id: parsedExamId, tenantId },
+    select: { id: true, startDate: true, endDate: true },
+  });
+
+  if (!exam) {
+    throw new HttpError(404, "Exam not found", { code: "NOT_FOUND" });
+  }
+
+  if (!Array.isArray(schedules) || schedules.length === 0) {
+    throw new HttpError(400, "schedules must be a non-empty array", { code: "VALIDATION_ERROR" });
+  }
+
+  const results = [];
+
+  for (const item of schedules) {
+    const subjectId = parseInt(item.subjectId, 10);
+    if (!subjectId || !item.examDate) {
+      throw new HttpError(400, "Each schedule entry requires subjectId and examDate", { code: "VALIDATION_ERROR" });
+    }
+
+    const examDate = new Date(item.examDate);
+    if (isNaN(examDate.getTime())) {
+      throw new HttpError(400, `Invalid examDate: ${item.examDate}`, { code: "VALIDATION_ERROR" });
+    }
+
+    const saved = await prisma.examSubjectSchedule.upsert({
+      where: { examId_subjectId: { examId: parsedExamId, subjectId } },
+      create: {
+        tenantId,
+        examId: parsedExamId,
+        subjectId,
+        examDate,
+        startTime: item.startTime || null,
+        endTime: item.endTime || null,
+      },
+      update: {
+        examDate,
+        startTime: item.startTime || null,
+        endTime: item.endTime || null,
+      },
+      include: {
+        subject: { select: { id: true, name: true, code: true } },
+      },
+    });
+
+    results.push(saved);
+  }
+
+  return results;
+};
+
+// ============================================================
+// EXAM SUBJECT SCHEDULE — GET
+// ============================================================
+
+const getExamSubjectSchedules = async (tenantId, examId) => {
+  const parsedExamId = parseInt(examId, 10);
+
+  const schedules = await prisma.examSubjectSchedule.findMany({
+    where: { tenantId, examId: parsedExamId },
+    include: {
+      subject: { select: { id: true, name: true, code: true } },
+    },
+    orderBy: { examDate: "asc" },
+  });
+
+  return schedules;
+};
+
+// ============================================================
+// EXAM SUBJECT SCHEDULE — DELETE ONE
+// ============================================================
+
+const deleteExamSubjectSchedule = async (tenantId, examId, subjectId, actingUser) => {
+  assertIsAdmin(actingUser);
+
+  const parsedExamId = parseInt(examId, 10);
+  const parsedSubjectId = parseInt(subjectId, 10);
+
+  const existing = await prisma.examSubjectSchedule.findFirst({
+    where: { tenantId, examId: parsedExamId, subjectId: parsedSubjectId },
+  });
+
+  if (!existing) {
+    throw new HttpError(404, "Schedule entry not found", { code: "NOT_FOUND" });
+  }
+
+  await prisma.examSubjectSchedule.delete({
+    where: { examId_subjectId: { examId: parsedExamId, subjectId: parsedSubjectId } },
+  });
+
+  return { message: "Schedule entry deleted" };
+};
+
+// ============================================================
 // EXPORTS
 // ============================================================
 
@@ -2443,4 +2582,7 @@ module.exports = {
   bulkEnterMarks,
   getExamMarks,
   getStudentReportCard,
-};
+  upsertExamSubjectSchedules,
+  getExamSubjectSchedules,
+  deleteExamSubjectSchedule,
+};

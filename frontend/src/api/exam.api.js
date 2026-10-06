@@ -117,3 +117,31 @@ export const getStudentReportCard = async (studentId, params = {}) => {
   });
   return response.data;
 };
+
+/**
+ * GET /exams/:examId/subject-schedule
+ * Response: { success, message, data: ExamSubjectSchedule[] }
+ */
+export const getExamSubjectSchedules = async (examId) => {
+  const response = await axiosClient.get(`/exams/${examId}/subject-schedule`);
+  return response.data;
+};
+
+/**
+ * POST /exams/:examId/subject-schedule (admin only)
+ * Body: { schedules: [{ subjectId, examDate, startTime?, endTime? }] }
+ * Response: { success, message, data: ExamSubjectSchedule[] }
+ */
+export const upsertExamSubjectSchedules = async (examId, schedules) => {
+  const response = await axiosClient.post(`/exams/${examId}/subject-schedule`, { schedules });
+  return response.data;
+};
+
+/**
+ * DELETE /exams/:examId/subject-schedule/:subjectId (admin only)
+ * Response: { success, message }
+ */
+export const deleteExamSubjectSchedule = async (examId, subjectId) => {
+  const response = await axiosClient.delete(`/exams/${examId}/subject-schedule/${subjectId}`);
+  return response.data;
+};
