@@ -1006,30 +1006,50 @@ export default function Timetable() {
         // The timetable API stores the teacher using staffId.
         // Some responses do not include the nested staff/teacher object,
         // so attach the already-loaded teacher record before rendering.
+        // In Teacher View the API is already filtered by the selected
+        // staffId, so preserve that selected id even when a timetable
+        // row does not return staffId itself.
         const enrichedEntries =
           timetableEntries.map((entry) => {
-            const staffId =
+            const rowStaffId =
               entry?.staffId ??
               entry?.staff_id ??
               entry?.teacherId ??
-              entry?.teacher_id;
+              entry?.teacher_id ??
+              (mode === "teacher"
+                ? staffId
+                : null);
 
             const matchedTeacher =
-              staffId !== null &&
-              staffId !== undefined
+              rowStaffId !== null &&
+              rowStaffId !== undefined &&
+              rowStaffId !== ""
                 ? teachers.find(
                     (teacher) =>
                       String(teacher?.id) ===
-                      String(staffId)
+                      String(rowStaffId)
                   )
                 : null;
 
             if (!matchedTeacher) {
-              return entry;
+              return {
+                ...entry,
+                ...(mode === "teacher" && staffId
+                  ? { staffId }
+                  : {}),
+              };
             }
 
             return {
               ...entry,
+              staffId:
+                entry?.staffId ??
+                entry?.staff_id ??
+                entry?.teacherId ??
+                entry?.teacher_id ??
+                (mode === "teacher"
+                  ? staffId
+                  : undefined),
               staff:
                 entry?.staff ||
                 matchedTeacher,
