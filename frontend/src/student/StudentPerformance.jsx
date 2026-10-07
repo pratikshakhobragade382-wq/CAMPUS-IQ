@@ -5,6 +5,25 @@ import {
 } from "react";
 
 import {
+  Activity,
+  AlertCircle,
+  Award,
+  BarChart3,
+  BookOpen,
+  Brain,
+  CheckCircle2,
+  ClipboardCheck,
+  GraduationCap,
+  Lightbulb,
+  Loader2,
+  ShieldCheck,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  UserRound,
+} from "lucide-react";
+
+import {
   ResponsiveContainer,
   LineChart,
   Line,
@@ -17,48 +36,24 @@ import {
   Cell,
 } from "recharts";
 
-import {
-  Activity,
-  Award,
-  BarChart3,
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardCheck,
-  GraduationCap,
-  Lightbulb,
-  Loader2,
-  Target,
-  TrendingUp,
-  UserRound,
-} from "lucide-react";
-
 import axiosClient from "../api/axios";
 
 import "./StudentPerformance.css";
 
-/* ============================================================
-   COLORS
-============================================================ */
-
 const SUBJECT_COLORS = [
-  "#4F46E5",
-  "#06B6D4",
-  "#10B981",
-  "#F59E0B",
-  "#EC4899",
-  "#8B5CF6",
-  "#EF4444",
-  "#14B8A6",
-  "#F97316",
-  "#3B82F6",
+  "#5146e5",
+  "#06b6d4",
+  "#10b981",
+  "#f59e0b",
+  "#ec4899",
+  "#8b5cf6",
+  "#ef4444",
+  "#14b8a6",
+  "#f97316",
+  "#3b82f6",
 ];
 
-/* ============================================================
-   HELPERS
-============================================================ */
-
-const numberOrNull = (value) => {
+const toNumber = (value) => {
   if (
     value === null ||
     value === undefined ||
@@ -74,48 +69,44 @@ const numberOrNull = (value) => {
     : null;
 };
 
-const firstValidNumber = (...values) => {
-  for (const value of values) {
-    const number = numberOrNull(value);
+const clamp = (value) => {
+  const number = toNumber(value);
 
-    if (number !== null) {
-      return number;
-    }
+  if (number === null) {
+    return null;
   }
 
-  return null;
+  return Math.max(
+    0,
+    Math.min(100, number)
+  );
+};
+
+const rounded = (value) => {
+  const number = clamp(value);
+
+  return number === null
+    ? null
+    : Math.round(number);
 };
 
 const formatPercent = (value) => {
-  const number = numberOrNull(value);
+  const number = clamp(value);
 
-  if (number === null) {
-    return "—";
-  }
-
-  return `${Math.round(number)}%`;
-};
-
-const formatScore = (value) => {
-  const number = numberOrNull(value);
-
-  if (number === null) {
-    return "—";
-  }
-
-  return Math.round(number);
+  return number === null
+    ? "—"
+    : `${Math.round(number)}%`;
 };
 
 const getStatus = (score) => {
-  const value = numberOrNull(score);
+  const value = clamp(score);
 
   if (value === null) {
     return {
-      label: "Not available",
+      label: "Not enough data",
       className:
         "student-performance-neutral",
-      description:
-        "More academic information is needed to show the current performance outlook.",
+      icon: Activity,
     };
   }
 
@@ -124,8 +115,7 @@ const getStatus = (score) => {
       label: "Strong progress",
       className:
         "student-performance-positive",
-      description:
-        "The available academic indicators show consistent progress.",
+      icon: TrendingUp,
     };
   }
 
@@ -134,8 +124,7 @@ const getStatus = (score) => {
       label: "Progressing",
       className:
         "student-performance-medium",
-      description:
-        "The student is progressing with some areas that can benefit from additional attention.",
+      icon: Activity,
     };
   }
 
@@ -143,17 +132,127 @@ const getStatus = (score) => {
     label: "Needs attention",
     className:
       "student-performance-attention",
-    description:
-      "Some additional academic support may be useful based on the available records.",
+    icon: TrendingDown,
   };
 };
 
 /* ============================================================
-   COMPONENT
+   TOOLTIP
+============================================================ */
+
+function PerformanceTooltip({
+  active,
+  payload,
+  label,
+}) {
+  if (
+    !active ||
+    !payload ||
+    !payload.length
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="student-performance-tooltip">
+
+      <div className="student-performance-tooltip-title">
+        {label}
+      </div>
+
+      {payload.map(
+        (item, index) => (
+          <div
+            key={index}
+            className="student-performance-tooltip-row"
+          >
+            <span>
+              {item.name}
+            </span>
+
+            <strong>
+              {rounded(item.value)}%
+            </strong>
+          </div>
+        )
+      )}
+
+    </div>
+  );
+}
+
+/* ============================================================
+   KPI
+============================================================ */
+
+function MetricCard({
+  icon: Icon,
+  title,
+  value,
+  description,
+}) {
+  return (
+    <div className="student-performance-metric">
+
+      <div className="student-performance-metric-icon">
+        <Icon size={20} />
+      </div>
+
+      <div>
+        <span className="student-performance-metric-title">
+          {title}
+        </span>
+
+        <strong>
+          {value}
+        </strong>
+
+        <small>
+          {description}
+        </small>
+      </div>
+
+    </div>
+  );
+}
+
+/* ============================================================
+   SNAPSHOT
+============================================================ */
+
+function SnapshotItem({
+  icon: Icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="student-performance-snapshot">
+
+      <div className="student-performance-snapshot-icon">
+        <Icon size={19} />
+      </div>
+
+      <div>
+        <span>
+          {label}
+        </span>
+
+        <strong>
+          {value}
+        </strong>
+      </div>
+
+    </div>
+  );
+}
+
+/* ============================================================
+   MAIN
 ============================================================ */
 
 export default function StudentPerformance() {
-  const [data, setData] = useState(null);
+  const [data, setData] =
+    useState(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -162,58 +261,55 @@ export default function StudentPerformance() {
     useState("");
 
   /* ==========================================================
-     LOAD PERFORMANCE
+     LOAD
   ========================================================== */
 
   useEffect(() => {
     let mounted = true;
 
-    const loadPerformance = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    const loadPerformance =
+      async () => {
+        try {
+          setLoading(true);
+          setError("");
 
-        const response =
-          await axiosClient.get(
-            "/student-portal/performance"
+          const response =
+            await axiosClient.get(
+              "/student-portal/performance"
+            );
+
+          const payload =
+            response?.data?.data ??
+            response?.data ??
+            null;
+
+          if (!mounted) {
+            return;
+          }
+
+          setData(payload);
+        } catch (err) {
+          console.error(
+            "Student performance error:",
+            err
           );
 
-        const payload =
-          response?.data?.data ??
-          response?.data ??
-          null;
+          if (!mounted) {
+            return;
+          }
 
-        console.log(
-          "STUDENT PERFORMANCE API RESPONSE:",
-          payload
-        );
-
-        if (!mounted) {
-          return;
+          setError(
+            err?.response?.data?.error ||
+              err?.response?.data?.message ||
+              err?.message ||
+              "Unable to load your performance information."
+          );
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
         }
-
-        setData(payload);
-      } catch (err) {
-        console.error(
-          "Student performance load error:",
-          err
-        );
-
-        if (!mounted) {
-          return;
-        }
-
-        setError(
-          err?.response?.data?.error ||
-            err?.response?.data?.message ||
-            "Unable to load your performance information."
-        );
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
+      };
 
     loadPerformance();
 
@@ -223,79 +319,20 @@ export default function StudentPerformance() {
   }, []);
 
   /* ==========================================================
-     NORMALIZED DATA
+     DATA
   ========================================================== */
 
   const student =
     data?.student || {};
 
-  const backendPerformance =
-    data?.performance || {};
-
-  const backendPrediction =
+  const prediction =
     data?.prediction || {};
 
-  const backendMetrics =
-    data?.metrics || {};
-
-  /*
-   * IMPORTANT:
-   *
-   * Different versions of the performance API may return
-   * the overall score in different places.
-   *
-   * We check all common locations before showing 0.
-   */
-
-  const overallScore = firstValidNumber(
-    backendPrediction?.score,
-    backendPerformance?.score,
-    backendPerformance?.overallScore,
-    backendPerformance?.overallPercentage,
-    backendPerformance?.percentage,
-    backendPerformance?.average,
-    backendMetrics?.overallScore,
-    backendMetrics?.overallPercentage,
-    backendMetrics?.percentage,
-    data?.overallScore,
-    data?.overallPercentage,
-    data?.score
-  );
-
-  const prediction = {
-    ...backendPrediction,
-
-    score: overallScore,
-
-    confidence:
-      firstValidNumber(
-        backendPrediction?.confidence,
-        backendPerformance?.confidence,
-        data?.confidence
-      ),
-  };
-
   const metrics =
-    backendMetrics || {};
+    data?.metrics || {};
 
   const attendance =
     data?.attendance || {};
-
-  const trend =
-    Array.isArray(
-      data?.trend?.points
-    )
-      ? data.trend.points
-      : Array.isArray(data?.trend)
-      ? data.trend
-      : [];
-
-  const subjects =
-    Array.isArray(
-      data?.subjects
-    )
-      ? data.subjects
-      : [];
 
   const explanation =
     data?.explanation || {};
@@ -307,167 +344,72 @@ export default function StudentPerformance() {
       ? data.recommendations
       : [];
 
-  /* ==========================================================
-     METRIC NORMALIZATION
-  ========================================================== */
+  const trend =
+    Array.isArray(
+      data?.trend?.points
+    )
+      ? data.trend.points
+      : [];
+
+  const subjects =
+    Array.isArray(
+      data?.subjects
+    )
+      ? data.subjects
+      : [];
+
+  const overallScore =
+    clamp(
+      prediction?.score ??
+        data?.performance?.score ??
+        metrics?.overallScore
+    );
 
   const attendancePercentage =
-    firstValidNumber(
-      metrics?.attendancePercentage,
-      metrics?.attendance,
-      attendance?.percentage,
-      attendance?.attendancePercentage,
-      attendance?.summary?.percentage
+    clamp(
+      metrics?.attendancePercentage ??
+        attendance?.percentage ??
+        attendance?.attendancePercentage
     );
 
   const assignmentCompletion =
-    firstValidNumber(
-      metrics?.assignmentCompletion,
-      metrics?.assignmentPercentage,
-      metrics?.assignmentsCompletion,
-      data?.assignments?.completionPercentage,
-      data?.assignments?.completion
+    clamp(
+      metrics?.assignmentCompletion
     );
 
   const examAverage =
-    firstValidNumber(
-      metrics?.examAverage,
-      metrics?.examPercentage,
-      metrics?.average,
-      data?.examAverage
-    );
-
-  const subjectsCount =
-    firstValidNumber(
-      metrics?.subjectsCount,
-      metrics?.subjectCount,
-      subjects.length
-    );
-
-  /* ==========================================================
-     SCORE
-  ========================================================== */
-
-  const score =
-    numberOrNull(
-      prediction.score
+    clamp(
+      metrics?.examAverage
     );
 
   const status =
-    getStatus(score);
+    getStatus(
+      overallScore
+    );
+
+  const StatusIcon =
+    status.icon;
 
   /* ==========================================================
-     CONFIDENCE
-  ========================================================== */
-
-  const calculatedConfidence =
-    (() => {
-      if (
-        prediction.confidence !==
-          null &&
-        prediction.confidence !==
-          undefined &&
-        Number.isFinite(
-          Number(
-            prediction.confidence
-          )
-        )
-      ) {
-        return Math.min(
-          100,
-          Math.max(
-            0,
-            Math.round(
-              Number(
-                prediction.confidence
-              )
-            )
-          )
-        );
-      }
-
-      let available = 0;
-
-      let total = 0;
-
-      if (
-        numberOrNull(
-          examAverage
-        ) !== null
-      ) {
-        available++;
-      }
-
-      total++;
-
-      if (
-        numberOrNull(
-          attendancePercentage
-        ) !== null
-      ) {
-        available++;
-      }
-
-      total++;
-
-      if (
-        numberOrNull(
-          assignmentCompletion
-        ) !== null
-      ) {
-        available++;
-      }
-
-      total++;
-
-      if (
-        score !== null
-      ) {
-        available++;
-      }
-
-      total++;
-
-      if (total === 0) {
-        return 0;
-      }
-
-      return Math.round(
-        (available / total) *
-          100
-      );
-    })();
-
-  /* ==========================================================
-     CHART DATA
+     TREND
   ========================================================== */
 
   const trendData =
     useMemo(() => {
       return trend
         .map(
-          (item, index) => {
-            const performance =
-              firstValidNumber(
-                item?.percentage,
-                item?.score,
-                item?.marksPercentage,
-                item?.average,
-                item?.value
-              );
+          (item, index) => ({
+            name:
+              item?.name ||
+              item?.exam ||
+              `Assessment ${index + 1}`,
 
-            return {
-              name:
-                item?.name ||
-                item?.exam ||
-                item?.examName ||
-                `Assessment ${
-                  index + 1
-                }`,
-
-              performance,
-            };
-          }
+            performance:
+              clamp(
+                item?.percentage ??
+                  item?.score
+              ),
+          })
         )
         .filter(
           (item) =>
@@ -476,37 +418,33 @@ export default function StudentPerformance() {
         );
     }, [trend]);
 
+  /* ==========================================================
+     SUBJECT
+  ========================================================== */
+
   const subjectData =
     useMemo(() => {
       return subjects
         .map(
-          (subject, index) => {
-            const percentage =
-              firstValidNumber(
-                subject?.percentage,
-                subject?.score,
-                subject?.marksPercentage,
-                subject?.average,
-                subject?.value
-              );
+          (subject, index) => ({
+            name:
+              subject?.name ||
+              subject?.subjectName ||
+              `Subject ${index + 1}`,
 
-            return {
-              name:
-                subject?.name ||
-                subject?.subjectName ||
-                `Subject ${
-                  index + 1
-                }`,
+            percentage:
+              clamp(
+                subject?.percentage ??
+                  subject?.score ??
+                  subject?.average
+              ),
 
-              percentage,
-
-              color:
-                SUBJECT_COLORS[
-                  index %
-                    SUBJECT_COLORS.length
-                ],
-            };
-          }
+            color:
+              SUBJECT_COLORS[
+                index %
+                  SUBJECT_COLORS.length
+              ],
+          })
         )
         .filter(
           (item) =>
@@ -522,19 +460,21 @@ export default function StudentPerformance() {
   if (loading) {
     return (
       <div className="student-performance-loading">
+
         <Loader2
           size={34}
           className="student-performance-spinner"
         />
 
         <h2>
-          Loading your performance...
+          Preparing your performance
         </h2>
 
         <p>
-          We are preparing your
-          academic overview.
+          Loading your academic
+          performance information.
         </p>
+
       </div>
     );
   }
@@ -546,15 +486,18 @@ export default function StudentPerformance() {
   if (error) {
     return (
       <div className="student-performance-error">
+
         <div className="student-performance-error-icon">
-          <Activity size={28} />
+          <AlertCircle size={28} />
         </div>
 
         <h2>
           Unable to load performance
         </h2>
 
-        <p>{error}</p>
+        <p>
+          {error}
+        </p>
 
         <button
           type="button"
@@ -564,77 +507,82 @@ export default function StudentPerformance() {
         >
           Try Again
         </button>
+
       </div>
     );
   }
 
   /* ==========================================================
-     SCORE RING
+     RING
   ========================================================== */
 
-  const scoreForRing =
-    score === null
+  const score =
+    overallScore === null
       ? 0
-      : Math.min(
-          100,
-          Math.max(
-            0,
-            score
-          )
-        );
+      : overallScore;
 
   const ringStyle = {
     background: `conic-gradient(
-      #4F46E5 0deg,
-      #06B6D4 ${
-        scoreForRing * 1.2
-      }deg,
-      #10B981 ${
-        scoreForRing * 2.4
-      }deg,
-      #E8EDF7 ${
-        scoreForRing * 3.6
-      }deg,
-      #E8EDF7 360deg
+      #5146e5 0deg,
+      #6366f1 ${score * 1.8}deg,
+      #06b6d4 ${score * 2.8}deg,
+      #10b981 ${score * 3.6}deg,
+      #e9e7f8 ${score * 3.6}deg
     )`,
   };
 
   return (
     <div className="student-performance-page">
 
-      {/* ======================================================
+      {/* ====================================================
           HEADER
-      ====================================================== */}
+      ==================================================== */}
 
-      <div className="student-performance-header">
+      <header className="student-performance-header">
 
         <div>
           <div className="student-performance-eyebrow">
-            STUDENT PORTAL
+            AI ACADEMIC INTELLIGENCE
           </div>
 
           <h1>
-            Performance Overview
+            Performance Analytics
           </h1>
 
           <p>
-            Track your academic
-            progress, subject
-            performance and areas
-            of focus.
+            Understand your academic progress,
+            subject performance, trends and
+            recommended areas of focus.
           </p>
         </div>
 
-      </div>
+        <div className="student-performance-ai-badge">
 
-      {/* ======================================================
-          STUDENT CONTEXT
-      ====================================================== */}
+          <Brain size={17} />
+
+          <div>
+            <strong>
+              AI Performance
+            </strong>
+
+            <span>
+              Academic decision support
+            </span>
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* ====================================================
+          STUDENT
+      ==================================================== */}
 
       <section className="student-performance-student-card">
 
         <div className="student-performance-student-icon">
-          {student.photoUrl ? (
+
+          {student?.photoUrl ? (
             <img
               src={
                 student.photoUrl
@@ -646,9 +594,10 @@ export default function StudentPerformance() {
             />
           ) : (
             <UserRound
-              size={34}
+              size={31}
             />
           )}
+
         </div>
 
         <div className="student-performance-student-info">
@@ -658,14 +607,14 @@ export default function StudentPerformance() {
           </span>
 
           <h2>
-            {student.studentName ||
-              student.name ||
+            {student?.studentName ||
+              student?.name ||
               "Student"}
           </h2>
 
           <div className="student-performance-student-meta">
 
-            {student.class?.name && (
+            {student?.class?.name && (
               <span>
                 <GraduationCap
                   size={15}
@@ -675,15 +624,14 @@ export default function StudentPerformance() {
               </span>
             )}
 
-            {student.section?.name && (
+            {student?.section?.name && (
               <span>
-                <UsersIcon />
-
+                Section{" "}
                 {student.section.name}
               </span>
             )}
 
-            {student.admissionNo && (
+            {student?.admissionNo && (
               <span>
                 Admission No:{" "}
                 {student.admissionNo}
@@ -691,31 +639,35 @@ export default function StudentPerformance() {
             )}
 
           </div>
+
         </div>
 
-        <div
-          className={`student-performance-status ${status.className}`}
-        >
-          <CheckCircle2
-            size={16}
-          />
+        <div className="student-performance-status-area">
 
-          {status.label}
+          <div
+            className={`student-performance-status ${status.className}`}
+          >
+            <StatusIcon size={15} />
+
+            {prediction?.label ||
+              status.label}
+          </div>
+
+          <span>
+            Current academic outlook
+          </span>
+
         </div>
 
       </section>
 
-      {/* ======================================================
-          MAIN GRID
-      ====================================================== */}
+      {/* ====================================================
+          SCORE + KPI
+      ==================================================== */}
 
-      <div className="student-performance-main-grid">
+      <section className="student-performance-main-grid">
 
-        {/* ====================================================
-            SCORE
-        ==================================================== */}
-
-        <section className="student-performance-score-card">
+        <div className="student-performance-score-card">
 
           <div className="student-performance-section-label">
             OVERALL OUTLOOK
@@ -727,54 +679,72 @@ export default function StudentPerformance() {
 
           <div className="student-performance-score-layout">
 
-            <div className="student-performance-score-ring-wrapper">
+            <div
+              className="student-performance-score-ring"
+              style={ringStyle}
+            >
 
-              <div
-                className="student-performance-score-ring"
-                style={ringStyle}
-              >
-                <div className="student-performance-score-inner">
+              <div className="student-performance-score-inner">
 
-                  <strong>
-                    {formatScore(
-                      score
-                    )}
-                  </strong>
+                <strong>
+                  {overallScore !==
+                  null
+                    ? rounded(
+                        overallScore
+                      )
+                    : "—"}
+                </strong>
 
-                  <span>
-                    /100
-                  </span>
+                <span>
+                  /100
+                </span>
 
-                </div>
               </div>
 
             </div>
 
-            <div className="student-performance-score-text">
+            <div className="student-performance-score-details">
 
               <div
                 className={`student-performance-status ${status.className}`}
               >
-                <CheckCircle2
-                  size={15}
-                />
+                <StatusIcon size={15} />
 
-                {status.label}
+                {prediction?.label ||
+                  status.label}
               </div>
 
               <p>
-                {status.description}
+                This overview combines
+                available assessment,
+                attendance and assignment
+                indicators.
               </p>
 
               <div className="student-performance-confidence">
 
-                <span>
-                  Data confidence
-                </span>
+                <div>
+                  <span>
+                    Data confidence
+                  </span>
 
-                <strong>
-                  {calculatedConfidence}%
-                </strong>
+                  <strong>
+                    {prediction?.confidence ??
+                      "—"}
+                    %
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Assessments
+                  </span>
+
+                  <strong>
+                    {metrics?.marks ??
+                      0}
+                  </strong>
+                </div>
 
               </div>
 
@@ -782,11 +752,7 @@ export default function StudentPerformance() {
 
           </div>
 
-        </section>
-
-        {/* ====================================================
-            KPI GRID
-        ==================================================== */}
+        </div>
 
         <div className="student-performance-kpi-grid">
 
@@ -797,7 +763,6 @@ export default function StudentPerformance() {
               attendancePercentage
             )}
             description="Participation consistency"
-            color="blue"
           />
 
           <MetricCard
@@ -807,7 +772,6 @@ export default function StudentPerformance() {
               assignmentCompletion
             )}
             description="Completion rate"
-            color="green"
           />
 
           <MetricCard
@@ -817,27 +781,24 @@ export default function StudentPerformance() {
               examAverage
             )}
             description="Average performance"
-            color="purple"
           />
 
           <MetricCard
             icon={BookOpen}
             title="Subjects"
             value={
-              subjectsCount ??
               subjects.length
             }
             description="With available scores"
-            color="orange"
           />
 
         </div>
 
-      </div>
+      </section>
 
-      {/* ======================================================
-          PERFORMANCE TREND
-      ====================================================== */}
+      {/* ====================================================
+          TREND
+      ==================================================== */}
 
       <section className="student-performance-card">
 
@@ -853,14 +814,13 @@ export default function StudentPerformance() {
             </h2>
 
             <p>
-              Track how your available
-              assessment performance
-              has changed over time.
+              Track your assessment performance
+              across available examinations.
             </p>
           </div>
 
           <div className="student-performance-card-icon">
-            <TrendingUp size={22} />
+            <TrendingUp size={21} />
           </div>
 
         </div>
@@ -870,45 +830,20 @@ export default function StudentPerformance() {
 
             <ResponsiveContainer
               width="100%"
-              height={330}
+              height={340}
             >
               <LineChart
                 data={trendData}
                 margin={{
-                  top: 20,
+                  top: 15,
                   right: 20,
                   left: 0,
                   bottom: 10,
                 }}
               >
 
-                <defs>
-                  <linearGradient
-                    id="studentPerformanceGradient"
-                    x1="0"
-                    y1="0"
-                    x2="1"
-                    y2="0"
-                  >
-                    <stop
-                      offset="0%"
-                      stopColor="#4F46E5"
-                    />
-
-                    <stop
-                      offset="50%"
-                      stopColor="#06B6D4"
-                    />
-
-                    <stop
-                      offset="100%"
-                      stopColor="#10B981"
-                    />
-                  </linearGradient>
-                </defs>
-
                 <CartesianGrid
-                  stroke="#E5E7EB"
+                  stroke="#e5e7eb"
                   strokeDasharray="4 5"
                   vertical={false}
                 />
@@ -916,7 +851,7 @@ export default function StudentPerformance() {
                 <XAxis
                   dataKey="name"
                   tick={{
-                    fill: "#64748B",
+                    fill: "#64748b",
                     fontSize: 12,
                   }}
                   axisLine={false}
@@ -924,9 +859,12 @@ export default function StudentPerformance() {
                 />
 
                 <YAxis
-                  domain={[0, 100]}
+                  domain={[
+                    0,
+                    100,
+                  ]}
                   tick={{
-                    fill: "#64748B",
+                    fill: "#64748b",
                     fontSize: 12,
                   }}
                   tickFormatter={(value) =>
@@ -937,58 +875,55 @@ export default function StudentPerformance() {
                 />
 
                 <Tooltip
-                  contentStyle={{
-                    borderRadius: 14,
-                    border:
-                      "1px solid #E2E8F0",
-                    boxShadow:
-                      "0 12px 30px rgba(15,23,42,0.10)",
-                  }}
-                  formatter={(value) => [
-                    `${Math.round(
-                      value
-                    )}%`,
-                    "Performance",
-                  ]}
+                  content={
+                    <PerformanceTooltip />
+                  }
                 />
 
                 <Line
                   type="monotone"
                   dataKey="performance"
-                  stroke="url(#studentPerformanceGradient)"
+                  name="Performance"
+                  stroke="#5146e5"
                   strokeWidth={4}
                   dot={{
                     r: 5,
-                    fill: "#4F46E5",
+                    fill: "#5146e5",
+                    stroke: "#ffffff",
                     strokeWidth: 3,
-                    stroke: "#FFFFFF",
                   }}
                   activeDot={{
-                    r: 7,
-                    fill: "#06B6D4",
-                    stroke:
-                      "#FFFFFF",
+                    r: 8,
+                    fill: "#06b6d4",
+                    stroke: "#ffffff",
                     strokeWidth: 3,
                   }}
-                  connectNulls
                 />
 
               </LineChart>
-
             </ResponsiveContainer>
 
           </div>
         ) : (
-          <EmptyChart
-            message="Assessment trend will appear here once examination results are available."
-          />
+          <div className="student-performance-empty-chart">
+            <BarChart3 size={35} />
+
+            <h3>
+              Performance trend unavailable
+            </h3>
+
+            <p>
+              Assessment results are required
+              before a trend can be displayed.
+            </p>
+          </div>
         )}
 
       </section>
 
-      {/* ======================================================
-          SUBJECT ANALYSIS
-      ====================================================== */}
+      {/* ====================================================
+          SUBJECT GRAPH
+      ==================================================== */}
 
       <section className="student-performance-card">
 
@@ -1004,13 +939,13 @@ export default function StudentPerformance() {
             </h2>
 
             <p>
-              Compare your available
-              subject scores.
+              Compare your available scores
+              across different subjects.
             </p>
           </div>
 
           <div className="student-performance-card-icon">
-            <BookOpen size={22} />
+            <BookOpen size={21} />
           </div>
 
         </div>
@@ -1020,7 +955,7 @@ export default function StudentPerformance() {
 
             <ResponsiveContainer
               width="100%"
-              height={360}
+              height={370}
             >
               <BarChart
                 data={subjectData}
@@ -1028,12 +963,12 @@ export default function StudentPerformance() {
                   top: 20,
                   right: 20,
                   left: 0,
-                  bottom: 35,
+                  bottom: 55,
                 }}
               >
 
                 <CartesianGrid
-                  stroke="#E5E7EB"
+                  stroke="#e5e7eb"
                   strokeDasharray="4 5"
                   vertical={false}
                 />
@@ -1046,15 +981,18 @@ export default function StudentPerformance() {
                   }}
                   angle={-20}
                   textAnchor="end"
-                  height={65}
+                  height={70}
                   axisLine={false}
                   tickLine={false}
                 />
 
                 <YAxis
-                  domain={[0, 100]}
+                  domain={[
+                    0,
+                    100,
+                  ]}
                   tick={{
-                    fill: "#64748B",
+                    fill: "#64748b",
                     fontSize: 12,
                   }}
                   tickFormatter={(value) =>
@@ -1066,14 +1004,14 @@ export default function StudentPerformance() {
 
                 <Tooltip
                   cursor={{
-                    fill: "#F8FAFC",
+                    fill: "#f8fafc",
                   }}
                   contentStyle={{
-                    borderRadius: 14,
                     border:
-                      "1px solid #E2E8F0",
+                      "1px solid #e2e8f0",
+                    borderRadius: 14,
                     boxShadow:
-                      "0 12px 30px rgba(15,23,42,0.10)",
+                      "0 14px 35px rgba(15,23,42,0.10)",
                   }}
                   formatter={(value) => [
                     `${Math.round(
@@ -1086,12 +1024,12 @@ export default function StudentPerformance() {
                 <Bar
                   dataKey="percentage"
                   radius={[
-                    8,
-                    8,
-                    0,
-                    0,
+                    9,
+                    9,
+                    2,
+                    2,
                   ]}
-                  maxBarSize={58}
+                  maxBarSize={62}
                 >
                   {subjectData.map(
                     (
@@ -1099,7 +1037,9 @@ export default function StudentPerformance() {
                       index
                     ) => (
                       <Cell
-                        key={`subject-${index}`}
+                        key={
+                          `subject-${index}`
+                        }
                         fill={
                           entry.color
                         }
@@ -1109,28 +1049,35 @@ export default function StudentPerformance() {
                 </Bar>
 
               </BarChart>
-
             </ResponsiveContainer>
 
           </div>
         ) : (
-          <EmptyChart
-            message="Subject performance will appear here once examination marks are available."
-          />
+          <div className="student-performance-empty-chart">
+            <BookOpen size={35} />
+
+            <h3>
+              Subject analysis unavailable
+            </h3>
+
+            <p>
+              Subject-wise results will appear
+              after examination marks are available.
+            </p>
+          </div>
         )}
 
       </section>
 
-      {/* ======================================================
-          CURRENT SNAPSHOT
-      ====================================================== */}
+      {/* ====================================================
+          SNAPSHOT
+      ==================================================== */}
 
       <section className="student-performance-card">
 
         <div className="student-performance-card-header">
 
           <div>
-
             <div className="student-performance-section-label">
               CURRENT SNAPSHOT
             </div>
@@ -1140,15 +1087,13 @@ export default function StudentPerformance() {
             </h2>
 
             <p>
-              A quick summary of the
-              academic records currently
-              available.
+              A quick summary of your current
+              academic records.
             </p>
-
           </div>
 
           <div className="student-performance-card-icon">
-            <BarChart3 size={22} />
+            <BarChart3 size={21} />
           </div>
 
         </div>
@@ -1161,16 +1106,14 @@ export default function StudentPerformance() {
             value={formatPercent(
               examAverage
             )}
-            color="purple"
           />
 
           <SnapshotItem
-            icon={CalendarDays}
+            icon={Activity}
             label="Attendance"
             value={formatPercent(
               attendancePercentage
             )}
-            color="blue"
           />
 
           <SnapshotItem
@@ -1179,173 +1122,194 @@ export default function StudentPerformance() {
             value={formatPercent(
               assignmentCompletion
             )}
-            color="green"
           />
 
           <SnapshotItem
             icon={BookOpen}
             label="Subjects"
             value={
-              subjectsCount ??
               subjects.length
             }
-            color="orange"
           />
 
         </div>
 
       </section>
 
-      {/* ======================================================
-          INSIGHTS
-      ====================================================== */}
+      {/* ====================================================
+          AI INSIGHTS
+      ==================================================== */}
 
-      <div className="student-performance-insight-grid">
+      <section className="student-performance-ai-section">
 
-        {/* STRENGTHS */}
+        <div className="student-performance-ai-header">
 
-        <section className="student-performance-card student-performance-insight-card">
+          <div className="student-performance-ai-title">
 
-          <div className="student-performance-insight-title positive">
-
-            <Award size={21} />
+            <div className="student-performance-ai-icon">
+              <Brain size={21} />
+            </div>
 
             <div>
-
               <span>
-                STRENGTHS
+                AI ANALYSIS
               </span>
 
               <h2>
-                What's going well
+                Performance Insights
               </h2>
+            </div>
+
+          </div>
+
+          <div className="student-performance-ai-status">
+            <ShieldCheck size={15} />
+
+            Academic decision support
+          </div>
+
+        </div>
+
+        <div className="student-performance-ai-summary">
+
+          <Lightbulb size={19} />
+
+          <p>
+            {explanation?.summary ||
+              "Your available academic records are being analysed to identify useful performance patterns and areas of focus."}
+          </p>
+
+        </div>
+
+        <div className="student-performance-insight-grid">
+
+          <div className="student-performance-insight-card strengths">
+
+            <div className="student-performance-insight-heading">
+              <CheckCircle2 size={19} />
+
+              <div>
+                <span>
+                  STRENGTHS
+                </span>
+
+                <h3>
+                  What's going well
+                </h3>
+              </div>
+            </div>
+
+            <div className="student-performance-insight-list">
+
+              {explanation?.strengths?.length ? (
+                explanation.strengths.map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <div
+                      key={index}
+                      className="student-performance-insight-item"
+                    >
+                      <CheckCircle2
+                        size={16}
+                      />
+
+                      <span>
+                        {item}
+                      </span>
+                    </div>
+                  )
+                )
+              ) : (
+                <p className="student-performance-empty-text">
+                  No specific strengths
+                  are available yet.
+                </p>
+              )}
 
             </div>
 
           </div>
 
-          <div className="student-performance-list">
+          <div className="student-performance-insight-card focus">
 
-            {explanation.strengths?.length ? (
-              explanation.strengths.map(
-                (
-                  item,
-                  index
-                ) => (
-                  <div
-                    className="student-performance-list-item"
-                    key={index}
-                  >
+            <div className="student-performance-insight-heading">
+              <Target size={19} />
 
-                    <CheckCircle2
-                      size={17}
-                    />
+              <div>
+                <span>
+                  FOCUS AREAS
+                </span>
 
-                    <span>
-                      {item}
-                    </span>
-
-                  </div>
-                )
-              )
-            ) : (
-              <div className="student-performance-empty-text">
-                No specific strengths
-                are available yet.
+                <h3>
+                  Areas to improve
+                </h3>
               </div>
-            )}
+            </div>
 
-          </div>
+            <div className="student-performance-insight-list">
 
-        </section>
+              {explanation?.focusAreas?.length ? (
+                explanation.focusAreas.map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <div
+                      key={index}
+                      className="student-performance-insight-item"
+                    >
+                      <Target
+                        size={16}
+                      />
 
-        {/* FOCUS AREAS */}
-
-        <section className="student-performance-card student-performance-insight-card">
-
-          <div className="student-performance-insight-title focus">
-
-            <Target size={21} />
-
-            <div>
-
-              <span>
-                FOCUS AREAS
-              </span>
-
-              <h2>
-                Areas to improve
-              </h2>
+                      <span>
+                        {item}
+                      </span>
+                    </div>
+                  )
+                )
+              ) : (
+                <p className="student-performance-empty-text">
+                  No specific focus areas
+                  are available yet.
+                </p>
+              )}
 
             </div>
 
           </div>
 
-          <div className="student-performance-list">
+        </div>
 
-            {explanation.focusAreas?.length ? (
-              explanation.focusAreas.map(
-                (
-                  item,
-                  index
-                ) => (
-                  <div
-                    className="student-performance-list-item"
-                    key={index}
-                  >
+      </section>
 
-                    <Target
-                      size={17}
-                    />
-
-                    <span>
-                      {item}
-                    </span>
-
-                  </div>
-                )
-              )
-            ) : (
-              <div className="student-performance-empty-text">
-                No specific focus areas
-                are available yet.
-              </div>
-            )}
-
-          </div>
-
-        </section>
-
-      </div>
-
-      {/* ======================================================
+      {/* ====================================================
           RECOMMENDATIONS
-      ====================================================== */}
+      ==================================================== */}
 
       <section className="student-performance-card">
 
         <div className="student-performance-card-header">
 
           <div>
-
             <div className="student-performance-section-label">
-              NEXT STEPS
+              AI-SUPPORTED ACTION PLAN
             </div>
 
             <h2>
-              Recommendations
+              Recommended Focus
             </h2>
 
             <p>
-              Practical steps based on
-              your current academic
-              records.
+              Practical steps based on your
+              available academic records.
             </p>
-
           </div>
 
           <div className="student-performance-card-icon">
-            <Lightbulb size={22} />
+            <Lightbulb size={21} />
           </div>
 
         </div>
@@ -1359,8 +1323,8 @@ export default function StudentPerformance() {
                 index
               ) => (
                 <div
-                  className="student-performance-recommendation"
                   key={index}
+                  className="student-performance-recommendation"
                 >
 
                   <div className="student-performance-recommendation-number">
@@ -1368,13 +1332,12 @@ export default function StudentPerformance() {
                   </div>
 
                   <div>
-
                     <h3>
                       {typeof item ===
                       "string"
                         ? item
                         : item?.title ||
-                          "Recommendation"}
+                          "Recommended action"}
                     </h3>
 
                     <p>
@@ -1384,149 +1347,85 @@ export default function StudentPerformance() {
                         : item?.description ||
                           ""}
                     </p>
-
                   </div>
 
                 </div>
               )
             )
           ) : (
-            <div className="student-performance-empty-text">
-              Recommendations will
-              appear when more academic
-              information is available.
-            </div>
+            <p className="student-performance-empty-text">
+              Recommendations will appear
+              when more academic information
+              is available.
+            </p>
           )}
 
         </div>
 
       </section>
 
-      {/* ======================================================
-          FOOTER NOTE
-      ====================================================== */}
+      {/* ====================================================
+          METHODOLOGY
+      ==================================================== */}
+
+      <section className="student-performance-methodology">
+
+        <div className="student-performance-methodology-icon">
+          <Brain size={20} />
+        </div>
+
+        <div className="student-performance-methodology-content">
+
+          <div className="student-performance-section-label">
+            AI PERFORMANCE FRAMEWORK
+          </div>
+
+          <h3>
+            Data-driven academic monitoring
+          </h3>
+
+          <p>
+            Performance insights are designed
+            to help identify useful academic
+            patterns and encourage timely
+            improvement.
+          </p>
+
+        </div>
+
+        <div className="student-performance-methodology-tags">
+
+          <span>
+            Academic Data
+          </span>
+
+          <span>
+            Risk Analysis
+          </span>
+
+          <span>
+            AI Insights
+          </span>
+
+        </div>
+
+      </section>
+
+      {/* ====================================================
+          FOOTER
+      ==================================================== */}
 
       <div className="student-performance-footer-note">
 
-        <Activity size={16} />
+        <ShieldCheck size={16} />
 
         <span>
-          This overview is based on
-          the academic records currently
-          available in CampusIQ.
+          This overview is based on the academic
+          records currently available in CampusIQ.
         </span>
 
       </div>
 
     </div>
-  );
-}
-
-/* ============================================================
-   METRIC CARD
-============================================================ */
-
-function MetricCard({
-  icon: Icon,
-  title,
-  value,
-  description,
-  color,
-}) {
-  return (
-    <div className="student-performance-metric">
-
-      <div
-        className={`student-performance-metric-icon ${color}`}
-      >
-        <Icon size={22} />
-      </div>
-
-      <div>
-
-        <span className="student-performance-metric-title">
-          {title}
-        </span>
-
-        <strong>
-          {value}
-        </strong>
-
-        <small>
-          {description}
-        </small>
-
-      </div>
-
-    </div>
-  );
-}
-
-/* ============================================================
-   SNAPSHOT
-============================================================ */
-
-function SnapshotItem({
-  icon: Icon,
-  label,
-  value,
-  color,
-}) {
-  return (
-    <div className="student-performance-snapshot">
-
-      <div
-        className={`student-performance-snapshot-icon ${color}`}
-      >
-        <Icon size={20} />
-      </div>
-
-      <div>
-
-        <span>
-          {label}
-        </span>
-
-        <strong>
-          {value}
-        </strong>
-
-      </div>
-
-    </div>
-  );
-}
-
-/* ============================================================
-   EMPTY CHART
-============================================================ */
-
-function EmptyChart({
-  message,
-}) {
-  return (
-    <div className="student-performance-empty-chart">
-
-      <BarChart3
-        size={34}
-      />
-
-      <p>
-        {message}
-      </p>
-
-    </div>
-  );
-}
-
-/* ============================================================
-   SMALL USERS ICON
-============================================================ */
-
-function UsersIcon() {
-  return (
-    <UserRound
-      size={15}
-    />
   );
 }

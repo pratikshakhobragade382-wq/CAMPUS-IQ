@@ -1,11 +1,13 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
 import {
   Activity,
   AlertCircle,
+  Award,
   BarChart3,
   BookOpen,
   Brain,
@@ -13,23 +15,30 @@ import {
   ClipboardCheck,
   GraduationCap,
   Lightbulb,
+  Loader2,
+  ShieldCheck,
+  Target,
+  TrendingDown,
+  TrendingUp,
   Users,
 } from "lucide-react";
 
 import {
+  ResponsiveContainer,
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 import axiosClient from "../api/axios";
 
 import "./AIPerformancePredictor.css";
-
 
 /* ============================================================
    HELPERS
@@ -51,7 +60,6 @@ const toNumber = (value) => {
     : null;
 };
 
-
 const clamp = (value) => {
   const number = toNumber(value);
 
@@ -65,54 +73,76 @@ const clamp = (value) => {
   );
 };
 
-
 const rounded = (value) => {
   const number = toNumber(value);
 
-  if (number === null) {
-    return null;
-  }
-
-  return Math.round(number);
+  return number === null
+    ? null
+    : Math.round(number);
 };
 
+const formatPercent = (value) => {
+  const number = clamp(value);
+
+  return number === null
+    ? "—"
+    : `${Math.round(number)}%`;
+};
 
 /* ============================================================
-   PERFORMANCE STATUS
+   STATUS
 ============================================================ */
 
-const getPerformanceStatus = (score) => {
-  if (score === null) {
+const getStatus = (score) => {
+  const value = clamp(score);
+
+  if (value === null) {
     return {
       label: "Not enough data",
-      className:
-        "performance-status-neutral",
+      className: "parent-performance-neutral",
+      icon: Activity,
     };
   }
 
-  if (score >= 75) {
+  if (value >= 80) {
     return {
-      label: "On Track",
-      className:
-        "performance-status-good",
+      label: "Strong progress",
+      className: "parent-performance-good",
+      icon: TrendingUp,
     };
   }
 
-  if (score >= 55) {
+  if (value >= 60) {
     return {
       label: "Progressing",
-      className:
-        "performance-status-progress",
+      className: "parent-performance-medium",
+      icon: Activity,
     };
   }
 
   return {
-    label: "Needs Attention",
-    className:
-      "performance-status-warning",
+    label: "Needs attention",
+    className: "parent-performance-warning",
+    icon: TrendingDown,
   };
 };
 
+/* ============================================================
+   SUBJECT COLORS
+============================================================ */
+
+const SUBJECT_COLORS = [
+  "#5146e5",
+  "#06b6d4",
+  "#10b981",
+  "#f59e0b",
+  "#ec4899",
+  "#8b5cf6",
+  "#ef4444",
+  "#14b8a6",
+  "#f97316",
+  "#3b82f6",
+];
 
 /* ============================================================
    CUSTOM TOOLTIP
@@ -132,9 +162,8 @@ function PerformanceTooltip({
   }
 
   return (
-    <div className="performance-tooltip">
-
-      <div className="performance-tooltip-label">
+    <div className="parent-performance-tooltip">
+      <div className="parent-performance-tooltip-title">
         {label}
       </div>
 
@@ -142,9 +171,8 @@ function PerformanceTooltip({
         (item, index) => (
           <div
             key={index}
-            className="performance-tooltip-value"
+            className="parent-performance-tooltip-row"
           >
-
             <span>
               {item.name}
             </span>
@@ -152,18 +180,15 @@ function PerformanceTooltip({
             <strong>
               {rounded(item.value)}%
             </strong>
-
           </div>
         )
       )}
-
     </div>
   );
 }
 
-
 /* ============================================================
-   METRIC CARD
+   KPI CARD
 ============================================================ */
 
 function MetricCard({
@@ -173,41 +198,62 @@ function MetricCard({
   subtitle,
 }) {
   return (
-    <div className="performance-metric-card">
-
-      <div className="performance-metric-icon">
-        <Icon size={21} />
+    <div className="parent-performance-metric">
+      <div className="parent-performance-metric-icon">
+        <Icon size={20} />
       </div>
 
-      <div className="performance-metric-content">
-
-        <span className="performance-metric-title">
+      <div className="parent-performance-metric-content">
+        <span>
           {title}
         </span>
 
-        <strong className="performance-metric-value">
+        <strong>
           {value}
         </strong>
 
-        <span className="performance-metric-subtitle">
+        <small>
           {subtitle}
-        </span>
-
+        </small>
       </div>
-
     </div>
   );
 }
 
+/* ============================================================
+   SNAPSHOT ITEM
+============================================================ */
+
+function SnapshotItem({
+  icon: Icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="parent-performance-snapshot">
+      <div className="parent-performance-snapshot-icon">
+        <Icon size={19} />
+      </div>
+
+      <div>
+        <span>
+          {label}
+        </span>
+
+        <strong>
+          {value}
+        </strong>
+      </div>
+    </div>
+  );
+}
 
 /* ============================================================
    MAIN COMPONENT
 ============================================================ */
 
 export default function AIPerformancePredictor() {
-
-  const [data, setData] =
-    useState(null);
+  const [data, setData] = useState(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -215,20 +261,16 @@ export default function AIPerformancePredictor() {
   const [error, setError] =
     useState("");
 
-
   /* ==========================================================
-     FETCH DATA
+     LOAD DATA
   ========================================================== */
 
   useEffect(() => {
-
     let mounted = true;
 
-    const fetchPerformance =
+    const loadPerformance =
       async () => {
-
         try {
-
           setLoading(true);
           setError("");
 
@@ -237,110 +279,48 @@ export default function AIPerformancePredictor() {
               "/parents/performance"
             );
 
+          const payload =
+            response?.data?.data ??
+            response?.data ??
+            null;
+
           if (!mounted) {
             return;
           }
 
-          setData(
-            response?.data?.data ||
-            null
-          );
-
+          setData(payload);
         } catch (err) {
-
           console.error(
-            "AI Performance Predictor error:",
+            "Parent performance error:",
             err
           );
 
-          if (mounted) {
-
-            setError(
-              err?.response?.data?.message ||
-              err?.message ||
-              "Unable to load performance data."
-            );
-
+          if (!mounted) {
+            return;
           }
 
+          setError(
+            err?.response?.data?.message ||
+              err?.response?.data?.error ||
+              err?.message ||
+              "Unable to load performance information."
+          );
         } finally {
-
           if (mounted) {
             setLoading(false);
           }
-
         }
-
       };
 
-    fetchPerformance();
+    loadPerformance();
 
     return () => {
       mounted = false;
     };
-
   }, []);
 
-
   /* ==========================================================
-     LOADING
-  ========================================================== */
-
-  if (loading) {
-
-    return (
-      <div className="performance-page">
-
-        <div className="performance-loading">
-
-          <div className="performance-loading-spinner" />
-
-          <h3>
-            Loading performance...
-          </h3>
-
-          <p>
-            Preparing your child's
-            academic performance report.
-          </p>
-
-        </div>
-
-      </div>
-    );
-  }
-
-
-  /* ==========================================================
-     ERROR
-  ========================================================== */
-
-  if (error) {
-
-    return (
-      <div className="performance-page">
-
-        <div className="performance-error">
-
-          <AlertCircle size={38} />
-
-          <h3>
-            Unable to load performance
-          </h3>
-
-          <p>
-            {error}
-          </p>
-
-        </div>
-
-      </div>
-    );
-  }
-
-
-  /* ==========================================================
-     SAFE DATA EXTRACTION
+     DATA
   ========================================================== */
 
   const tracker =
@@ -359,10 +339,11 @@ export default function AIPerformancePredictor() {
     tracker?.attendance || {};
 
   const trend =
-    tracker?.trend || {};
-
-  const explanation =
-    tracker?.explanation || {};
+    Array.isArray(
+      tracker?.trend?.points
+    )
+      ? tracker.trend.points
+      : [];
 
   const subjects =
     Array.isArray(
@@ -371,6 +352,9 @@ export default function AIPerformancePredictor() {
       ? tracker.subjects
       : [];
 
+  const explanation =
+    tracker?.explanation || {};
+
   const recommendations =
     Array.isArray(
       tracker?.recommendations
@@ -378,330 +362,393 @@ export default function AIPerformancePredictor() {
       ? tracker.recommendations
       : [];
 
-
-  /* ==========================================================
-     REAL ATTENDANCE
-  ========================================================== */
+  const overallScore =
+    clamp(
+      prediction?.score ??
+        metrics?.overallScore
+    );
 
   const attendancePercentage =
     clamp(
       metrics?.attendancePercentage ??
-      attendance?.attendancePercentage ??
-      attendance?.percentage
+        attendance?.percentage ??
+        attendance?.attendancePercentage
     );
 
-
-  /* ==========================================================
-     OVERALL SCORE
-  ========================================================== */
-
-  const overallScore =
+  const assignmentCompletion =
     clamp(
-      prediction?.score ??
-      metrics?.overallScore
+      metrics?.assignmentCompletion
     );
 
+  const examAverage =
+    clamp(
+      metrics?.examAverage
+    );
 
-  const performanceStatus =
-    getPerformanceStatus(
+  const status =
+    getStatus(
       overallScore
     );
 
+  const StatusIcon =
+    status.icon;
 
   /* ==========================================================
-     ASSIGNMENT
+     TREND DATA
   ========================================================== */
 
-  const assignmentPercentage =
-    clamp(
-      metrics?.assignmentCompletion ??
-      metrics?.assignmentCompletionPercentage ??
-      tracker?.assignments?.completionPercentage
-    );
+  const trendData =
+    useMemo(() => {
+      return trend
+        .map(
+          (item, index) => ({
+            name:
+              item?.name ||
+              item?.exam ||
+              item?.label ||
+              `Assessment ${index + 1}`,
 
-
-  /* ==========================================================
-     ASSESSMENT
-  ========================================================== */
-
-  const assessmentPercentage =
-    clamp(
-      metrics?.examAverage ??
-      metrics?.assessmentAverage ??
-      tracker?.exams?.average
-    );
-
-
-  /* ==========================================================
-     TREND
-  ========================================================== */
-
-  let trendData = [];
-
-  if (
-    Array.isArray(
-      trend?.points
-    )
-  ) {
-
-    trendData =
-      trend.points
-        .map((item) => ({
-          name:
-            item?.name ||
-            item?.exam ||
-            item?.label ||
-            "Assessment",
-
-          score:
-            clamp(
-              item?.percentage ??
-              item?.score ??
-              item?.marks
-            ),
-        }))
+            performance:
+              clamp(
+                item?.percentage ??
+                  item?.score ??
+                  item?.marks
+              ),
+          })
+        )
         .filter(
           (item) =>
-            item.score !== null
+            item.performance !==
+            null
         );
+    }, [trend]);
 
+  /* ==========================================================
+     SUBJECT DATA
+  ========================================================== */
+
+  const subjectData =
+    useMemo(() => {
+      return subjects
+        .map(
+          (subject, index) => ({
+            name:
+              subject?.name ||
+              subject?.subjectName ||
+              `Subject ${index + 1}`,
+
+            percentage:
+              clamp(
+                subject?.percentage ??
+                  subject?.score ??
+                  subject?.average
+              ),
+
+            color:
+              SUBJECT_COLORS[
+                index %
+                  SUBJECT_COLORS.length
+              ],
+          })
+        )
+        .filter(
+          (item) =>
+            item.percentage !==
+            null
+        );
+    }, [subjects]);
+
+  /* ==========================================================
+     LOADING
+  ========================================================== */
+
+  if (loading) {
+    return (
+      <div className="parent-performance-loading">
+        <div className="parent-performance-loader">
+          <Loader2
+            size={32}
+          />
+        </div>
+
+        <h2>
+          Preparing performance insights
+        </h2>
+
+        <p>
+          Loading your child's academic
+          performance data.
+        </p>
+      </div>
+    );
   }
 
-
   /* ==========================================================
-     SUBJECT COUNT
+     ERROR
   ========================================================== */
 
-  const subjectCount =
-    subjects.length;
+  if (error) {
+    return (
+      <div className="parent-performance-error">
+        <div className="parent-performance-error-icon">
+          <AlertCircle size={28} />
+        </div>
 
+        <h2>
+          Unable to load performance
+        </h2>
+
+        <p>
+          {error}
+        </p>
+
+        <button
+          type="button"
+          onClick={() =>
+            window.location.reload()
+          }
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   /* ==========================================================
-     PAGE
+     RING
   ========================================================== */
+
+  const score =
+    overallScore === null
+      ? 0
+      : overallScore;
+
+  const ringStyle = {
+    background: `conic-gradient(
+      #5146e5 0deg,
+      #6366f1 ${score * 1.8}deg,
+      #06b6d4 ${score * 2.8}deg,
+      #10b981 ${score * 3.6}deg,
+      #e9e7f8 ${score * 3.6}deg
+    )`,
+  };
 
   return (
-    <div className="performance-page">
+    <div className="parent-performance-page">
 
       {/* ====================================================
           HEADER
       ==================================================== */}
 
-      <div className="performance-page-header">
+      <header className="parent-performance-header">
 
         <div>
-
-          <div className="performance-eyebrow">
-            PARENT PORTAL
+          <div className="parent-performance-eyebrow">
+            AI ACADEMIC INTELLIGENCE
           </div>
 
           <h1>
-            AI Performance Predictor
+            Performance Analytics
           </h1>
 
           <p>
-            A clear view of your child's
-            academic progress, trends and
-            recommended areas of focus.
+            A professional overview of your
+            child's academic progress, trends,
+            subject performance and areas that
+            may need attention.
           </p>
-
         </div>
 
-      </div>
+        <div className="parent-performance-ai-badge">
+          <Brain size={17} />
 
+          <div>
+            <strong>
+              AI Performance
+            </strong>
+
+            <span>
+              Academic decision support
+            </span>
+          </div>
+        </div>
+
+      </header>
 
       {/* ====================================================
-          STUDENT
+          STUDENT OVERVIEW
       ==================================================== */}
 
-      <section className="student-overview-card">
+      <section className="parent-performance-student-card">
 
-        <div className="student-avatar">
-
-          {student?.name
-            ?.charAt(0)
-            ?.toUpperCase() || "S"}
-
+        <div className="parent-performance-avatar">
+          {student?.photoUrl ? (
+            <img
+              src={
+                student.photoUrl
+              }
+              alt={
+                student.name ||
+                "Student"
+              }
+            />
+          ) : (
+            student?.name
+              ?.charAt(0)
+              ?.toUpperCase() || "S"
+          )}
         </div>
 
+        <div className="parent-performance-student-info">
 
-        <div className="student-overview-info">
-
-          <div className="performance-eyebrow">
-            STUDENT PERFORMANCE OVERVIEW
-          </div>
+          <span>
+            STUDENT
+          </span>
 
           <h2>
             {student?.name ||
+              student?.studentName ||
               "Student"}
           </h2>
 
-          <div className="student-meta">
+          <div className="parent-performance-student-meta">
 
-            <span>
+            {student?.class?.name && (
+              <span>
+                <GraduationCap
+                  size={15}
+                />
 
-              <GraduationCap
-                size={14}
-              />
+                {student.class.name}
+              </span>
+            )}
 
-              {student?.class?.name ||
-                student?.className ||
-                "Class"}
+            {student?.section?.name && (
+              <span>
+                <Users
+                  size={15}
+                />
 
-            </span>
+                Section{" "}
+                {student.section.name}
+              </span>
+            )}
 
-
-            <span>
-
-              <Users
-                size={14}
-              />
-
-              {student?.section?.name
-                ? `Section ${student.section.name}`
-                : "Section"}
-
-            </span>
+            {student?.admissionNo && (
+              <span>
+                Admission No:{" "}
+                {student.admissionNo}
+              </span>
+            )}
 
           </div>
-
         </div>
 
-
-        <div className="student-overview-status">
+        <div className="parent-performance-status-area">
 
           <div
-            className={`status-pill ${performanceStatus.className}`}
+            className={`parent-performance-status ${status.className}`}
           >
-
-            <Activity size={15} />
+            <StatusIcon size={15} />
 
             {prediction?.label ||
-              performanceStatus.label}
-
+              status.label}
           </div>
 
-          <p>
-            The student is progressing,
-            with some areas that can benefit
-            from additional attention.
-          </p>
+          <span>
+            Current academic outlook
+          </span>
 
         </div>
 
       </section>
 
-
       {/* ====================================================
-          SUMMARY
+          TOP ANALYTICS
       ==================================================== */}
 
-      <section className="performance-summary-grid">
+      <section className="parent-performance-main-grid">
 
-        {/* OVERALL */}
+        {/* SCORE */}
 
-        <div className="overall-performance-card">
+        <div className="parent-performance-score-card">
 
-          <div className="overall-performance-header">
-
-            <div>
-
-              <div className="performance-eyebrow">
-                OVERALL OUTLOOK
-              </div>
-
-              <h2>
-                Current Performance
-              </h2>
-
-            </div>
-
-            <Brain
-              size={22}
-              className="summary-brain-icon"
-            />
-
+          <div className="parent-performance-card-label">
+            OVERALL OUTLOOK
           </div>
 
+          <h2>
+            Current Performance
+          </h2>
 
-          <div className="overall-performance-body">
+          <div className="parent-performance-score-layout">
 
-            <div className="score-circle-wrapper">
+            <div
+              className="parent-performance-score-ring"
+              style={ringStyle}
+            >
+              <div className="parent-performance-score-inner">
 
-              <div
-                className="score-circle"
-                style={{
-                  "--score":
-                    overallScore ??
-                    0,
-                }}
-              >
+                <strong>
+                  {overallScore !==
+                  null
+                    ? rounded(
+                        overallScore
+                      )
+                    : "—"}
+                </strong>
 
-                <div className="score-circle-inner">
-
-                  <strong>
-                    {overallScore !==
-                    null
-                      ? rounded(
-                          overallScore
-                        )
-                      : "—"}
-                  </strong>
-
-                  <span>
-                    /100
-                  </span>
-
-                </div>
+                <span>
+                  /100
+                </span>
 
               </div>
-
             </div>
 
-
-            <div className="overall-performance-details">
+            <div className="parent-performance-score-details">
 
               <div
-                className={`small-status ${performanceStatus.className}`}
+                className={`parent-performance-status ${status.className}`}
               >
+                <StatusIcon size={15} />
+
                 {prediction?.label ||
-                  performanceStatus.label}
+                  status.label}
               </div>
 
               <p>
-                The performance report is
-                based on the available
-                examination, attendance and
-                assignment records. The
-                current academic pattern is
-                shown through performance
-                score, attendance, assignment
-                completion and assessment
-                trends.
+                The current score combines
+                available assessment,
+                attendance and assignment
+                information.
               </p>
 
+              <div className="parent-performance-confidence">
 
-              {prediction?.confidence !==
-                undefined &&
-              prediction?.confidence !==
-                null ? (
-
-                <div className="confidence-row">
-
+                <div>
                   <span>
-                    Confidence indicator
+                    Data confidence
                   </span>
 
                   <strong>
-                    {rounded(
-                      prediction.confidence
-                    )}
+                    {prediction?.confidence ??
+                      "—"}
                     %
                   </strong>
-
                 </div>
 
-              ) : null}
+                <div>
+                  <span>
+                    Assessments
+                  </span>
+
+                  <strong>
+                    {metrics?.marksCount ??
+                      0}
+                  </strong>
+                </div>
+
+              </div>
 
             </div>
 
@@ -709,61 +756,42 @@ export default function AIPerformancePredictor() {
 
         </div>
 
+        {/* KPI */}
 
-        {/* METRICS */}
-
-        <div className="metrics-grid">
+        <div className="parent-performance-kpi-grid">
 
           <MetricCard
             icon={Activity}
             title="Attendance"
-            value={
-              attendancePercentage !==
-              null
-                ? `${rounded(
-                    attendancePercentage
-                  )}%`
-                : "—"
-            }
-            subtitle="Teacher recorded"
+            value={formatPercent(
+              attendancePercentage
+            )}
+            subtitle="Participation consistency"
           />
-
 
           <MetricCard
             icon={ClipboardCheck}
             title="Assignments"
-            value={
-              assignmentPercentage !==
-              null
-                ? `${rounded(
-                    assignmentPercentage
-                  )}%`
-                : "—"
-            }
+            value={formatPercent(
+              assignmentCompletion
+            )}
             subtitle="Completion rate"
           />
-
 
           <MetricCard
             icon={GraduationCap}
             title="Assessments"
-            value={
-              assessmentPercentage !==
-              null
-                ? `${rounded(
-                    assessmentPercentage
-                  )}%`
-                : "—"
-            }
+            value={formatPercent(
+              examAverage
+            )}
             subtitle="Average performance"
           />
-
 
           <MetricCard
             icon={BookOpen}
             title="Subjects"
             value={
-              subjectCount
+              subjects.length
             }
             subtitle="With available scores"
           />
@@ -772,18 +800,16 @@ export default function AIPerformancePredictor() {
 
       </section>
 
-
       {/* ====================================================
-          TREND
+          PERFORMANCE TREND
       ==================================================== */}
 
-      <section className="performance-trend-card">
+      <section className="parent-performance-card">
 
-        <div className="performance-card-header">
+        <div className="parent-performance-card-header">
 
           <div>
-
-            <div className="performance-eyebrow">
+            <div className="parent-performance-card-label">
               ACADEMIC PROGRESS
             </div>
 
@@ -792,50 +818,44 @@ export default function AIPerformancePredictor() {
             </h2>
 
             <p>
-              Track how available academic
-              performance has changed over time.
+              Follow how assessment performance
+              has changed across available exams.
             </p>
-
           </div>
 
-          <div className="performance-card-icon">
-
-            <BarChart3
-              size={21}
-            />
-
+          <div className="parent-performance-card-icon">
+            <TrendingUp size={21} />
           </div>
 
         </div>
 
-
         {trendData.length > 0 ? (
-
-          <div className="performance-chart">
+          <div className="parent-performance-chart">
 
             <ResponsiveContainer
               width="100%"
-              height="100%"
+              height={340}
             >
-
               <LineChart
                 data={trendData}
                 margin={{
-                  top: 10,
+                  top: 15,
                   right: 20,
                   left: 0,
-                  bottom: 5,
+                  bottom: 10,
                 }}
               >
 
                 <CartesianGrid
-                  strokeDasharray="3 3"
+                  stroke="#e5e7eb"
+                  strokeDasharray="4 5"
                   vertical={false}
                 />
 
                 <XAxis
                   dataKey="name"
                   tick={{
+                    fill: "#64748b",
                     fontSize: 12,
                   }}
                   axisLine={false}
@@ -848,6 +868,7 @@ export default function AIPerformancePredictor() {
                     100,
                   ]}
                   tick={{
+                    fill: "#64748b",
                     fontSize: 12,
                   }}
                   tickFormatter={(value) =>
@@ -865,193 +886,411 @@ export default function AIPerformancePredictor() {
 
                 <Line
                   type="monotone"
-                  dataKey="score"
+                  dataKey="performance"
                   name="Performance"
                   stroke="#5146e5"
-                  strokeWidth={3}
+                  strokeWidth={4}
                   dot={{
                     r: 5,
                     fill: "#5146e5",
+                    stroke: "#fff",
+                    strokeWidth: 3,
                   }}
                   activeDot={{
-                    r: 7,
+                    r: 8,
+                    fill: "#06b6d4",
+                    stroke: "#fff",
+                    strokeWidth: 3,
                   }}
                 />
 
               </LineChart>
-
             </ResponsiveContainer>
 
           </div>
-
         ) : (
-
-          <div className="empty-trend">
-
-            <BarChart3
-              size={35}
-            />
+          <div className="parent-performance-empty-chart">
+            <BarChart3 size={35} />
 
             <h3>
               Performance trend unavailable
             </h3>
 
             <p>
-              More assessment records
-              are required to display
-              the trend.
+              More assessment results are
+              required before a trend can be
+              displayed.
             </p>
-
           </div>
-
         )}
 
       </section>
 
-
       {/* ====================================================
-          INSIGHTS
+          SUBJECT ANALYSIS
       ==================================================== */}
 
-      <section className="insights-card">
+      <section className="parent-performance-card">
 
-        <div className="performance-card-header">
+        <div className="parent-performance-card-header">
 
           <div>
-
-            <div className="performance-eyebrow">
-              AI ANALYSIS
+            <div className="parent-performance-card-label">
+              SUBJECT ANALYSIS
             </div>
 
             <h2>
-              Performance Insights
+              Subject-wise Performance
             </h2>
 
+            <p>
+              Compare performance across
+              subjects using the available
+              examination records.
+            </p>
           </div>
 
-          <div className="performance-card-icon">
-
-            <Brain
-              size={21}
-            />
-
+          <div className="parent-performance-card-icon">
+            <BookOpen size={21} />
           </div>
 
         </div>
 
+        {subjectData.length > 0 ? (
+          <div className="parent-performance-chart">
 
-        <div className="insights-summary">
+            <ResponsiveContainer
+              width="100%"
+              height={370}
+            >
+              <BarChart
+                data={subjectData}
+                margin={{
+                  top: 20,
+                  right: 20,
+                  left: 0,
+                  bottom: 55,
+                }}
+              >
+
+                <CartesianGrid
+                  stroke="#e5e7eb"
+                  strokeDasharray="4 5"
+                  vertical={false}
+                />
+
+                <XAxis
+                  dataKey="name"
+                  tick={{
+                    fill: "#475569",
+                    fontSize: 12,
+                  }}
+                  angle={-20}
+                  textAnchor="end"
+                  height={70}
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <YAxis
+                  domain={[
+                    0,
+                    100,
+                  ]}
+                  tick={{
+                    fill: "#64748b",
+                    fontSize: 12,
+                  }}
+                  tickFormatter={(value) =>
+                    `${value}%`
+                  }
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <Tooltip
+                  cursor={{
+                    fill: "#f8fafc",
+                  }}
+                  contentStyle={{
+                    border:
+                      "1px solid #e2e8f0",
+                    borderRadius: 14,
+                    boxShadow:
+                      "0 14px 35px rgba(15,23,42,0.10)",
+                  }}
+                  formatter={(value) => [
+                    `${Math.round(
+                      value
+                    )}%`,
+                    "Score",
+                  ]}
+                />
+
+                <Bar
+                  dataKey="percentage"
+                  radius={[
+                    9,
+                    9,
+                    2,
+                    2,
+                  ]}
+                  maxBarSize={62}
+                >
+                  {subjectData.map(
+                    (
+                      entry,
+                      index
+                    ) => (
+                      <Cell
+                        key={
+                          `subject-${index}`
+                        }
+                        fill={
+                          entry.color
+                        }
+                      />
+                    )
+                  )}
+                </Bar>
+
+              </BarChart>
+            </ResponsiveContainer>
+
+          </div>
+        ) : (
+          <div className="parent-performance-empty-chart">
+            <BookOpen size={35} />
+
+            <h3>
+              Subject analysis unavailable
+            </h3>
+
+            <p>
+              Subject-wise results will
+              appear after examination marks
+              are available.
+            </p>
+          </div>
+        )}
+
+      </section>
+
+      {/* ====================================================
+          SNAPSHOT
+      ==================================================== */}
+
+      <section className="parent-performance-card">
+
+        <div className="parent-performance-card-header">
+
+          <div>
+            <div className="parent-performance-card-label">
+              CURRENT SNAPSHOT
+            </div>
+
+            <h2>
+              Academic Snapshot
+            </h2>
+
+            <p>
+              Quick indicators from the
+              records currently available.
+            </p>
+          </div>
+
+          <div className="parent-performance-card-icon">
+            <BarChart3 size={21} />
+          </div>
+
+        </div>
+
+        <div className="parent-performance-snapshot-grid">
+
+          <SnapshotItem
+            icon={GraduationCap}
+            label="Assessment Average"
+            value={formatPercent(
+              examAverage
+            )}
+          />
+
+          <SnapshotItem
+            icon={Activity}
+            label="Attendance"
+            value={formatPercent(
+              attendancePercentage
+            )}
+          />
+
+          <SnapshotItem
+            icon={ClipboardCheck}
+            label="Assignments"
+            value={formatPercent(
+              assignmentCompletion
+            )}
+          />
+
+          <SnapshotItem
+            icon={BookOpen}
+            label="Subjects"
+            value={
+              subjects.length
+            }
+          />
+
+        </div>
+
+      </section>
+
+      {/* ====================================================
+          AI INSIGHTS
+      ==================================================== */}
+
+      <section className="parent-performance-ai-section">
+
+        <div className="parent-performance-ai-header">
+
+          <div className="parent-performance-ai-title">
+
+            <div className="parent-performance-ai-icon">
+              <Brain size={21} />
+            </div>
+
+            <div>
+              <span>
+                AI ANALYSIS
+              </span>
+
+              <h2>
+                Performance Insights
+              </h2>
+            </div>
+
+          </div>
+
+          <div className="parent-performance-ai-status">
+            <ShieldCheck size={15} />
+
+            Academic decision support
+          </div>
+
+        </div>
+
+        <div className="parent-performance-ai-summary">
+
+          <div className="parent-performance-ai-summary-icon">
+            <Lightbulb size={19} />
+          </div>
 
           <p>
             {explanation?.summary ||
-              "The performance report is generated from the available academic records."}
+              "The available academic records are being analysed to identify useful performance patterns and areas of focus."}
           </p>
 
         </div>
 
+        <div className="parent-performance-insight-grid">
 
-        <div className="insights-columns">
+          {/* STRENGTHS */}
 
-          <div className="insight-column">
+          <div className="parent-performance-insight-card strengths">
 
-            <div className="insight-title positive">
+            <div className="parent-performance-insight-heading">
+              <CheckCircle2 size={19} />
 
-              <CheckCircle2
-                size={18}
-              />
+              <div>
+                <span>
+                  STRENGTHS
+                </span>
 
-              Strengths
-
+                <h3>
+                  What's going well
+                </h3>
+              </div>
             </div>
 
+            <div className="parent-performance-insight-list">
 
-            <ul>
-
-              {Array.isArray(
-                explanation?.strengths
-              ) &&
-              explanation.strengths.length >
-                0 ? (
-
+              {explanation?.strengths?.length ? (
                 explanation.strengths.map(
                   (
                     item,
                     index
                   ) => (
-
-                    <li
+                    <div
                       key={index}
+                      className="parent-performance-insight-item"
                     >
-                      {item}
-                    </li>
+                      <CheckCircle2
+                        size={16}
+                      />
 
+                      <span>
+                        {item}
+                      </span>
+                    </div>
                   )
                 )
-
               ) : (
-
-                <li>
-                  Strength information
-                  will appear when more
-                  academic records are
-                  available.
-                </li>
-
+                <p className="parent-performance-empty-text">
+                  No specific strengths
+                  are available yet.
+                </p>
               )}
-
-            </ul>
-
-          </div>
-
-
-          <div className="insight-column">
-
-            <div className="insight-title attention">
-
-              <AlertCircle
-                size={18}
-              />
-
-              Areas to Improve
 
             </div>
 
+          </div>
 
-            <ul>
+          {/* FOCUS */}
 
-              {Array.isArray(
-                explanation?.focusAreas
-              ) &&
-              explanation.focusAreas.length >
-                0 ? (
+          <div className="parent-performance-insight-card focus">
 
+            <div className="parent-performance-insight-heading">
+              <Target size={19} />
+
+              <div>
+                <span>
+                  FOCUS AREAS
+                </span>
+
+                <h3>
+                  Areas to improve
+                </h3>
+              </div>
+            </div>
+
+            <div className="parent-performance-insight-list">
+
+              {explanation?.focusAreas?.length ? (
                 explanation.focusAreas.map(
                   (
                     item,
                     index
                   ) => (
-
-                    <li
+                    <div
                       key={index}
+                      className="parent-performance-insight-item"
                     >
-                      {item}
-                    </li>
+                      <Target
+                        size={16}
+                      />
 
+                      <span>
+                        {item}
+                      </span>
+                    </div>
                   )
                 )
-
               ) : (
-
-                <li>
-                  Areas for improvement
-                  will appear when more
-                  academic records are
-                  available.
-                </li>
-
+                <p className="parent-performance-empty-text">
+                  No specific focus areas
+                  are available yet.
+                </p>
               )}
 
-            </ul>
+            </div>
 
           </div>
 
@@ -1059,147 +1298,149 @@ export default function AIPerformancePredictor() {
 
       </section>
 
-
       {/* ====================================================
           RECOMMENDATIONS
       ==================================================== */}
 
-      <section className="recommendations-card">
+      <section className="parent-performance-card">
 
-        <div className="performance-card-header">
+        <div className="parent-performance-card-header">
 
           <div>
-
-            <div className="performance-eyebrow">
-              RECOMMENDED FOCUS
+            <div className="parent-performance-card-label">
+              AI-SUPPORTED ACTION PLAN
             </div>
 
             <h2>
-              Recommendations
+              Recommended Focus
             </h2>
 
             <p>
-              Suggested areas of focus
-              based on available records.
+              Practical academic steps based
+              on the available performance data.
             </p>
-
           </div>
 
-          <div className="performance-card-icon">
-
-            <Lightbulb
-              size={21}
-            />
-
+          <div className="parent-performance-card-icon">
+            <Lightbulb size={21} />
           </div>
 
         </div>
 
+        <div className="parent-performance-recommendations">
 
-        <div className="recommendations-list">
-
-          {recommendations.length >
-          0 ? (
-
+          {recommendations.length ? (
             recommendations.map(
               (
-                recommendation,
+                item,
                 index
               ) => (
-
                 <div
-                  className="recommendation-item"
                   key={index}
+                  className="parent-performance-recommendation"
                 >
 
-                  <div className="recommendation-number">
+                  <div className="parent-performance-recommendation-number">
                     {index + 1}
                   </div>
 
                   <div>
-
-                    <strong>
-                      Recommendation{" "}
-                      {index + 1}
-                    </strong>
+                    <h3>
+                      {typeof item ===
+                      "string"
+                        ? item
+                        : item?.title ||
+                          "Recommended action"}
+                    </h3>
 
                     <p>
-                      {recommendation}
+                      {typeof item ===
+                      "string"
+                        ? "Continue using this as part of a regular academic routine."
+                        : item?.description ||
+                          ""}
                     </p>
-
                   </div>
 
                 </div>
-
               )
             )
-
           ) : (
-
-            <div className="recommendation-item">
-
-              <div className="recommendation-number">
-                1
-              </div>
-
-              <div>
-
-                <strong>
-                  Continue monitoring
-                  academic progress
-                </strong>
-
-                <p>
-                  Keep checking attendance,
-                  assignments and assessment
-                  performance regularly.
-                </p>
-
-              </div>
-
+            <div className="parent-performance-empty-text">
+              Recommendations will appear
+              when more academic information
+              becomes available.
             </div>
-
           )}
 
         </div>
 
       </section>
 
+      {/* ====================================================
+          METHODOLOGY
+      ==================================================== */}
+
+      <section className="parent-performance-methodology">
+
+        <div className="parent-performance-methodology-icon">
+          <Brain size={20} />
+        </div>
+
+        <div className="parent-performance-methodology-content">
+
+          <div className="parent-performance-card-label">
+            AI PERFORMANCE FRAMEWORK
+          </div>
+
+          <h3>
+            Data-driven academic monitoring
+          </h3>
+
+          <p>
+            Performance insights are intended
+            to support early academic attention
+            and communication between students,
+            parents and the school. They should
+            not be treated as a final academic
+            decision.
+          </p>
+
+        </div>
+
+        <div className="parent-performance-methodology-tags">
+
+          <span>
+            Academic Data
+          </span>
+
+          <span>
+            Risk Analysis
+          </span>
+
+          <span>
+            AI Insights
+          </span>
+
+        </div>
+
+      </section>
 
       {/* ====================================================
           FOOTER
       ==================================================== */}
 
-      <section className="performance-footer-card">
+      <div className="parent-performance-footer">
 
-        <div className="performance-footer-icon">
+        <ShieldCheck size={17} />
 
-          <GraduationCap
-            size={25}
-          />
+        <span>
+          This report is generated from the
+          academic records currently available
+          in CampusIQ.
+        </span>
 
-        </div>
-
-        <div>
-
-          <div className="performance-eyebrow">
-            KEEP SUPPORTING
-          </div>
-
-          <h2>
-            Your child's progress matters
-          </h2>
-
-          <p>
-            Use this report to understand
-            strengths, identify areas that
-            need more practice and maintain
-            consistent academic habits.
-          </p>
-
-        </div>
-
-      </section>
+      </div>
 
     </div>
   );
