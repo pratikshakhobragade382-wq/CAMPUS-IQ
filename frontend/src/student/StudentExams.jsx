@@ -7,11 +7,13 @@ import {
   RefreshCw,
   AlertCircle,
   ChevronRight,
+  Calendar,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import axiosClient from "../api/axios";
 import { getMyStudentProfile } from "../api/studentPortal.api";
+import { ExamTimetableModal } from "../components/modal/ExamTimetableModal";
 
 import "./StudentExams.css";
 
@@ -82,6 +84,7 @@ export default function StudentExams() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedExamForTimetable, setSelectedExamForTimetable] = useState(null);
 
   const loadExams = async () => {
     setLoading(true);
@@ -191,6 +194,26 @@ export default function StudentExams() {
                 <span>{exam.academicYear.name}</span>
               </div>
             )}
+
+            <div>
+              <Calendar size={15} />
+              <span>
+                {Array.isArray(exam.subjectSchedules) && exam.subjectSchedules.length > 0
+                  ? `${exam.subjectSchedules.length} Papers Scheduled`
+                  : 'Timetable Available'}
+              </span>
+            </div>
+          </div>
+
+          <div className="student-exam-card-actions">
+            <button
+              type="button"
+              className="student-exam-timetable-btn"
+              onClick={() => setSelectedExamForTimetable(exam)}
+            >
+              <CalendarDays size={15} />
+              View Exam Timetable
+            </button>
           </div>
         </div>
       </article>
@@ -331,6 +354,14 @@ export default function StudentExams() {
           )}
         </>
       )}
+
+      {/* Timetable / Date Sheet Modal */}
+      <ExamTimetableModal
+        isOpen={Boolean(selectedExamForTimetable)}
+        onClose={() => setSelectedExamForTimetable(null)}
+        exam={selectedExamForTimetable}
+        theme="slate"
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { getClasses } from '../../api/class.api';
 import { getSubjects } from '../../api/subject.api';
 import { getStudents } from '../../api/student.api';
 import { getTeacherTimetable } from '../../api/timetable.api';
+import { ExamTimetableModal } from '../../components/modal/ExamTimetableModal';
 import './TeacherExams.css';
 
 function timetableEntriesFromResponse(response) {
@@ -29,6 +30,7 @@ export default function TeacherExams() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [alertMsg, setAlertMsg] = useState(null);
+  const [timetableModalExam, setTimetableModalExam] = useState(null);
 
   // Marks Entry Form State
   const [selectedExamId, setSelectedExamId] = useState('');
@@ -721,10 +723,27 @@ export default function TeacherExams() {
                           {new Date(exam.endDate).toLocaleDateString('en-IN')}
                         </span>
                       </div>
+                      <div className="detail-row">
+                        <i className="fa-solid fa-list-check text-blue-500"></i>
+                        <span>
+                          {Array.isArray(exam.subjectSchedules) && exam.subjectSchedules.length > 0
+                            ? `${exam.subjectSchedules.length} Papers Scheduled`
+                            : 'Timetable Available'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="exam-card-actions">
+                    <button
+                      type="button"
+                      className="btn-view-timetable"
+                      onClick={() => setTimetableModalExam(exam)}
+                      title="View subject-wise exam timetable and date sheet"
+                    >
+                      <i className="fa-solid fa-calendar-days"></i>
+                      View Timetable
+                    </button>
                     <button
                       type="button"
                       className="btn-enter-marks"
@@ -938,6 +957,14 @@ export default function TeacherExams() {
         </div>
       )}
       </div>
+
+      {/* Timetable & Date Sheet Modal */}
+      <ExamTimetableModal
+        isOpen={Boolean(timetableModalExam)}
+        onClose={() => setTimetableModalExam(null)}
+        exam={timetableModalExam}
+        theme="blue"
+      />
     </div>
   );
 }

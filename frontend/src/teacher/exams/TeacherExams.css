@@ -206,6 +206,30 @@
   transform: translateY(-1px);
 }
 
+.btn-view-timetable {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-view-timetable:hover {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+  transform: translateY(-1px);
+}
+
 /* Marks Entry Table */
 .marks-entry-card {
   background: #ffffff;

@@ -796,7 +796,7 @@ export default function Exam() {
       const schedRes = await getExamSubjectSchedules(currentExamId);
       const schedList = Array.isArray(schedRes?.data) ? schedRes.data : [];
       setSubjectSchedules(schedList);
-      setScheduleMsg(`Successfully scheduled ${valid.length} subject(s)! ✨`);
+      setScheduleMsg(`Successfully scheduled ${valid.length} subject(s)! ✨ Timetable published and notification sent to all portals.`);
       await loadExams();
     } catch (error) {
       setScheduleErr(getApiError(error, 'Failed to save schedule'));
@@ -1606,7 +1606,7 @@ export default function Exam() {
                   {isAdmin ? 'No schedule set. Click "Add Subject" to add subject-wise exam dates.' : 'No subject schedule set yet.'}
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <div className="overflow-auto rounded-lg border border-gray-200 max-h-[360px]">
                   <table className="min-w-full text-xs">
                     <thead className="bg-gray-50">
                       <tr>
@@ -1915,7 +1915,7 @@ export default function Exam() {
                     </div>
                   )}
 
-                  <div className="overflow-x-auto rounded-lg border border-gray-200 max-h-[420px]">
+                  <div className="overflow-auto rounded-lg border border-gray-200 max-h-[420px]">
                     <table className="min-w-full text-xs">
                       <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
@@ -2183,7 +2183,7 @@ export default function Exam() {
                           </span>
                         </div>
 
-                        <div className="divide-y divide-gray-100 bg-white">
+                        <div className="divide-y divide-gray-100 bg-white max-h-[420px] overflow-y-auto print:max-h-none print:overflow-visible">
                           {subjectSchedules.map((item, idx) => (
                             <div
                               key={item.id || idx}

@@ -6,6 +6,11 @@ const {
 } =
   require("../notification/teachernotification");
 
+const {
+  createNotification,
+} =
+  require("../notification/notification.service");
+
 const prisma =
   require("../../prisma/prismaClient");
 
@@ -225,6 +230,25 @@ const createTimetableEntry = async (
       priority:
         "normal",
     });
+
+    /* ========================================================
+       NOTIFY ALL PORTALS (Admin, Teachers, Students, Parents)
+    ======================================================== */
+    try {
+      await createNotification({
+        tenantId: req.user.tenantId,
+        title: `Class Timetable Published: ${data.class?.name || "Class"}`,
+        message: `New class timetable has been scheduled for ${data.subject?.name || "Subject"} in ${data.class?.name || "Class"}${data.section?.name ? ` (${data.section.name})` : ""}${data.dayOfWeek ? ` on ${data.dayOfWeek}` : ""}.`,
+        type: "class",
+        priority: "normal",
+        audience: "all",
+        classId: data.classId || null,
+        sectionId: data.sectionId || null,
+        createdById: req.user.id || null,
+      });
+    } catch (notifErr) {
+      console.error("Timetable all-portal notification failed:", notifErr);
+    }
 
 
     return res.status(201).json({
@@ -452,6 +476,25 @@ const updateTimetableEntry = async (
       priority:
         "normal",
     });
+
+    /* ========================================================
+       NOTIFY ALL PORTALS (Admin, Teachers, Students, Parents)
+    ======================================================== */
+    try {
+      await createNotification({
+        tenantId: req.user.tenantId,
+        title: `Class Timetable Updated: ${data.class?.name || "Class"}`,
+        message: `Class timetable for ${data.subject?.name || "Subject"} in ${data.class?.name || "Class"}${data.section?.name ? ` (${data.section.name})` : ""}${data.dayOfWeek ? ` on ${data.dayOfWeek}` : ""} has been updated.`,
+        type: "class",
+        priority: "normal",
+        audience: "all",
+        classId: data.classId || null,
+        sectionId: data.sectionId || null,
+        createdById: req.user.id || null,
+      });
+    } catch (notifErr) {
+      console.error("Timetable update all-portal notification failed:", notifErr);
+    }
 
 
     return res.status(200).json({

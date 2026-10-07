@@ -37,23 +37,23 @@ export const Modal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/30"
+        className="fixed inset-0 bg-black/30"
         onClick={onClose}
       />
 
       {/* Modal Content */}
       <div
         className={clsx(
-          'relative bg-white rounded-2xl shadow-lg p-6 w-full mx-4 z-50',
+          'relative bg-white rounded-2xl shadow-lg p-6 w-full z-50 max-h-[90vh] flex flex-col',
           sizes[size],
           className
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
@@ -64,7 +64,7 @@ export const Modal = ({
         </div>
 
         {/* Body */}
-        <div>
+        <div className="overflow-y-auto flex-1 min-h-0 pr-1">
           {children}
         </div>
       </div>
@@ -85,7 +85,7 @@ export const ModalBody = ({ children, className }) => (
  * Modal Footer Component
  */
 export const ModalFooter = ({ children, className }) => (
-  <div className={clsx('mt-6 pt-6 border-t border-gray-100 flex items-center justify-end gap-3', className)}>
+  <div className={clsx('mt-6 pt-4 border-t border-gray-100 flex items-center justify-end gap-3 flex-shrink-0', className)}>
     {children}
   </div>
 );

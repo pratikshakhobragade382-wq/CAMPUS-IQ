@@ -2528,7 +2528,14 @@ const upsertExamSubjectSchedules = async (
 
   const exam = await prisma.exam.findFirst({
     where: { id: parsedExamId, tenantId },
-    select: { id: true, startDate: true, endDate: true },
+    select: {
+      id: true,
+      name: true,
+      classId: true,
+      class: { select: { id: true, name: true } },
+      startDate: true,
+      endDate: true,
+    },
   });
 
   if (!exam) {
@@ -2573,6 +2580,26 @@ const upsertExamSubjectSchedules = async (
     });
 
     results.push(saved);
+  }
+
+  // Publish notification to all portals (Admin, Teacher, Student, Parent)
+  try {
+    const className = exam.class?.name || "Class";
+    const examName = exam.name || "Examination";
+    const papersCount = results.length;
+
+    await createNotification({
+      tenantId,
+      title: `Exam Timetable Published: ${examName}`,
+      message: `The official examination date sheet and timetable for ${examName} (${className}) has been published with ${papersCount} subject papers scheduled. You can now view the full routine in the Exam module.`,
+      type: "exam",
+      priority: "high",
+      audience: "all",
+      classId: exam.classId || null,
+      createdById: actingUser?.id || null,
+    });
+  } catch (notifErr) {
+    console.error("Failed to publish exam timetable notification:", notifErr);
   }
 
   return results;

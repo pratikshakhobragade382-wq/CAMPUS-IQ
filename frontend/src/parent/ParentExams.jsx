@@ -15,6 +15,7 @@ import {
 
 import { getMyChildren } from "../api/parent.api";
 import { getExamsByClass } from "../api/parentExam.api";
+import { ExamTimetableModal } from "../components/modal/ExamTimetableModal";
 
 import "./ParentExams.css";
 
@@ -115,7 +116,7 @@ const getExamStatus = (startKey, endKey, todayKey) => {
 ============================================================
 */
 
-function ExamCard({ exam, child }) {
+function ExamCard({ exam, child, onViewTimetable }) {
   const statusMeta = STATUS_META[exam.status];
 
   const classText = exam.class?.name || child.className || "—";
@@ -204,6 +205,32 @@ function ExamCard({ exam, child }) {
             </span>
           </div>
         </div>
+
+        <div className="parent-exam-detail-item">
+          <div className="parent-exam-detail-icon">
+            <CalendarDays size={16} />
+          </div>
+
+          <div className="parent-exam-detail-text">
+            <span className="detail-label">Schedule</span>
+            <span className="detail-value">
+              {Array.isArray(exam.subjectSchedules) && exam.subjectSchedules.length > 0
+                ? `${exam.subjectSchedules.length} Papers Scheduled`
+                : "Timetable Available"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="parent-exam-card-actions">
+        <button
+          type="button"
+          className="parent-exam-timetable-btn"
+          onClick={() => onViewTimetable(exam)}
+        >
+          <CalendarDays size={15} />
+          View Exam Timetable
+        </button>
       </div>
 
       {exam.status === "completed" && (
@@ -233,6 +260,7 @@ export default function ParentExams() {
   const [examsLoading, setExamsLoading] = useState(false);
   const [examsError, setExamsError] = useState("");
   const [examsReload, setExamsReload] = useState(0);
+  const [selectedExamForTimetable, setSelectedExamForTimetable] = useState(null);
 
   const [activeTab, setActiveTab] = useState("upcoming");
 
@@ -578,10 +606,25 @@ export default function ParentExams() {
       ) : (
         <div className="parent-exams-grid">
           {visibleExams.map((exam) => (
-            <ExamCard key={exam.id} exam={exam} child={selectedChild} />
+            <ExamCard
+              key={exam.id}
+              exam={exam}
+              child={selectedChild}
+              onViewTimetable={setSelectedExamForTimetable}
+            />
           ))}
         </div>
       )}
+
+      {/* Exam Timetable / Date Sheet Modal */}
+      <ExamTimetableModal
+        isOpen={Boolean(selectedExamForTimetable)}
+        onClose={() => setSelectedExamForTimetable(null)}
+        exam={selectedExamForTimetable}
+        studentName={selectedChild?.name || ""}
+        className={selectedChild?.className || ""}
+        theme="purple"
+      />
     </div>
   );
 }
