@@ -259,6 +259,66 @@ function extractArray(data) {
   return [];
 }
 
+function getTeacherSubjectNames(teacher) {
+  if (!teacher || typeof teacher !== "object") {
+    return [];
+  }
+
+  const subjectSources = [
+    teacher.subjects,
+    teacher.assignedSubjects,
+    teacher.subjectAssignments,
+    teacher.teacherSubjects,
+    teacher.staffSubjects,
+    teacher.staffSubject,
+  ];
+
+  const rawSubjects =
+    subjectSources.find((value) => Array.isArray(value)) ||
+    [];
+
+  const names = rawSubjects
+    .map((item) => {
+      if (typeof item === "string") {
+        return item;
+      }
+
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      return (
+        item.name ||
+        item.subjectName ||
+        item.subject?.name ||
+        item.subject?.subjectName ||
+        item.subject?.label ||
+        item.label ||
+        item.subject?.subject?.name ||
+        item.subject?.subject?.subjectName ||
+        ""
+      );
+    })
+    .map((name) => String(name || "").trim())
+    .filter(Boolean);
+
+  const directSubjectNames = [
+    teacher.subjectName,
+    teacher.subject?.name,
+    teacher.subject?.subjectName,
+    teacher.subject?.label,
+  ]
+    .map((name) => String(name || "").trim())
+    .filter(Boolean);
+
+  return Array.from(
+    new Set([
+      ...names,
+      ...directSubjectNames,
+    ])
+  );
+}
+
 function normalizeTeacher(teacher) {
   if (!teacher || typeof teacher !== "object") {
     return null;
@@ -296,10 +356,20 @@ function normalizeTeacher(teacher) {
     teacher.email ||
     "Teacher";
 
+  const subjectNames =
+    getTeacherSubjectNames(teacher);
+
+  const displayName =
+    subjectNames.length > 0
+      ? `${name} (${subjectNames.join(", ")})`
+      : `${name} (No subject assigned)`;
+
   return {
     ...teacher,
     id,
     name,
+    subjectNames,
+    displayName,
   };
 }
 
@@ -2773,7 +2843,7 @@ export default function Timetable() {
                           teacher.id
                         )}
                       >
-                        {teacher.name}
+                        {teacher.displayName}
                       </option>
                     )
                   )}
@@ -3758,7 +3828,7 @@ export default function Timetable() {
                         teacher.id
                       )}
                     >
-                      {teacher.name}
+                      {teacher.displayName}
                     </option>
                   )
                 )}
@@ -3973,7 +4043,7 @@ export default function Timetable() {
                         teacher.id
                       }
                     >
-                      {teacher.name}
+                      {teacher.displayName}
                     </option>
                   )
                 )}
