@@ -123,13 +123,40 @@ function getSubjectName(entry) {
   );
 }
 
-function getTeacherName(entry) {
-  return (
+function getTeacherName(entry, teachers = []) {
+  const directName =
     entry?.staff?.name ||
+    entry?.staff?.fullName ||
     entry?.teacher?.name ||
-    entry?.teacherName ||
-    "Teacher not assigned"
-  );
+    entry?.teacher?.fullName ||
+    entry?.teacherName;
+
+  const staffId =
+    entry?.staffId ??
+    entry?.staff_id ??
+    entry?.teacherId ??
+    entry?.teacher_id ??
+    entry?.staff?.id ??
+    entry?.teacher?.id;
+
+  const matchedTeacher =
+    Array.isArray(teachers) && staffId !== null && staffId !== undefined
+      ? teachers.find(
+          (teacher) =>
+            String(teacher?.id) === String(staffId)
+        )
+      : null;
+
+  if (matchedTeacher) {
+    return (
+      matchedTeacher.displayName ||
+      matchedTeacher.name ||
+      directName ||
+      "Teacher not assigned"
+    );
+  }
+
+  return directName || "Teacher not assigned";
 }
 
 function getInchargeName(section) {
@@ -973,9 +1000,49 @@ export default function Timetable() {
           response.data ??
           {};
 
-        setEntries(
-          flattenGrouped(data)
-        );
+        const timetableEntries =
+          flattenGrouped(data);
+
+        // The timetable API stores the teacher using staffId.
+        // Some responses do not include the nested staff/teacher object,
+        // so attach the already-loaded teacher record before rendering.
+        const enrichedEntries =
+          timetableEntries.map((entry) => {
+            const staffId =
+              entry?.staffId ??
+              entry?.staff_id ??
+              entry?.teacherId ??
+              entry?.teacher_id;
+
+            const matchedTeacher =
+              staffId !== null &&
+              staffId !== undefined
+                ? teachers.find(
+                    (teacher) =>
+                      String(teacher?.id) ===
+                      String(staffId)
+                  )
+                : null;
+
+            if (!matchedTeacher) {
+              return entry;
+            }
+
+            return {
+              ...entry,
+              staff:
+                entry?.staff ||
+                matchedTeacher,
+              teacher:
+                entry?.teacher ||
+                matchedTeacher,
+              teacherName:
+                entry?.teacherName ||
+                matchedTeacher.name,
+            };
+          });
+
+        setEntries(enrichedEntries);
       } catch (err) {
         console.error(
           "Failed to load timetable:",
@@ -1027,7 +1094,7 @@ export default function Timetable() {
 
           return [
             getSubjectName(entry),
-            getTeacherName(entry),
+            getTeacherName(entry, teachers),
             getClassName(entry),
             getSectionName(entry),
             entry.dayName,
@@ -1861,7 +1928,8 @@ export default function Timetable() {
                         const teacher =
                           escapeHtml(
                             getTeacherName(
-                              entry
+                              entry,
+                              teachers
                             )
                           );
 
@@ -3217,7 +3285,8 @@ export default function Timetable() {
 
                                           <span>
                                             {getTeacherName(
-                                              entry
+                                              entry,
+                                              teachers
                                             )}
                                           </span>
 
@@ -3351,7 +3420,8 @@ export default function Timetable() {
 
                         <td>
                           {getTeacherName(
-                            entry
+                            entry,
+                            teachers
                           )}
                         </td>
 
